@@ -10,8 +10,8 @@ app.use(express.json());
 app.use(cors());
 app.use(morgan("dev"));
 
-readdirSync("./routes").map((r) => {
-  app.use("/api", require("./routes/" + r));
+readdirSync("./app/routes").map((r) => {
+  app.use("/api", require("./app/routes/" + r));
 });
 
 app.listen(5000, () => {
