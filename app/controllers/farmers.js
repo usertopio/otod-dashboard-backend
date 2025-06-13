@@ -36,7 +36,15 @@ exports.fetchFarmers = async (req, res) => {
 
         connectionDB.query(
           insertFarmersQuery,
-          farmerFields.map((farmerField) => farmer[farmerField]),
+          farmerFields.map((farmerField) => {
+            if (
+              farmerField === "idCardExpiryDate" &&
+              farmer[farmerField] === ""
+            ) {
+              return null;
+            }
+            return farmer[farmerField];
+          }),
           (err) => {
             if (err) {
               console.error("Insert error:", err);
