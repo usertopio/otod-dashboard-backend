@@ -1,5 +1,5 @@
 const axios = require("axios");
-const apiConfig = require("../config/api.conf.js");
+const apiConfig = require("../../config/api.conf.js");
 
 const apiClient = axios.create({
   baseURL: apiConfig.baseURL,
