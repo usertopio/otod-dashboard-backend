@@ -1,6 +1,6 @@
 const { getFarmers } = require("../services/outsourceApi");
 
-exports.getFarmers = async (req, res) => {
+exports.fetchFarmers = async (req, res) => {
   try {
     req.body = {
       provinceName: "",
