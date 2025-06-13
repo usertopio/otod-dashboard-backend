@@ -4,6 +4,8 @@ const cors = require("cors");
 
 const { readdirSync } = require("fs");
 
+require("dotenv").config();
+
 const app = express();
 
 app.use(express.json());
