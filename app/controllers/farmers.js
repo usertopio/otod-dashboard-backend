@@ -1,4 +1,5 @@
 const { getFarmers } = require("../services/outsourceApi");
+const { connectionDB, farmerFields } = require("../config/db.conf.js");
 
 // Function to fetch farmers data from the outsource API
 exports.fetchFarmers = async (req, res) => {
@@ -26,6 +27,23 @@ exports.fetchFarmers = async (req, res) => {
       );
 
       allFarmers = allFarmers.concat(Farmers.data);
+
+      // Insert farmer into the database one by one
+      Farmers.data.forEach((farmer) => {
+        const insertFarmersQuery = `
+          INSERT INTO farmers (${farmerFields.join(", ")})
+          VALUES (${farmerFields.map(() => "?").join(", ")})`;
+
+        connectionDB.query(
+          insertFarmersQuery,
+          farmerFields.map((farmerField) => farmer[farmerField]),
+          (err) => {
+            if (err) {
+              console.error("Insert error:", err);
+            }
+          }
+        );
+      });
     }
 
     res.json({ allFarmers: allFarmers });
