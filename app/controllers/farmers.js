@@ -16,7 +16,7 @@ exports.fetchFarmers = async (req, res) => {
     // Loop through the number of pages to fetch all farmaer data
     for (let page = 1; page <= pages; page++) {
       // Prepare the payload for the API request
-      let customReqBody = {
+      let requestBody = {
         provinceName: "",
         pageIndex: page,
         pageSize: 500,
@@ -27,7 +27,7 @@ exports.fetchFarmers = async (req, res) => {
       };
 
       // Fetch farmers data in the current page from the outsource API
-      let farmers = await getFarmers(customReqBody, customHeaders);
+      let farmers = await getFarmers(requestBody, customHeaders);
 
       allFarmersCurPage = farmers.data;
 
