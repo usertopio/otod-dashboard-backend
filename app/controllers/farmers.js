@@ -1,4 +1,4 @@
-const { getFarmers } = require("../services/api/outsourceApi.js");
+const { getFarmers } = require("../services/api/farmers.js");
 const { insertFarmer } = require("../services/db/farmersDb");
 
 // Function to fetch farmers data from the outsource API
