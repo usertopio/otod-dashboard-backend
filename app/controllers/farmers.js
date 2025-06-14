@@ -8,8 +8,10 @@ exports.fetchFarmers = async (req, res) => {
     let totalRecords = 1114;
     let pageSize = 500;
     let pages = Math.ceil(totalRecords / pageSize);
-    let allFarmers = [];
-    let TotalemptyIdCardExpiryDateCountPage = 0;
+    // let pages = 3;
+    let allFarmersAllPages = [];
+    let allFarmersCurPage = [];
+    let TotalemptyIdCardExpiryDateCurPage = 0;
 
     // Loop through the number of pages to fetch all farmaer data
     for (let page = 1; page <= pages; page++) {
@@ -20,31 +22,39 @@ exports.fetchFarmers = async (req, res) => {
         pageSize: 500,
       };
 
-      // Fetch farmers data from the outsource API
+      // Fetch farmers data in the current page from the outsource API
       let Farmers = await getFarmers(payload);
 
-      TotalemptyIdCardExpiryDateCountPage = Farmers.data.filter(
+      allFarmersCurPage = Farmers.data;
+
+      // Count the number of farmers with empty ID card expiry date in the current page
+      TotalemptyIdCardExpiryDateCurPage = allFarmersCurPage.filter(
         (Farmer) => Farmer.idCardExpiryDate === ""
       ).length;
 
       // Concatinate the fetched farmers from pages
-      allFarmers = allFarmers.concat(Farmers.data);
+      allFarmersAllPages = allFarmersAllPages.concat(allFarmersCurPage);
 
-      let emptyIdCardExpiryDateCount = 0;
       // Insert a farmer into the database one by one
-      Farmers.data.forEach(insertFarmer);
+      allFarmersCurPage.forEach(insertFarmer);
+
+      // Log: Log the first 5 recId for the current page
+      console.log(
+        `First 5 recId for page ${page}:`,
+        allFarmersCurPage.slice(0, 5).map((f) => f.recId)
+      );
 
       // Log: Log the fetched data for each page
       console.log(
-        `Fetched data for round ${page}: Length: ${
-          Farmers.data.length
-        }, Type: ${typeof Farmers.data}, Empty ID Card Expiry Date Count: ${TotalemptyIdCardExpiryDateCountPage}`
+        `Fetched data for page ${page}: Length: ${
+          allFarmersCurPage.length
+        }, Type: ${typeof allFarmersCurPage}, Empty ID Card Expiry Date Count: ${TotalemptyIdCardExpiryDateCurPage}`
       );
     }
 
-    // Respond with all farmers data
+    // Respond with all farmer data
     res.json({
-      allFarmers: allFarmers,
+      allFarmersAllPages: allFarmersAllPages,
     });
   } catch (error) {
     console.error("Error fetching farmers:", error);
