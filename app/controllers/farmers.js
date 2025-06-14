@@ -15,13 +15,14 @@ exports.fetchFarmers = async (req, res) => {
 
     // Loop through the number of pages to fetch all farmaer data
     for (let page = 1; page <= pages; page++) {
-      // Prepare the payload for the API request
+      // Prepare the request body for the API request
       let requestBody = {
         provinceName: "",
         pageIndex: page,
         pageSize: 500,
       };
 
+      // Custom headers for the API request
       let customHeaders = {
         Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
       };
