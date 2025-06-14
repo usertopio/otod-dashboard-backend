@@ -15,11 +15,19 @@ const login = async (reqBody) => {
 
 // Outsource doc: API Name: GetFarmers
 const getFarmers = async (customReqBody, customHeaders = {}) => {
-  const res = await apiClient.post("/api/report/GetFarmers", customReqBody, {
-    headers: {
-      ...customHeaders,
+  const res = await apiClient.post(
+    "/api/report/GetFarmers",
+    {
+      requestBody: {
+        ...customReqBody,
+      },
     },
-  });
+    {
+      headers: {
+        ...customHeaders,
+      },
+    }
+  );
   return res.data;
 };
 
