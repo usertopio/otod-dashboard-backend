@@ -7,9 +7,19 @@ const apiClient = axios.create({
   headers: apiConfig.headers,
 });
 
+// Outsource doc: API Name: Login
+const login = async (reqBody) => {
+  const res = await apiClient.post("/api/report/GetFarmers", reqBody);
+  return res.data;
+};
+
 // Outsource doc: API Name: GetFarmers
-const getFarmers = async (payload) => {
-  const res = await apiClient.post("/api/report/GetFarmers", payload);
+const getFarmers = async (customReqBody, customHeaders = {}) => {
+  const res = await apiClient.post("/api/report/GetFarmers", customReqBody, {
+    headers: {
+      ...customHeaders,
+    },
+  });
   return res.data;
 };
 

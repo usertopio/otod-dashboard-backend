@@ -16,16 +16,20 @@ exports.fetchFarmers = async (req, res) => {
     // Loop through the number of pages to fetch all farmaer data
     for (let page = 1; page <= pages; page++) {
       // Prepare the payload for the API request
-      let payload = {
+      let customReqBody = {
         provinceName: "",
         pageIndex: page,
         pageSize: 500,
       };
 
-      // Fetch farmers data in the current page from the outsource API
-      let Farmers = await getFarmers(payload);
+      let customHeaders = {
+        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      };
 
-      allFarmersCurPage = Farmers.data;
+      // Fetch farmers data in the current page from the outsource API
+      let farmers = await getFarmers(customReqBody, customHeaders);
+
+      allFarmersCurPage = farmers.data;
 
       // Count the number of farmers with empty ID card expiry date in the current page
       TotalemptyIdCardExpiryDateCurPage = allFarmersCurPage.filter(
