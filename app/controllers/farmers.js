@@ -1,5 +1,8 @@
 const { getFarmers, GetFarmerSummary } = require("../services/api/farmers.js");
-const { insertFarmer } = require("../services/db/farmersDb");
+const {
+  insertFarmer,
+  insertFarmerSummary,
+} = require("../services/db/farmersDb");
 
 // Function to fetch farmers data from the outsource API
 exports.fetchFarmers = async (req, res) => {
@@ -40,6 +43,10 @@ exports.fetchFarmers = async (req, res) => {
       // Concatinate the fetched farmers from pages
       allFarmersAllPages = allFarmersAllPages.concat(allFarmersCurPage);
 
+      // Log: Log the fetched farmers
+      console.log("Farmers:", allFarmersAllPages);
+      console.log("Type:", typeof allFarmersAllPages);
+
       // Insert a farmer into the database one by one
       allFarmersCurPage.forEach(insertFarmer);
 
@@ -79,6 +86,10 @@ exports.fetchFarmerSummary = async (req, res) => {
 
     // Log: Log the fetched farmer summary
     console.log("Farmer Summary:", farmerSummary);
+    console.log("Type:", typeof farmerSummary);
+
+    // Insert the farmer summary into the database one by one
+    farmerSummary.data.forEach(insertFarmerSummary);
 
     res.json({ farmerSummary: farmerSummary });
   } catch (error) {
