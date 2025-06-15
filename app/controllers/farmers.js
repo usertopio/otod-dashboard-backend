@@ -9,6 +9,8 @@ exports.fetchFarmers = async (req, res) => {
     let pageSize = 500;
     let pages = Math.ceil(totalRecords / pageSize);
     // let pages = 3;
+
+    // Initialize arrays to hold all farmers data and current page farmers data for logging
     let allFarmersAllPages = [];
     let allFarmersCurPage = [];
     let TotalemptyIdCardExpiryDateCurPage = 0;
