@@ -80,7 +80,7 @@ exports.fetchFarmerSummary = async (req, res) => {
     // Log: Log the fetched farmer summary
     console.log("Farmer Summary:", farmerSummary);
 
-    res.json(farmerSummary);
+    res.json({ farmerSummary: farmerSummary });
   } catch (error) {
     console.error("Error fetching farmer summary:", error);
     res.status(500).json({ error: "Failed to fetch farmer summary" });
