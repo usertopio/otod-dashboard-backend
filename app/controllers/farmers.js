@@ -45,9 +45,9 @@ exports.fetchFarmers = async (req, res) => {
       // Concatinate the fetched farmers from pages
       allFarmersAllPages = allFarmersAllPages.concat(allFarmersCurPage);
 
-      // Log: Log the fetched farmers
-      console.log("Farmers:", allFarmersAllPages);
-      console.log("Type:", typeof allFarmersAllPages);
+      // // Log: Log the fetched farmers
+      // console.log("Farmers:", allFarmersAllPages);
+      // console.log("Type:", typeof allFarmersAllPages);
 
       // Insert a farmer into the database one by one
       allFarmersCurPage.forEach(insertFarmer);
@@ -85,10 +85,6 @@ exports.fetchFarmerSummary = async (req, res) => {
 
     // Fetch farmer summary from the outsource API
     let farmerSummary = await GetFarmerSummary(customHeaders);
-
-    // Log: Log the fetched farmer summary
-    console.log("Farmer Summary:", farmerSummary);
-    console.log("Type:", typeof farmerSummary);
 
     // Insert the farmer summary into the database one by one
     farmerSummary.data.forEach(insertFarmerSummary);
