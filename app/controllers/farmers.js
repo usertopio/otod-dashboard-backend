@@ -1,4 +1,4 @@
-const { getFarmers, GetFarmerSummary } = require("../services/api/farmers.js");
+const { getFarmers, getFarmerSummary } = require("../services/api/farmers.js");
 const {
   insertFarmer,
   insertFarmerSummary,
@@ -84,7 +84,7 @@ exports.fetchFarmerSummary = async (req, res) => {
     };
 
     // Fetch farmer summary from the outsource API
-    let farmerSummary = await GetFarmerSummary(customHeaders);
+    let farmerSummary = await getFarmerSummary(customHeaders);
 
     // Insert the farmer summary into the database one by one
     farmerSummary.data.forEach(insertFarmerSummary);
