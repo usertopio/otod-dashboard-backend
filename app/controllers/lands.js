@@ -1,5 +1,5 @@
-const { getLands } = require("../services/api/lands.js");
-const { insertLand } = require("../services/db/landsDb");
+const { getLands, getLandSummary } = require("../services/api/lands.js");
+const { insertLand, insertLandSummary } = require("../services/db/landsDb");
 
 exports.fetchLands = async (req, res) => {
   try {
@@ -59,5 +59,25 @@ exports.fetchLands = async (req, res) => {
   } catch (error) {
     console.error("Error fetching lands:", error);
     res.status(500).json({ error: "Failed to fetch lands" });
+  }
+};
+
+exports.fetchLandSummary = async (req, res) => {
+  try {
+    // Custom headers for the API request
+    let customHeaders = {
+      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+    };
+
+    // Fetch land summary from the outsource API
+    let landSummary = await getLandSummary(customHeaders);
+
+    // Insert the land summary into the database one by one
+    landSummary.data.forEach(insertLandSummary);
+
+    res.json({ landSummary: landSummary });
+  } catch (error) {
+    console.error("Error fetching land summary:", error);
+    res.status(500).json({ error: "Failed to fetch land summary" });
   }
 };

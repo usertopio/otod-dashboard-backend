@@ -38,4 +38,13 @@ const landFields = [
   "companyName",
 ];
 
-module.exports = { connectionDB, landFields };
+const landSummaryFields = [
+  "provinceName",
+  "landType",
+  "totalLands",
+  "noOfRais",
+  "noOfNgan",
+  "noOfWah",
+];
+
+module.exports = { connectionDB, landFields, landSummaryFields };
