@@ -45,10 +45,6 @@ exports.fetchFarmers = async (req, res) => {
       // Concatinate the fetched farmers from pages
       allFarmersAllPages = allFarmersAllPages.concat(allFarmersCurPage);
 
-      // // Log: Log the fetched farmers
-      // console.log("Farmers:", allFarmersAllPages);
-      // console.log("Type:", typeof allFarmersAllPages);
-
       // Insert a farmer into the database one by one
       allFarmersCurPage.forEach(insertFarmer);
 
