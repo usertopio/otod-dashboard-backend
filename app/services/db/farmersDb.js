@@ -2,7 +2,7 @@ const {
   connectionDB,
   farmerFields,
   farmerSummaryFields,
-} = require("../../config/db.conf.js");
+} = require("../../config/db/farmers.conf.js");
 
 // Function to insert a farmer into the database, one by one
 const insertFarmer = (farmer) => {

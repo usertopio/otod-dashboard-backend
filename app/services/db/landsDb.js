@@ -2,7 +2,7 @@ const {
   connectionDB,
   landFields,
   landSummaryFields,
-} = require("../../config/db/land.conf.js");
+} = require("../../config/db/lands.conf.js");
 
 // Function to insert a land into the database, one by one
 const insertLand = (land) => {
