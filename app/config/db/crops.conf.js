@@ -1,0 +1,50 @@
+const mysql = require("mysql2");
+
+const connectionDB = mysql.createConnection({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: "otod-test",
+});
+
+const cropFields = [
+  "recId",
+  "province",
+  "farmerId",
+  "title",
+  "firstName",
+  "lastName",
+  "landId",
+  "landType",
+  "lat",
+  "lon",
+  "noOfRais",
+  "noOfNgan",
+  "noOfWah",
+  "cropId",
+  "cropYear",
+  "cropName",
+  "breedId",
+  "breedName",
+  "gapCertNumber",
+  "gapCertType",
+  "gapIssuedDate",
+  "gapExpiryDate",
+  "cropStartDate",
+  "cropEndDate",
+  "totalTrees",
+  "forecastKg",
+  "forecastBaht",
+  "forecastWorkerCost",
+  "forecastFertilizerCost",
+  "forecastEquipmentCost",
+  "forecastPetrolCost",
+  "durianStageId",
+  "durianStageName",
+  "createdTime",
+  "updatedTime",
+  "companyId",
+  "companyName",
+];
+
+module.exports = { connectionDB, cropFields };
