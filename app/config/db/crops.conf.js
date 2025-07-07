@@ -47,4 +47,20 @@ const cropFields = [
   "companyName",
 ];
 
-module.exports = { connectionDB, cropFields };
+const cropSummaryFields = [
+  "provinceName",
+  "cropYear",
+  "breedName",
+  "totalCrops",
+  "totalGAPs",
+  "totalTrees",
+  "forecastKg",
+  "forecastBaht",
+  "forecastWorkerCost",
+  "forecastFertilizerCost",
+  "forecastEquipmentCost",
+  "yieldKg",
+  "yieldBaht",
+];
+
+module.exports = { connectionDB, cropFields, cropSummaryFields };

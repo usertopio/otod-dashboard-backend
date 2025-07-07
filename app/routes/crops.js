@@ -5,4 +5,6 @@ const { fetchCrops, fetchCropSummary } = require("../controllers/crops.js");
 // Fetch crops data from the outsource API
 router.post("/fetchCrops", fetchCrops);
 
+router.post("/fetchCropSummary", fetchCropSummary);
+
 module.exports = router;

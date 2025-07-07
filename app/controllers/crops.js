@@ -1,5 +1,5 @@
-const { getCrops } = require("../services/api/crops.js");
-const { insertCrop } = require("../services/db/cropsDb");
+const { getCrops, getCropSummary } = require("../services/api/crops.js");
+const { insertCrop, insertCropSummary } = require("../services/db/cropsDb");
 
 exports.fetchCrops = async (req, res) => {
   try {
@@ -55,5 +55,29 @@ exports.fetchCrops = async (req, res) => {
   } catch (error) {
     console.error("Error fetching crops:", error);
     res.status(500).json({ error: "Failed to fetch crops" });
+  }
+};
+
+exports.fetchCropSummary = async (req, res) => {
+  try {
+    let requestBody = {
+      cropYear: 2024,
+    };
+
+    // Custom headers for the API request
+    let customHeaders = {
+      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+    };
+
+    // Fetch crop summary from the outsource API
+    let cropSummary = await getCropSummary(requestBody, customHeaders);
+
+    // Insert the crop summary into the database one by one
+    cropSummary.data.forEach(insertCropSummary);
+
+    res.json({ cropSummary: cropSummary });
+  } catch (error) {
+    console.error("Error fetching crop summary:", error);
+    res.status(500).json({ error: "Failed to fetch crop summary" });
   }
 };
