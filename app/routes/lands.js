@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { fetchLands, fetchLandSummary } = require("../controllers/Lands");
+const { fetchLands, fetchLandSummary } = require("../controllers/lands");
 
 // Fetch Lands data from the outsource API
 router.post("/fetchLands", fetchLands);
