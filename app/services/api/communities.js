@@ -10,4 +10,14 @@ const getCommunities = async (requestBody, customHeaders = {}) => {
   return res.data;
 };
 
-module.exports = { getCommunities };
+// Outsource doc: API Name: GetCommunitySummary
+const getCommunitySummary = async (customHeaders = {}) => {
+  const res = await apiClient.get("/api/report/GetCommunitySummary", {
+    headers: {
+      ...customHeaders,
+    },
+  });
+  return res.data;
+};
+
+module.exports = { getCommunities, getCommunitySummary };
