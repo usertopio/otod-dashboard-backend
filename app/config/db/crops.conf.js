@@ -63,4 +63,20 @@ const cropSummaryFields = [
   "yieldBaht",
 ];
 
-module.exports = { connectionDB, cropFields, cropSummaryFields };
+const gapSummaryFields = [
+  "provinceName",
+  "cropYear",
+  "breedName",
+  "totalCrops",
+  "totalGAPs",
+  "totalActive",
+  "totalExpired",
+  "total6mthExpiring",
+];
+
+module.exports = {
+  connectionDB,
+  cropFields,
+  cropSummaryFields,
+  gapSummaryFields,
+};
