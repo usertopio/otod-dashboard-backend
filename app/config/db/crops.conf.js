@@ -117,6 +117,16 @@ const cropHarvestFields = [
   "yieldBaht",
 ];
 
+const cropForecastAndYieldFields = [
+  "cropYear",
+  "provinceName",
+  "breedName",
+  "totalForecastKg",
+  "totalForecastBaht",
+  "totalYieldKg",
+  "totalYieldBaht",
+];
+
 module.exports = {
   connectionDB,
   cropFields,

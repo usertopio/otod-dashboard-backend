@@ -4,6 +4,7 @@ const {
   getGapSummary,
   getCropStageSummary,
   getCropHarvests,
+  getCropForecastAndYield,
 } = require("../services/api/crops.js");
 const {
   insertCrop,
@@ -11,6 +12,7 @@ const {
   insertGapSummary,
   insertCropStageSummary,
   insertCropHarvests,
+  insertCropForecastAndYield,
 } = require("../services/db/cropsDb");
 
 exports.fetchCrops = async (req, res) => {
@@ -207,5 +209,34 @@ exports.fetchCropHarvests = async (req, res) => {
   } catch (error) {
     console.error("Error fetching CropHarvests:", error);
     res.status(500).json({ error: "Failed to fetch CropHarvests" });
+  }
+};
+
+exports.fetchCropForecastAndYield = async (req, res) => {
+  try {
+    let requestBody = {
+      cropYear: 2024,
+      provinceName: "",
+      groupByBreed: true,
+    };
+
+    // Custom headers for the API request
+    let customHeaders = {
+      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+    };
+
+    // Fetch grap summary from the outsource API
+    let cropForecastAndYield = await getCropForecastAndYield(
+      requestBody,
+      customHeaders
+    );
+
+    // Insert the grap summary into the database one by one
+    cropForecastAndYield.data.forEach(insertCropForecastAndYield);
+
+    res.json({ cropForecastAndYield: cropForecastAndYield });
+  } catch (error) {
+    console.error("Error fetching CropForecastAndYield:", error);
+    res.status(500).json({ error: "Failed to fetch CropForecastAndYield" });
   }
 };

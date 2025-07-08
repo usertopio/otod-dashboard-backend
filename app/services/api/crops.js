@@ -54,10 +54,25 @@ const getCropHarvests = async (requestBody, customHeaders = {}) => {
   return res.data;
 };
 
+// Outsource doc: API Name: GetCropForecastAndYield
+const getCropForecastAndYield = async (requestBody, customHeaders = {}) => {
+  const res = await apiClient.post(
+    "/api/report/GetCropForecastAndYield",
+    requestBody,
+    {
+      headers: {
+        ...customHeaders,
+      },
+    }
+  );
+  return res.data;
+};
+
 module.exports = {
   getCrops,
   getCropSummary,
   getGapSummary,
   getCropStageSummary,
   getCropHarvests,
+  getCropForecastAndYield,
 };

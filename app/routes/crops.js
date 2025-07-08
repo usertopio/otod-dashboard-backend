@@ -6,6 +6,7 @@ const {
   fetchGapSummary,
   fetchCropStageSummary,
   fetchCropHarvests,
+  fetchCropForecastAndYield,
 } = require("../controllers/crops.js");
 
 // Fetch crops data from the outsource API
@@ -18,5 +19,7 @@ router.post("/fetchGapSummary", fetchGapSummary);
 router.post("/fetchCropStageSummary", fetchCropStageSummary);
 
 router.post("/fetchCropHarvests", fetchCropHarvests);
+
+router.post("/fetchCropForecastAndYield", fetchCropForecastAndYield);
 
 module.exports = router;
