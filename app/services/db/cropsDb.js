@@ -3,6 +3,7 @@ const {
   cropFields,
   cropSummaryFields,
   gapSummaryFields,
+  cropStageSummaryFields,
 } = require("../../config/db/crops.conf.js");
 
 // Function to insert a crop into the database, one by one
@@ -77,4 +78,30 @@ const insertGapSummary = (gapSummary) => {
   });
 };
 
-module.exports = { insertCrop, insertCropSummary, insertGapSummary };
+// Function to insert a crop stage summary into the database, one by one
+const insertCropStageSummary = (cropStageSummary) => {
+  // Query to insert a GAP summary into the database
+  const insertCropStageSummaryQuery = `
+    INSERT INTO crop_stage_summary (${cropStageSummaryFields.join(", ")})
+    VALUES (${cropStageSummaryFields.map(() => "?").join(", ")})
+  `;
+
+  // Prepare the values to be inserted. Convert plain object to array
+  const values = cropStageSummaryFields.map((cropStageSummaryField) => {
+    return cropStageSummary[cropStageSummaryField];
+  });
+
+  // Execute the insert query with the prepared values
+  connectionDB.query(insertCropStageSummaryQuery, values, (err) => {
+    if (err) {
+      console.error("Insert GapSummary error:", err);
+    }
+  });
+};
+
+module.exports = {
+  insertCrop,
+  insertCropSummary,
+  insertGapSummary,
+  insertCropStageSummary,
+};

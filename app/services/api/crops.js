@@ -30,4 +30,23 @@ const getGapSummary = async (requestBody, customHeaders = {}) => {
   return res.data;
 };
 
-module.exports = { getCrops, getCropSummary, getGapSummary };
+// Outsource doc: API Name: GetCropStageSummary
+const getCropStageSummary = async (requestBody, customHeaders = {}) => {
+  const res = await apiClient.post(
+    "/api/report/GetCropStageSummary",
+    requestBody,
+    {
+      headers: {
+        ...customHeaders,
+      },
+    }
+  );
+  return res.data;
+};
+
+module.exports = {
+  getCrops,
+  getCropSummary,
+  getGapSummary,
+  getCropStageSummary,
+};

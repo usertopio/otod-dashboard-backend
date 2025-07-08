@@ -2,11 +2,13 @@ const {
   getCrops,
   getCropSummary,
   getGapSummary,
+  getCropStageSummary,
 } = require("../services/api/crops.js");
 const {
   insertCrop,
   insertCropSummary,
   insertGapSummary,
+  insertCropStageSummary,
 } = require("../services/db/cropsDb");
 
 exports.fetchCrops = async (req, res) => {
@@ -111,5 +113,32 @@ exports.fetchGapSummary = async (req, res) => {
   } catch (error) {
     console.error("Error fetching crop summary:", error);
     res.status(500).json({ error: "Failed to fetch crop summary" });
+  }
+};
+
+exports.fetchCropStageSummary = async (req, res) => {
+  try {
+    let requestBody = {
+      cropYear: 2024,
+    };
+
+    // Custom headers for the API request
+    let customHeaders = {
+      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+    };
+
+    // Fetch crop stage summary from the outsource API
+    let cropStageSummary = await getCropStageSummary(
+      requestBody,
+      customHeaders
+    );
+
+    // Insert the crop stage summary into the database one by one
+    cropStageSummary.data.forEach(insertCropStageSummary);
+
+    res.json({ cropStageSummary: cropStageSummary });
+  } catch (error) {
+    console.error("Error fetching crop stage summary:", error);
+    res.status(500).json({ error: "Failed to fetch crop stage summary" });
   }
 };
