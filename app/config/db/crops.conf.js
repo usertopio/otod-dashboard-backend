@@ -97,10 +97,31 @@ const cropStageSummaryFields = [
   "totalCropsSTG18",
 ];
 
+const cropHarvestFields = [
+  "provinceName",
+  "cropYear",
+  "farmerId",
+  "title",
+  "firstName",
+  "lastName",
+  "farmerRegistNumber",
+  "landId",
+  "lat",
+  "lon",
+  "kml",
+  "cropId",
+  "operId",
+  "operDate",
+  "lotNumber",
+  "yieldKg",
+  "yieldBaht",
+];
+
 module.exports = {
   connectionDB,
   cropFields,
   cropSummaryFields,
   gapSummaryFields,
   cropStageSummaryFields,
+  cropHarvestFields,
 };

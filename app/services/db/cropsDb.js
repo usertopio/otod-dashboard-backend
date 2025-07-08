@@ -4,6 +4,7 @@ const {
   cropSummaryFields,
   gapSummaryFields,
   cropStageSummaryFields,
+  cropHarvestFields,
 } = require("../../config/db/crops.conf.js");
 
 // Function to insert a crop into the database, one by one
@@ -99,9 +100,29 @@ const insertCropStageSummary = (cropStageSummary) => {
   });
 };
 
+const insertCropHarvests = (cropHarvest) => {
+  // Query to insert a CropHarvests into the database
+  const insertCropHarvestsQuery = `
+          INSERT INTO crop_harvests (${cropHarvestFields.join(", ")})
+          VALUES (${cropHarvestFields.map(() => "?").join(", ")})`;
+
+  // Prepare the values to be inserted
+  const values = cropHarvestFields.map((cropHarvestField) => {
+    return cropHarvest[cropHarvestField];
+  });
+
+  // Execute the insert query with the prepared values
+  connectionDB.query(insertCropHarvestsQuery, values, (err) => {
+    if (err) {
+      console.error("Insert error:", err);
+    }
+  });
+};
+
 module.exports = {
   insertCrop,
   insertCropSummary,
   insertGapSummary,
   insertCropStageSummary,
+  insertCropHarvests,
 };

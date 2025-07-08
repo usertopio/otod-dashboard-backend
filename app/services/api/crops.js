@@ -44,9 +44,20 @@ const getCropStageSummary = async (requestBody, customHeaders = {}) => {
   return res.data;
 };
 
+// Outsource doc: API Name: GetLands
+const getCropHarvests = async (requestBody, customHeaders = {}) => {
+  const res = await apiClient.post("/api/report/GetCropHarvests", requestBody, {
+    headers: {
+      ...customHeaders,
+    },
+  });
+  return res.data;
+};
+
 module.exports = {
   getCrops,
   getCropSummary,
   getGapSummary,
   getCropStageSummary,
+  getCropHarvests,
 };
