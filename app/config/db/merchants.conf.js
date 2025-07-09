@@ -22,4 +22,6 @@ const merchantsFields = [
   "companyName",
 ];
 
-module.exports = { connectionDB, merchantsFields };
+const merchantSummaryFields = ["provinceName", "totalMerchants"];
+
+module.exports = { connectionDB, merchantsFields, merchantSummaryFields };
