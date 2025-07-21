@@ -29,7 +29,7 @@ const insertWaterUsageSummaryByCrop = (waterUsageSummaryByCrop) => {
 };
 
 // Function to insert a land summary into the database, one by one
-const insertwaterUsageSummaryByMonth = (waterUsageSummaryByMonth) => {
+const insertWaterUsageSummaryByMonth = (waterUsageSummaryByMonth) => {
   // Query to insert a land summary into the database
   const insertWaterUsageSummaryByMonthQuery = `
     INSERT INTO water_usage_summary_by_month (${waterUsageSummaryByMonthFields.join(
@@ -55,5 +55,5 @@ const insertwaterUsageSummaryByMonth = (waterUsageSummaryByMonth) => {
 
 module.exports = {
   insertWaterUsageSummaryByCrop,
-  insertwaterUsageSummaryByMonth,
+  insertWaterUsageSummaryByMonth,
 };

@@ -7,6 +7,13 @@ const connectionDB = mysql.createConnection({
   database: "otod-test",
 });
 
+const waterUsageSummaryByCropFields = [
+  "cropYear",
+  "provinceName",
+  "operMonth",
+  "totalLitre",
+];
+
 const waterUsageSummaryByMonthFields = [
   "cropYear",
   "provinceName",
@@ -14,16 +21,8 @@ const waterUsageSummaryByMonthFields = [
   "totalLitre",
 ];
 
-const substanceUsageSummaryByMonthFields = [
-  "cropYear",
-  "provinceName",
-  "substance",
-  "operMonth",
-  "totalRecords",
-];
-
 module.exports = {
   connectionDB,
+  waterUsageSummaryByCropFields,
   waterUsageSummaryByMonthFields,
-  substanceUsageSummaryByMonthFields,
 };
