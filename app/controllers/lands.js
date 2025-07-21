@@ -75,7 +75,7 @@ exports.fetchLandSummary = async (req, res) => {
     // Insert the land summary into the database one by one
     landSummary.data.forEach(insertLandSummary);
 
-    res.json({ landSummary: landSummary });
+    res.json({ landSummary: landSummary.data });
   } catch (error) {
     console.error("Error fetching land summary:", error);
     res.status(500).json({ error: "Failed to fetch land summary" });

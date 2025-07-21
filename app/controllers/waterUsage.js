@@ -29,7 +29,7 @@ exports.fetchWaterUsageSummaryByCrop = async (req, res) => {
     // Insert the land summary into the database one by one
     waterUsageSummaryByCrop.data.forEach(insertWaterUsageSummaryByCrop);
 
-    res.json({ waterUsageSummaryByCrop: waterUsageSummaryByCrop });
+    res.json({ waterUsageSummaryByCrop: waterUsageSummaryByCrop.data });
   } catch (error) {
     console.error("Error fetching WaterUsageSummaryByCrop:", error);
     res.status(500).json({ error: "Failed to fetch WaterUsageSummaryByCrop" });
@@ -54,7 +54,7 @@ exports.fetchWaterUsageSummaryByMonth = async (req, res) => {
 
     WaterUsageSummaryByMonth.data.forEach(insertWaterUsageSummaryByMonth);
 
-    res.json({ WaterUsageSummaryByMonth: WaterUsageSummaryByMonth });
+    res.json({ WaterUsageSummaryByMonth: WaterUsageSummaryByMonth.data });
   } catch (error) {
     console.error("Error fetching WaterUsageSummaryByMonth:", error);
     res.status(500).json({ error: "Failed to fetch WaterUsageSummaryByMonth" });

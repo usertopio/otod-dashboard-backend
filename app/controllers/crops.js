@@ -113,7 +113,7 @@ exports.fetchGapSummary = async (req, res) => {
     // Insert the grap summary into the database one by one
     gapSummary.data.forEach(insertGapSummary);
 
-    res.json({ gapSummary: gapSummary });
+    res.json({ gapSummary: gapSummary.data });
   } catch (error) {
     console.error("Error fetching crop summary:", error);
     res.status(500).json({ error: "Failed to fetch crop summary" });
@@ -140,7 +140,7 @@ exports.fetchCropStageSummary = async (req, res) => {
     // Insert the crop stage summary into the database one by one
     cropStageSummary.data.forEach(insertCropStageSummary);
 
-    res.json({ cropStageSummary: cropStageSummary });
+    res.json({ cropStageSummary: cropStageSummary.data });
   } catch (error) {
     console.error("Error fetching crop stage summary:", error);
     res.status(500).json({ error: "Failed to fetch crop stage summary" });
@@ -204,7 +204,7 @@ exports.fetchCropHarvests = async (req, res) => {
 
     // Respond with all land data
     res.json({
-      allCropHarvestsAllPage: allCropHarvestsAllPage,
+      allCropHarvestsAllPage: allCropHarvestsAllPage.data,
     });
   } catch (error) {
     console.error("Error fetching CropHarvests:", error);
@@ -234,7 +234,7 @@ exports.fetchCropForecastAndYield = async (req, res) => {
     // Insert the grap summary into the database one by one
     cropForecastAndYield.data.forEach(insertCropForecastAndYield);
 
-    res.json({ cropForecastAndYield: cropForecastAndYield });
+    res.json({ cropForecastAndYield: cropForecastAndYield.data });
   } catch (error) {
     console.error("Error fetching CropForecastAndYield:", error);
     res.status(500).json({ error: "Failed to fetch CropForecastAndYield" });

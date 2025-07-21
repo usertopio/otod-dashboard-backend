@@ -29,7 +29,7 @@ exports.fetchSubstanceUsageSummaryByCrop = async (req, res) => {
     // Insert the land summary into the database one by one
     substanceUsageSummaryByCrop.data.forEach(insertSubstanceUsageSummaryByCrop);
 
-    res.json({ substanceUsageSummaryByCrop: substanceUsageSummaryByCrop });
+    res.json({ substanceUsageSummaryByCrop: substanceUsageSummaryByCrop.data });
   } catch (error) {
     console.error("Error fetching SubstanceUsageSummaryByCrop:", error);
     res
@@ -58,7 +58,9 @@ exports.fetchSubstanceUsageSummaryByMonth = async (req, res) => {
       insertSubstanceUsageSummaryByMonth
     );
 
-    res.json({ substanceUsageSummaryByMonth: substanceUsageSummaryByMonth });
+    res.json({
+      substanceUsageSummaryByMonth: substanceUsageSummaryByMonth.data,
+    });
   } catch (error) {
     console.error("Error fetching SubstanceUsageSummaryByMonth:", error);
     res

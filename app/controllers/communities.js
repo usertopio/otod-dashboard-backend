@@ -82,7 +82,7 @@ exports.fetchCommunitySummary = async (req, res) => {
     // Insert the community summary into the database one by one
     communitySummary.data.forEach(insertCommunitySummary);
 
-    res.json({ communitySummary: communitySummary });
+    res.json({ communitySummary: communitySummary.data });
   } catch (error) {
     console.error("Error fetching CommunitySummary:", error);
     res.status(500).json({ error: "Failed to fetch CommunitySummary" });

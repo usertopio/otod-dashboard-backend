@@ -89,7 +89,7 @@ exports.fetchOperationSummary = async (req, res) => {
     // Insert the community summary into the database one by one
     operationSummary.data.forEach(insertOperationSummary);
 
-    res.json({ operationSummary: operationSummary });
+    res.json({ operationSummary: operationSummary.data });
   } catch (error) {
     console.error("Error fetching OperationSummary:", error);
     res.status(500).json({ error: "Failed to fetch OperationSummary" });
