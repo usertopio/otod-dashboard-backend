@@ -2,7 +2,7 @@ const {
   connectionDB,
   waterUsageSummaryByCropFields,
   waterUsageSummaryByMonthFields,
-} = require("../../config/db/Water.conf.js");
+} = require("../../config/db/waterUsage.conf.js");
 
 // Function to insert a land into the database, one by one
 const insertWaterUsageSummaryByCrop = (waterUsageSummaryByCrop) => {

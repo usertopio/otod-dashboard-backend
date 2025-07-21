@@ -1,11 +1,11 @@
 const {
   getWaterUsageSummaryByCrop,
   getWaterUsageSummaryByMonth,
-} = require("../services/api/water.js");
+} = require("../services/api/waterUsage.js");
 const {
   insertWaterUsageSummaryByCrop,
   insertWaterUsageSummaryByMonth,
-} = require("../services/db/waterDb.js");
+} = require("../services/db/waterUsageDb.js");
 
 exports.fetchWaterUsageSummaryByCrop = async (req, res) => {
   try {
