@@ -89,7 +89,7 @@ exports.fetchCropSummary = async (req, res) => {
     // Insert the crop summary into the database one by one
     cropSummary.data.forEach(insertCropSummary);
 
-    res.json({ cropSummary: cropSummary });
+    res.json({ cropSummary: cropSummary.data });
   } catch (error) {
     console.error("Error fetching crop summary:", error);
     res.status(500).json({ error: "Failed to fetch crop summary" });
