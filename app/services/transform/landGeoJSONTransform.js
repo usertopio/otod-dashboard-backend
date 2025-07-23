@@ -13,9 +13,9 @@ module.exports = async function transformLandGeoJSON(farmers) {
         landType: land.landType,
         lat: land.lat,
         lon: land.lon,
-        areaRai: land.noOfRais,
-        areaNgan: land.noOfNgan,
-        areaWah: land.noOfWah,
+        noOfRais: land.noOfRais,
+        noOfNgan: land.noOfNgan,
+        noOfWah: land.noOfWah,
         geojson: land.geojson,
         fetchedAt,
       });
