@@ -1,6 +1,6 @@
-const runLandGeoJSON = require("../services/landGeoJSON");
+const runLandGeoJSON = require("../services/landGeoJSON/index.js");
 
-exports.fetchAndStoreLandGeoJSON = async (req, res) => {
+exports.fetchLandGeoJSON = async (req, res) => {
   try {
     await runLandGeoJSON();
     res.status(200).send("✅ GetLandGeoJSON processed successfully.");
