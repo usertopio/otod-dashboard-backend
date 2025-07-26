@@ -3,7 +3,7 @@ const router = express.Router();
 const {
   fetchWaterUsageSummaryByCrop,
   fetchWaterUsageSummaryByMonth,
-} = require("../controllers/waterUsage.js");
+} = require("../controllers/water.js");
 
 // Fetch Lands data from the outsource API
 router.post("/fetchWaterUsageSummaryByCrop", fetchWaterUsageSummaryByCrop);
