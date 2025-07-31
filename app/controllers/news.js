@@ -1,8 +1,5 @@
-const { getNews, getNewsSummaryByMonth } = require("../services/api/news.js");
-const {
-  insertANew,
-  insertNewsSummaryByMonth,
-} = require("../services/db/newsDb.js");
+const { getNews } = require("../services/api/news.js");
+const { insertANew } = require("../services/db/newsDb.js");
 
 exports.fetchNews = async (req, res) => {
   try {
@@ -59,33 +56,5 @@ exports.fetchNews = async (req, res) => {
   } catch (error) {
     console.error("Error fetching news:", error);
     res.status(500).json({ error: "Failed to fetch news" });
-  }
-};
-
-exports.fetchNewsSummaryByMonth = async (req, res) => {
-  try {
-    let requestBody = {
-      fromYear: 2024,
-      toYear: 2024,
-    };
-
-    // Custom headers for the API request
-    let customHeaders = {
-      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-    };
-
-    // Fetch news summary from the outsource API
-    let newsSummaryByMonth = await getNewsSummaryByMonth(
-      requestBody,
-      customHeaders
-    );
-
-    // Insert the crop summary into the database one by one
-    newsSummaryByMonth.data.forEach(insertNewsSummaryByMonth);
-
-    res.json({ newsSummaryByMonth: newsSummaryByMonth.data });
-  } catch (error) {
-    console.error("Error fetching NewsSummaryByMonth:", error);
-    res.status(500).json({ error: "Failed to fetch NewsSummaryByMonth" });
   }
 };

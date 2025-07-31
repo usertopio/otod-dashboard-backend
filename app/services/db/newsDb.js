@@ -1,8 +1,4 @@
-const {
-  connectionDB,
-  aNewFields,
-  newsSummaryByMonthFields,
-} = require("../../config/db/news.conf.js");
+const { connectionDB, aNewFields } = require("../../config/db/news.conf.js");
 
 // Function to insert a new into the database, one by one
 const insertANew = (aNew) => {
@@ -21,23 +17,6 @@ const insertANew = (aNew) => {
   connectionDB.query(insertANewQuery, values, (err) => {
     if (err) {
       console.error("Insert error:", err);
-    }
-  });
-};
-
-// Function to insert a news summary into the database, one by one
-const insertNewsSummaryByMonth = (newsSummaryByMonth) => {
-  // ...existing code...
-  const insertNewsSummaryQuery = `
-    INSERT INTO news_summary_by_month (${newsSummaryByMonthFields.join(", ")})
-    VALUES (${newsSummaryByMonthFields.map(() => "?").join(", ")})
-  `;
-  const values = newsSummaryByMonthFields.map((newsSummaryByMonthField) => {
-    return newsSummaryByMonth[newsSummaryByMonthField];
-  });
-  connectionDB.query(insertNewsSummaryQuery, values, (err) => {
-    if (err) {
-      console.error("Insert NewsSummaryByMonth error:", err);
     }
   });
 };

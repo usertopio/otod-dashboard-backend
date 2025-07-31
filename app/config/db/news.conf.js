@@ -23,17 +23,7 @@ const aNewFields = [
   "companyName",
 ];
 
-const newsSummaryByMonthFields = [
-  "province",
-  "announceMonth",
-  "newsGroup",
-  "totalNews",
-  "totalLike",
-  "totalComments",
-];
-
 module.exports = {
   connectionDB,
   aNewFields,
-  newsSummaryByMonthFields,
 };
