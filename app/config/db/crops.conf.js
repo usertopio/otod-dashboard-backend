@@ -47,56 +47,6 @@ const cropFields = [
   "companyName",
 ];
 
-const cropSummaryFields = [
-  "provinceName",
-  "cropYear",
-  "breedName",
-  "totalCrops",
-  "totalGAPs",
-  "totalTrees",
-  "forecastKg",
-  "forecastBaht",
-  "forecastWorkerCost",
-  "forecastFertilizerCost",
-  "forecastEquipmentCost",
-  "yieldKg",
-  "yieldBaht",
-];
-
-const gapSummaryFields = [
-  "provinceName",
-  "cropYear",
-  "breedName",
-  "totalCrops",
-  "totalGAPs",
-  "totalActive",
-  "totalExpired",
-  "total6mthExpiring",
-];
-
-const cropStageSummaryFields = [
-  "province",
-  "cropYear",
-  "totalCropsSTG1",
-  "totalCropsSTG2",
-  "totalCropsSTG3",
-  "totalCropsSTG4",
-  "totalCropsSTG5",
-  "totalCropsSTG6",
-  "totalCropsSTG7",
-  "totalCropsSTG8",
-  "totalCropsSTG9",
-  "totalCropsSTG10",
-  "totalCropsSTG11",
-  "totalCropsSTG12",
-  "totalCropsSTG13",
-  "totalCropsSTG14",
-  "totalCropsSTG15",
-  "totalCropsSTG16",
-  "totalCropsSTG17",
-  "totalCropsSTG18",
-];
-
 const cropHarvestFields = [
   "provinceName",
   "cropYear",
@@ -117,22 +67,8 @@ const cropHarvestFields = [
   "yieldBaht",
 ];
 
-const cropForecastAndYieldFields = [
-  "cropYear",
-  "provinceName",
-  "breedName",
-  "totalForecastKg",
-  "totalForecastBaht",
-  "totalYieldKg",
-  "totalYieldBaht",
-];
-
 module.exports = {
   connectionDB,
   cropFields,
-  cropSummaryFields,
-  gapSummaryFields,
-  cropStageSummaryFields,
   cropHarvestFields,
-  cropForecastAndYieldFields,
 };

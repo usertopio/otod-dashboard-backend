@@ -1,19 +1,5 @@
-const {
-  getCrops,
-  getCropSummary,
-  getGapSummary,
-  getCropStageSummary,
-  getCropHarvests,
-  getCropForecastAndYield,
-} = require("../services/api/crops.js");
-const {
-  insertCrop,
-  insertCropSummary,
-  insertGapSummary,
-  insertCropStageSummary,
-  insertCropHarvests,
-  insertCropForecastAndYield,
-} = require("../services/db/cropsDb");
+const { getCrops, getCropHarvests } = require("../services/api/crops.js");
+const { insertCrop, insertCropHarvests } = require("../services/db/cropsDb");
 
 exports.fetchCrops = async (req, res) => {
   try {
@@ -69,81 +55,6 @@ exports.fetchCrops = async (req, res) => {
   } catch (error) {
     console.error("Error fetching crops:", error);
     res.status(500).json({ error: "Failed to fetch crops" });
-  }
-};
-
-exports.fetchCropSummary = async (req, res) => {
-  try {
-    let requestBody = {
-      cropYear: 2024,
-    };
-
-    // Custom headers for the API request
-    let customHeaders = {
-      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-    };
-
-    // Fetch crop summary from the outsource API
-    let cropSummary = await getCropSummary(requestBody, customHeaders);
-
-    // Insert the crop summary into the database one by one
-    cropSummary.data.forEach(insertCropSummary);
-
-    res.json({ cropSummary: cropSummary.data });
-  } catch (error) {
-    console.error("Error fetching crop summary:", error);
-    res.status(500).json({ error: "Failed to fetch crop summary" });
-  }
-};
-
-exports.fetchGapSummary = async (req, res) => {
-  try {
-    let requestBody = {
-      cropYear: 2024,
-    };
-
-    // Custom headers for the API request
-    let customHeaders = {
-      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-    };
-
-    // Fetch grap summary from the outsource API
-    let gapSummary = await getGapSummary(requestBody, customHeaders);
-
-    // Insert the grap summary into the database one by one
-    gapSummary.data.forEach(insertGapSummary);
-
-    res.json({ gapSummary: gapSummary.data });
-  } catch (error) {
-    console.error("Error fetching crop summary:", error);
-    res.status(500).json({ error: "Failed to fetch crop summary" });
-  }
-};
-
-exports.fetchCropStageSummary = async (req, res) => {
-  try {
-    let requestBody = {
-      cropYear: 2024,
-    };
-
-    // Custom headers for the API request
-    let customHeaders = {
-      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-    };
-
-    // Fetch crop stage summary from the outsource API
-    let cropStageSummary = await getCropStageSummary(
-      requestBody,
-      customHeaders
-    );
-
-    // Insert the crop stage summary into the database one by one
-    cropStageSummary.data.forEach(insertCropStageSummary);
-
-    res.json({ cropStageSummary: cropStageSummary.data });
-  } catch (error) {
-    console.error("Error fetching crop stage summary:", error);
-    res.status(500).json({ error: "Failed to fetch crop stage summary" });
   }
 };
 
@@ -209,34 +120,5 @@ exports.fetchCropHarvests = async (req, res) => {
   } catch (error) {
     console.error("Error fetching CropHarvests:", error);
     res.status(500).json({ error: "Failed to fetch CropHarvests" });
-  }
-};
-
-exports.fetchCropForecastAndYield = async (req, res) => {
-  try {
-    let requestBody = {
-      cropYear: 2024,
-      provinceName: "",
-      groupByBreed: true,
-    };
-
-    // Custom headers for the API request
-    let customHeaders = {
-      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-    };
-
-    // Fetch grap summary from the outsource API
-    let cropForecastAndYield = await getCropForecastAndYield(
-      requestBody,
-      customHeaders
-    );
-
-    // Insert the grap summary into the database one by one
-    cropForecastAndYield.data.forEach(insertCropForecastAndYield);
-
-    res.json({ cropForecastAndYield: cropForecastAndYield.data });
-  } catch (error) {
-    console.error("Error fetching CropForecastAndYield:", error);
-    res.status(500).json({ error: "Failed to fetch CropForecastAndYield" });
   }
 };
