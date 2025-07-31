@@ -25,12 +25,4 @@ const operationsFields = [
   "companyName",
 ];
 
-const operationSummaryFields = [
-  "provinceName",
-  "cropYear",
-  "operMonth",
-  "operType",
-  "ttOpers",
-];
-
-module.exports = { connectionDB, operationsFields, operationSummaryFields };
+module.exports = { connectionDB, operationsFields };
