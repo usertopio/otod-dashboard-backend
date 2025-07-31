@@ -25,13 +25,4 @@ const communitiesFields = [
   "companyName",
 ];
 
-const communitySummaryFields = [
-  "provinceName",
-  "totalCommunities",
-  "totalMembers",
-  "totalRais",
-  "totalTrees",
-  "totalForecastYield",
-];
-
-module.exports = { connectionDB, communitiesFields, communitySummaryFields };
+module.exports = { connectionDB, communitiesFields };

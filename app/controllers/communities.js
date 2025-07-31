@@ -1,10 +1,8 @@
 const {
   getCommunities,
-  getCommunitySummary,
 } = require("../services/api/communities.js");
 const {
   insertCommunities,
-  insertCommunitySummary,
 } = require("../services/db/communitiesDb.js");
 
 exports.fetchCommunities = async (req, res) => {
@@ -66,25 +64,5 @@ exports.fetchCommunities = async (req, res) => {
   } catch (error) {
     console.error("Error fetching Communities:", error);
     res.status(500).json({ error: "Failed to fetch Communities" });
-  }
-};
-
-exports.fetchCommunitySummary = async (req, res) => {
-  try {
-    // Custom headers for the API request
-    let customHeaders = {
-      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-    };
-
-    // Fetch community summary from the outsource API
-    let communitySummary = await getCommunitySummary(customHeaders);
-
-    // Insert the community summary into the database one by one
-    communitySummary.data.forEach(insertCommunitySummary);
-
-    res.json({ communitySummary: communitySummary.data });
-  } catch (error) {
-    console.error("Error fetching CommunitySummary:", error);
-    res.status(500).json({ error: "Failed to fetch CommunitySummary" });
   }
 };
