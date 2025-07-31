@@ -1,7 +1,6 @@
 const {
   connectionDB,
   farmerFields,
-  farmerSummaryFields,
 } = require("../../config/db/farmers.conf.js");
 
 // Function to insert a farmer into the database, one by one
@@ -28,25 +27,4 @@ const insertFarmer = (farmer) => {
   });
 };
 
-// Function to insert a farmer summary into the database, one by one
-const insertFarmerSummary = (farmerSummary) => {
-  // Query to insert a farmer summary into the database
-  const insertFarmerSummaryQuery = `
-    INSERT INTO farmer_summary (${farmerSummaryFields.join(", ")})
-    VALUES (${farmerSummaryFields.map(() => "?").join(", ")})
-  `;
-
-  // Prepare the values to be inserted. Convert plain object to array
-  const values = farmerSummaryFields.map((farmerSummaryField) => {
-    return farmerSummary[farmerSummaryField];
-  });
-
-  // Execute the insert query with the prepared values
-  connectionDB.query(insertFarmerSummaryQuery, values, (err) => {
-    if (err) {
-      console.error("Insert FarmerSummary error:", err);
-    }
-  });
-};
-
-module.exports = { insertFarmer, insertFarmerSummary };
+module.exports = { insertFarmer };

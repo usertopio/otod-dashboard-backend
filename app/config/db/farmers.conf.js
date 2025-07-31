@@ -34,7 +34,4 @@ const farmerFields = [
   "updatedTime",
 ];
 
-// Farmer summary fields
-const farmerSummaryFields = ["provinceName", "totalFarmers"];
-
-module.exports = { connectionDB, farmerFields, farmerSummaryFields };
+module.exports = { connectionDB, farmerFields };

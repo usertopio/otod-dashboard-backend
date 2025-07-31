@@ -1,8 +1,5 @@
-const { getFarmers, getFarmerSummary } = require("../services/api/farmers.js");
-const {
-  insertFarmer,
-  insertFarmerSummary,
-} = require("../services/db/farmersDb");
+const { getFarmers } = require("../services/api/farmers.js");
+const { insertFarmer } = require("../services/db/farmersDb");
 
 // Function to fetch farmers data from the outsource API
 exports.fetchFarmers = async (req, res) => {
@@ -69,25 +66,5 @@ exports.fetchFarmers = async (req, res) => {
   } catch (error) {
     console.error("Error fetching farmers:", error);
     res.status(500).json({ error: "Failed to fetch farmers" });
-  }
-};
-
-exports.fetchFarmerSummary = async (req, res) => {
-  try {
-    // Custom headers for the API request
-    let customHeaders = {
-      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-    };
-
-    // Fetch farmer summary from the outsource API
-    let farmerSummary = await getFarmerSummary(customHeaders);
-
-    // Insert the farmer summary into the database one by one
-    farmerSummary.data.forEach(insertFarmerSummary);
-
-    res.json({ farmerSummary: farmerSummary });
-  } catch (error) {
-    console.error("Error fetching farmer summary:", error);
-    res.status(500).json({ error: "Failed to fetch farmer summary" });
   }
 };
