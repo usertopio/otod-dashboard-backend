@@ -1,40 +1,5 @@
-const {
-  getWaterUsageSummaryByCrop,
-  getWaterUsageSummaryByMonth,
-} = require("../services/api/water.js");
-const {
-  insertWaterUsageSummaryByCrop,
-  insertWaterUsageSummaryByMonth,
-} = require("../services/db/waterDb.js");
-
-exports.fetchWaterUsageSummaryByCrop = async (req, res) => {
-  try {
-    // Prepare the request body for the API request
-    let requestBody = {
-      cropYear: 2024,
-      provinceName: "",
-    };
-
-    // Custom headers for the API request
-    let customHeaders = {
-      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-    };
-
-    // Fetch land summary from the outsource API
-    let waterUsageSummaryByCrop = await getWaterUsageSummaryByCrop(
-      requestBody,
-      customHeaders
-    );
-
-    // Insert the land summary into the database one by one
-    waterUsageSummaryByCrop.data.forEach(insertWaterUsageSummaryByCrop);
-
-    res.json({ waterUsageSummaryByCrop: waterUsageSummaryByCrop.data });
-  } catch (error) {
-    console.error("Error fetching WaterUsageSummaryByCrop:", error);
-    res.status(500).json({ error: "Failed to fetch WaterUsageSummaryByCrop" });
-  }
-};
+const { getWaterUsageSummaryByMonth } = require("../services/api/water.js");
+const { insertWaterUsageSummaryByMonth } = require("../services/db/waterDb.js");
 
 exports.fetchWaterUsageSummaryByMonth = async (req, res) => {
   try {

@@ -1,19 +1,5 @@
 const apiClient = require("./apiClient.js");
 
-// Outsource doc: API Name: GetWaterUsageSummaryByCrop
-const getWaterUsageSummaryByCrop = async (requestBody, customHeaders = {}) => {
-  const res = await apiClient.post(
-    "/api/report/GetWaterUsageSummaryByCrop",
-    requestBody,
-    {
-      headers: {
-        ...customHeaders,
-      },
-    }
-  );
-  return res.data;
-};
-
 // Outsource doc: API Name: GetWaterUsageSummaryByMonth
 const getWaterUsageSummaryByMonth = async (requestBody, customHeaders = {}) => {
   const res = await apiClient.post(
@@ -29,6 +15,5 @@ const getWaterUsageSummaryByMonth = async (requestBody, customHeaders = {}) => {
 };
 
 module.exports = {
-  getWaterUsageSummaryByCrop,
   getWaterUsageSummaryByMonth,
 };
