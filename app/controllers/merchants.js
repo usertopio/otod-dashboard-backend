@@ -1,11 +1,5 @@
-const {
-  getMerchants,
-  getMerchantSummary,
-} = require("../services/api/merchants.js");
-const {
-  insertMerchants,
-  insertMerchantSummary,
-} = require("../services/db/merchantsDb.js");
+const { getMerchants } = require("../services/api/merchants.js");
+const { insertMerchants } = require("../services/db/merchantsDb.js");
 
 exports.fetchMerchants = async (req, res) => {
   try {
@@ -64,25 +58,5 @@ exports.fetchMerchants = async (req, res) => {
   } catch (error) {
     console.error("Error fetching Merchants:", error);
     res.status(500).json({ error: "Failed to fetch Merchants" });
-  }
-};
-
-exports.fetchMerchantSummary = async (req, res) => {
-  try {
-    // Custom headers for the API request
-    let customHeaders = {
-      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-    };
-
-    // Fetch community summary from the outsource API
-    let merchantSummary = await getMerchantSummary(customHeaders);
-
-    // Insert the community summary into the database one by one
-    merchantSummary.data.forEach(insertMerchantSummary);
-
-    res.json({ merchantSummary: merchantSummary.data });
-  } catch (error) {
-    console.error("Error fetching MerchantSummary:", error);
-    res.status(500).json({ error: "Failed to fetch MerchantSummary" });
   }
 };
