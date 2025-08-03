@@ -23,5 +23,4 @@ const insertANew = (aNew) => {
 
 module.exports = {
   insertANew,
-  insertNewsSummaryByMonth,
 };

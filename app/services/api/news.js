@@ -12,5 +12,4 @@ const getNews = async (requestBody, customHeaders = {}) => {
 
 module.exports = {
   getNews,
-  getNewsSummaryByMonth,
 };
