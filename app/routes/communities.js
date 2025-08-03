@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const { fetchCommunities } = require("../controllers/communities.js");
+const { fetchCommunitiesUntilTarget } = require("../controllers/communities");
 
-// Fetch Communities data from the outsource API
-router.post("/fetchCommunities", fetchCommunities);
+// Main communities endpoints
+router.post("/fetchCommunities", fetchCommunitiesUntilTarget);
+router.post("/fetchCommunitiesUntilTarget", fetchCommunitiesUntilTarget);
 
 module.exports = router;
