@@ -1,62 +1,49 @@
 class CommunitiesLogger {
-  static logAttemptStart(attempt, maxAttempts) {
-    console.log(`\n🔄 === COMMUNITIES ATTEMPT ${attempt}/${maxAttempts} ===`);
+  // 🔧 EXACT MATCH: Target start like farmers
+  static logTargetStart(targetCount, maxAttempts) {
+    console.log(
+      `🎯 Target: ${targetCount} communities, Max attempts: ${maxAttempts}`
+    );
+    console.log("");
   }
 
-  static logCurrentStatus(currentCount, targetCount) {
-    console.log(`🏘️ Current communities in DB: ${currentCount}/${targetCount}`);
+  // 🔧 EXACT MATCH: Attempt start like farmers
+  static logAttemptStart(attempt, maxAttempts, currentCount, targetCount) {
+    console.log(`🔄 === ATTEMPT ${attempt}/${maxAttempts} ===`);
+    console.log(`📊 Current communities in DB: ${currentCount}/${targetCount}`);
 
-    if (currentCount < targetCount) {
-      console.log(
-        `🏘️ Need ${
-          targetCount - currentCount
-        } more communities - calling API...`
-      );
-    } else {
+    if (currentCount >= targetCount) {
       console.log(
         `🔄 Target reached but continuing API call for fresh data...`
       );
     }
   }
 
-  static logTargetReached(targetCount, attemptsUsed) {
-    console.log(
-      `🎯 Target of ${targetCount} communities reached after ${attemptsUsed} attempts`
-    );
+  // 🔧 EXACT MATCH: Page info like farmers
+  static logPageInfo(page, communities) {
+    const recIds = communities.slice(0, 5).map((c) => c.recId);
+    console.log(`📄 Page ${page}: First 5 recId: [${recIds.join(", ")}]`);
+    console.log(`📄 Page ${page}: Length: ${communities.length}`);
   }
 
-  static logFinalResults(
-    targetCount,
-    achieved,
-    attemptsUsed,
-    maxAttempts,
-    status
-  ) {
-    console.log(`\n🏁 === COMMUNITIES FINAL RESULT ===`);
-    console.log(`🎯 Target: ${targetCount}`);
-    console.log(`🏘️ Achieved: ${achieved}`);
-    console.log(`🔄 Attempts used: ${attemptsUsed}/${maxAttempts}`);
-    console.log(`✅ Status: ${status}`);
+  // 🔧 EXACT MATCH: API summary like farmers
+  static logApiSummary(totalFromAPI, uniqueFromAPI) {
+    console.log(`📊 Total from API: ${totalFromAPI}, Unique: ${uniqueFromAPI}`);
   }
 
-  static logAttemptResults(attempt, result) {
-    console.log(`📈 Communities Attempt ${attempt} completed:`);
-    console.log(`   ➕ Inserted: ${result.inserted}`);
-    console.log(`   🔄 Updated: ${result.updated}`);
-    console.log(`   ❌ Errors: ${result.errors}`);
-    console.log(`   🏘️ Total now: ${result.totalAfter}`);
-
-    this._logApiMetrics(result);
-    this._logDatabaseMetrics(result);
-    this._logInsights(result);
-    this._logNewRecIds(result);
-    this._logErrorRecIds(result);
-
-    console.log("======== COMMUNITIES ATTEMPT END ========\n");
+  // 🔧 EXACT MATCH: Attempt results like farmers
+  static logAttemptResults(attempt, inserted, updated, errors, totalAfter) {
+    console.log(`📈 Attempt ${attempt} completed:`);
+    console.log(`   ➕ Inserted: ${inserted}`);
+    console.log(`   🔄 Updated: ${updated}`);
+    console.log(`   ❌ Errors: ${errors}`);
+    console.log(`   📊 Total now: ${totalAfter}`);
+    console.log("");
   }
 
-  static _logApiMetrics(result) {
-    console.log("\n🏘️ === COMMUNITIES API METRICS ===");
+  // 🔧 EXACT MATCH: API metrics like farmers
+  static logApiMetrics(result) {
+    console.log(`📊 === API METRICS ===`);
     console.log(
       `📥 Record amount from current API call: ${result.totalFromAPI}`
     );
@@ -65,19 +52,23 @@ class CommunitiesLogger {
     );
     console.log(`🆕 New records amount: ${result.inserted}`);
     console.log(`🔄 Duplicated data amount: ${result.duplicatedDataAmount}`);
+    console.log("");
   }
 
-  static _logDatabaseMetrics(result) {
-    console.log("\n🏘️ === COMMUNITIES DATABASE METRICS ===");
-    console.log(`🏘️ Previous amount records in table: ${result.totalBefore}`);
+  // 🔧 EXACT MATCH: Database metrics like farmers
+  static logDatabaseMetrics(result) {
+    console.log(`📊 === DATABASE METRICS ===`);
+    console.log(`📊 Previous amount records in table: ${result.totalBefore}`);
     console.log(`📈 Current amount records in table: ${result.totalAfter}`);
     console.log(`➕ Records INSERTED: ${result.inserted}`);
     console.log(`🔄 Records UPDATED: ${result.updated}`);
     console.log(`❌ Records with ERRORS: ${result.errors}`);
+    console.log("");
   }
 
-  static _logInsights(result) {
-    console.log("\n🏘️ === COMMUNITIES ADDITIONAL INSIGHTS ===");
+  // 🔧 EXACT MATCH: Additional insights like farmers
+  static logAdditionalInsights(result) {
+    console.log(`📊 === ADDITIONAL INSIGHTS ===`);
     console.log(
       `📋 Total processing operations: ${result.totalProcessingOperations}`
     );
@@ -85,50 +76,37 @@ class CommunitiesLogger {
       `📍 Records in DB but not in current API: ${result.recordsInDbNotInAPI}`
     );
     console.log(`⏱️ Database growth: ${result.growth} records`);
+    console.log("");
   }
 
-  static _logNewRecIds(result) {
-    if (result.newRecIds.length > 0) {
-      console.log(
-        `\n🆕 NEW COMMUNITY REC_IDS INSERTED (${result.newRecIds.length}):`
-      );
-      if (result.newRecIds.length <= 20) {
-        console.log(`   [${result.newRecIds.join(", ")}]`);
-      } else {
-        console.log(
-          `   First 10: [${result.newRecIds.slice(0, 10).join(", ")}]`
-        );
-        console.log(`   Last 10:  [${result.newRecIds.slice(-10).join(", ")}]`);
-        console.log(
-          `   (... ${result.newRecIds.length - 20} more rec_ids ...)`
-        );
-      }
+  // 🔧 EXACT MATCH: New record IDs like farmers
+  static logNewRecordIds(result) {
+    if (result.newRecIds && result.newRecIds.length > 0) {
+      console.log(`🆕 NEW REC_IDS INSERTED: [${result.newRecIds.join(", ")}]`);
     } else {
-      console.log(`\n🆕 NEW COMMUNITY REC_IDS INSERTED: None`);
+      console.log(`🆕 NEW REC_IDS INSERTED: None`);
     }
+    console.log("==========================================");
+    console.log("");
   }
 
-  static _logErrorRecIds(result) {
-    if (result.errorRecIds.length > 0) {
-      console.log(
-        `\n❌ ERROR COMMUNITY REC_IDS (${result.errorRecIds.length}):`
-      );
-      console.log(`   [${result.errorRecIds.slice(0, 10).join(", ")}]`);
-    }
-  }
-
-  static logPageInfo(page, communities) {
+  // 🔧 EXACT MATCH: Target reached like farmers
+  static logTargetReached(currentCount, targetCount, attempts) {
     console.log(
-      `🏘️ Page ${page}: First 5 recId: [${communities
-        .slice(0, 5)
-        .map((c) => c.recId)
-        .join(", ")}]`
+      `🎯 Target of ${targetCount} reached after ${attempts} attempts`
     );
-    console.log(`🏘️ Page ${page}: Length: ${communities.length}`);
+    console.log("");
   }
 
-  static logApiSummary(totalFromAPI, uniqueCount) {
-    console.log(`🏘️ Total from API: ${totalFromAPI}, Unique: ${uniqueCount}`);
+  // 🔧 EXACT MATCH: Final result like farmers
+  static logFinalResults(result) {
+    console.log("🏁 === FINAL RESULT ===");
+    console.log(`🎯 Target: ${result.target}`);
+    console.log(`📊 Achieved: ${result.achieved}`);
+    console.log(
+      `🔄 Attempts used: ${result.attemptsUsed}/${result.maxAttempts}`
+    );
+    console.log(`✅ Status: ${result.status}`);
   }
 }
 

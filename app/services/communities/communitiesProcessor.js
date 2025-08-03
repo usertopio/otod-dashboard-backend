@@ -1,5 +1,5 @@
 const { getCommunities } = require("../api/communities");
-const { insertCommunities } = require("../db/communitiesDb");
+const { insertOrUpdateCommunity } = require("../db/communitiesDb");
 const { connectionDB } = require("../../config/db/db.conf.js");
 const { COMMUNITIES_CONFIG, OPERATIONS } = require("../../utils/constants");
 const CommunitiesLogger = require("./communitiesLogger");
@@ -76,9 +76,10 @@ class CommunitiesProcessor {
     );
   }
 
+  // 🔧 EXACT SAME PATTERN AS FARMERS
   static async _processUniqueCommunities(uniqueCommunities, metrics) {
     for (const community of uniqueCommunities) {
-      const result = await this._insertOrUpdateCommunity(community);
+      const result = await insertOrUpdateCommunity(community);
 
       switch (result.operation) {
         case OPERATIONS.INSERT:
@@ -99,57 +100,6 @@ class CommunitiesProcessor {
     }
   }
 
-  static async _insertOrUpdateCommunity(community) {
-    try {
-      // Check if community already exists
-      const [existing] = await connectionDB
-        .promise()
-        .query(`SELECT id FROM communities WHERE recId = ? LIMIT 1`, [
-          community.recId,
-        ]);
-
-      if (existing.length > 0) {
-        // Update existing community
-        await connectionDB.promise().query(
-          `UPDATE communities SET 
-             province = ?, amphur = ?, tambon = ?, postCode = ?, commId = ?, 
-             commName = ?, totalMembers = ?, noOfRais = ?, noOfTrees = ?, 
-             forecastYield = ?, createdTime = ?, updatedTime = ?, companyId = ?, companyName = ?
-             WHERE recId = ?`,
-          [
-            community.province,
-            community.amphur,
-            community.tambon,
-            community.postCode,
-            community.commId,
-            community.commName,
-            community.totalMembers,
-            community.noOfRais,
-            community.noOfTrees,
-            community.forecastYield,
-            community.createdTime,
-            community.updatedTime,
-            community.companyId,
-            community.companyName,
-            community.recId,
-          ]
-        );
-        return { operation: OPERATIONS.UPDATE, recId: community.recId };
-      } else {
-        // Insert new community using existing function
-        insertCommunities(community);
-        return { operation: OPERATIONS.INSERT, recId: community.recId };
-      }
-    } catch (err) {
-      console.error("Community insert/update error:", err);
-      return {
-        operation: OPERATIONS.ERROR,
-        recId: community.recId,
-        error: err.message,
-      };
-    }
-  }
-
   static async _getDatabaseCount() {
     const [result] = await connectionDB
       .promise()
@@ -158,7 +108,7 @@ class CommunitiesProcessor {
   }
 
   static _buildResult(metrics, dbCountBefore, dbCountAfter) {
-    return {
+    const result = {
       // Database metrics
       totalBefore: dbCountBefore,
       totalAfter: dbCountAfter,
@@ -173,10 +123,13 @@ class CommunitiesProcessor {
         (community, index, self) =>
           index === self.findIndex((c) => c.recId === community.recId)
       ).length,
+      // 🔧 FIXED: Calculate duplicated data correctly like farmers
       duplicatedDataAmount:
         metrics.allCommunitiesAllPages.length -
-        metrics.insertCount -
-        metrics.updateCount,
+        metrics.allCommunitiesAllPages.filter(
+          (community, index, self) =>
+            index === self.findIndex((c) => c.recId === community.recId)
+        ).length,
 
       // Record tracking
       newRecIds: metrics.newRecIds,
@@ -184,14 +137,16 @@ class CommunitiesProcessor {
       errorRecIds: metrics.errorRecIds,
       processedRecIds: Array.from(metrics.processedRecIds),
 
-      // Additional insights
-      recordsInDbNotInAPI: dbCountBefore - metrics.updateCount,
+      // Additional insights (like farmers)
       totalProcessingOperations:
         metrics.insertCount + metrics.updateCount + metrics.errorCount,
-
-      // For compatibility
-      allCommunitiesAllPages: metrics.allCommunitiesAllPages,
+      recordsInDbNotInAPI: Math.max(
+        0,
+        dbCountBefore - metrics.processedRecIds.size
+      ),
     };
+
+    return result;
   }
 }
 
