@@ -110,6 +110,8 @@ async function insertOrUpdateFarmer(farmer) {
           ),
           values.rec_id,
         ]);
+
+      return { operation: "UPDATE", recId: farmer.recId };
     } else {
       // === Insert ===
       await connectionDB.promise().query(
@@ -120,9 +122,12 @@ async function insertOrUpdateFarmer(farmer) {
           .join(", ")})`,
         Object.values(values)
       );
+
+      return { operation: "INSERT", recId: farmer.recId };
     }
   } catch (err) {
     console.error("Farmer insert/update error:", err);
+    return { operation: "ERROR", recId: farmer.recId, error: err.message };
   }
 }
 

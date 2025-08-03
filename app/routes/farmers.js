@@ -1,8 +1,18 @@
 const express = require("express");
 const router = express.Router();
-const { fetchFarmers } = require("../controllers/farmers");
+const {
+  fetchFarmers,
+  fetchFarmersUntilTarget,
+  resetFarmersTable,
+} = require("../controllers/farmers");
 
-// Fetch farmers data from the outsource API
+// Original single fetch
 router.post("/fetchFarmers", fetchFarmers);
+
+// New looping fetch until target
+router.post("/fetchFarmersUntilTarget", fetchFarmersUntilTarget);
+
+// Reset farmers table
+router.post("/resetFarmers", resetFarmersTable);
 
 module.exports = router;
