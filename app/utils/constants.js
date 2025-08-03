@@ -5,6 +5,14 @@ const FARMERS_CONFIG = {
   DEFAULT_TOTAL_RECORDS: 1114,
 };
 
+// 🆕 NEW: Communities configuration
+const COMMUNITIES_CONFIG = {
+  DEFAULT_TARGET_COUNT: 3,
+  DEFAULT_MAX_ATTEMPTS: 5,
+  DEFAULT_PAGE_SIZE: 500,
+  DEFAULT_TOTAL_RECORDS: 3,
+};
+
 const STATUS = {
   SUCCESS: "SUCCESS",
   INCOMPLETE: "INCOMPLETE",
@@ -18,6 +26,7 @@ const OPERATIONS = {
 
 module.exports = {
   FARMERS_CONFIG,
+  COMMUNITIES_CONFIG, // 🆕 Export communities config
   STATUS,
   OPERATIONS,
 };
