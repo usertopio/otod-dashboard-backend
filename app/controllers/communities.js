@@ -1,68 +1,33 @@
-const {
-  getCommunities,
-} = require("../services/api/communities.js");
-const {
-  insertCommunities,
-} = require("../services/db/communitiesDb.js");
+const CommunitiesService = require("../services/communities/communitiesService");
+const { COMMUNITIES_CONFIG } = require("../utils/constants");
 
-exports.fetchCommunities = async (req, res) => {
-  try {
-    // Detail provided by the outsource
-    let totalRecords = 3;
-    let pageSize = 500;
-    let pages = Math.ceil(totalRecords / pageSize);
+class CommunitiesController {
+  static async fetchCommunitiesUntilTarget(req, res) {
+    try {
+      const targetCount =
+        (req.body && req.body.targetCount) ||
+        COMMUNITIES_CONFIG.DEFAULT_TARGET_COUNT;
+      const maxAttempts =
+        (req.body && req.body.maxAttempts) ||
+        COMMUNITIES_CONFIG.DEFAULT_MAX_ATTEMPTS;
 
-    // Initialize arrays to hold all farmers data and current page farmers data for logging
-    let allCommunitiesAllPage = [];
-    let allCommunitiesCurPage = [];
-
-    // Loop through the number of pages to fetch all land data
-    for (let page = 0; page < pages; page++) {
-      // Prepare the request body for the API request
-      let requestBody = {
-        provinceName: "",
-        pageIndex: page,
-        pageSize: pageSize,
-      };
-
-      // Custom headers for the API request
-      let customHeaders = {
-        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-      };
-
-      // Fetch lands data in the current page from the outsource API
-      let Communities = await getCommunities(requestBody, customHeaders);
-
-      allCommunitiesCurPage = Communities.data;
-
-      // Concatinate the fetched lands from pages
-      allCommunitiesAllPage = allCommunitiesAllPage.concat(
-        allCommunitiesCurPage
+      const result = await CommunitiesService.fetchCommunitiesUntilTarget(
+        targetCount,
+        maxAttempts
       );
 
-      // Insert a lands into the database one by one
-      allCommunitiesCurPage.forEach(insertCommunities);
-
-      // Log: Log the first 5 recId for the current page
-      console.log(
-        `First 5 recId for page ${page + 1}:`,
-        allCommunitiesCurPage.slice(0, 5).map((f) => f.recId)
-      );
-
-      // Log: Log the fetched data for each page
-      console.log(
-        `Fetched data for page ${page + 1}: Length: ${
-          allCommunitiesCurPage.length
-        }, Type: ${typeof allCommunitiesCurPage}`
-      );
+      return res.status(200).json(result);
+    } catch (err) {
+      console.error("Error in fetchCommunitiesUntilTarget:", err);
+      return res.status(500).json({
+        message: "Failed to fetch communities until target",
+        error: err.message,
+      });
     }
-
-    // Respond with all land data
-    res.json({
-      allCommunitiesAllPage: allCommunitiesAllPage,
-    });
-  } catch (error) {
-    console.error("Error fetching Communities:", error);
-    res.status(500).json({ error: "Failed to fetch Communities" });
   }
+}
+
+module.exports = {
+  fetchCommunitiesUntilTarget:
+    CommunitiesController.fetchCommunitiesUntilTarget,
 };
