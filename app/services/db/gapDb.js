@@ -1,4 +1,4 @@
-const { connectionDB } = require("../../config/db/gap.conf.js");
+const { connectionDB } = require("../../config/db/db.conf.js");
 const { OPERATIONS } = require("../../utils/constants");
 
 // 🎯 ONLY: Advanced insert/update pattern for fetchGapUntilTarget
