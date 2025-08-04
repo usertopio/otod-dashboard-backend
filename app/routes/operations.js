@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const { fetchOperations } = require("../controllers/operations.js");
+const { fetchOperationsUntilTarget } = require("../controllers/operations.js");
 
-// Fetch Operations data from the outsource API
-router.post("/fetchOperations", fetchOperations);
+// 🎯 Only advanced "UntilTarget" endpoint
+router.post("/fetchOperationsUntilTarget", fetchOperationsUntilTarget);
 
 module.exports = router;
