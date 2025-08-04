@@ -32,10 +32,16 @@ const OPERATIONS = {
   ERROR: "ERROR",
 };
 
+const MERCHANTS_CONFIG = {
+  DEFAULT_TARGET_COUNT: 0,
+  DEFAULT_MAX_ATTEMPTS: 5,
+};
+
 module.exports = {
   FARMERS_CONFIG,
   NEWS_CONFIG, // 🆕 Export news config
   COMMUNITIES_CONFIG, // 🆕 Export communities config
   STATUS,
   OPERATIONS,
+  MERCHANTS_CONFIG, // ADD this line
 };
