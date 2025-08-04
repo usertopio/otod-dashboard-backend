@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const { fetchNews } = require("../controllers/news.js");
+const { fetchNewsUntilTarget } = require("../controllers/news.js");
 
-// Fetch news data from the outsource API
-router.post("/fetchNews", fetchNews);
+// 🎯 ONLY: Fetch news until target reached
+router.post("/fetchNewsUntilTarget", fetchNewsUntilTarget);
 
 module.exports = router;

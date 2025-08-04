@@ -1,60 +1,27 @@
-const { getNews } = require("../services/api/news.js");
-const { insertANew } = require("../services/db/newsDb.js");
+const { getNews, getNewsSummaryByMonth } = require("../services/api/news.js");
+const {
+  insertANew,
+  insertNewsSummaryByMonth,
+} = require("../services/db/newsDb.js");
+const NewsService = require("../services/news/newsService");
 
-exports.fetchNews = async (req, res) => {
+// 🎯 ONLY: fetchNewsUntilTarget endpoint
+exports.fetchNewsUntilTarget = async (req, res) => {
   try {
-    // Detail provided by the outsource
-    let totalRecords = 5;
-    let pageSize = 500;
-    let pages = Math.ceil(totalRecords / pageSize);
+    const targetCount = req.body.targetCount || 5; // Default: 5 news
+    const maxAttempts = req.body.maxAttempts || 5; // Default: 5 attempts
 
-    // Initialize arrays to hold all farmers data and current page farmers data for logging
-    let allNewsAllPages = [];
-    let allNewsCurPage = [];
-    // let TotalemptyIdCardExpiryDateCurPage = 0;
+    const result = await NewsService.fetchNewsUntilTarget(
+      targetCount,
+      maxAttempts
+    );
 
-    for (let page = 1; page <= pages; page++) {
-      const requestBody = {
-        provinceName: "",
-        fromDate: "2024-10-01",
-        toDate: "2024-12-31",
-        pageIndex: 1,
-        pageSize: 500,
-      };
-
-      // Custom headers for the API request
-      const customHeaders = {
-        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-      };
-
-      // Fetch crops data in the current page from the outsource API
-      const news = await getNews(requestBody, customHeaders);
-
-      allNewsCurPage = news.data;
-
-      // Concatinate the fetched crops from pages
-      allNewsAllPages = allNewsAllPages.concat(allNewsCurPage);
-
-      // Insert a news into the database one by one
-      allNewsCurPage.forEach(insertANew);
-
-      // Log: Log the first 5 recId for the current page
-      console.log(
-        `First 5 recId for page ${page}:`,
-        allNewsCurPage.slice(0, 5).map((f) => f.recId)
-      );
-
-      // Log: Log the fetched data for each page
-      console.log(
-        `Fetched data for page ${page}: Length: ${
-          allNewsCurPage.length
-        }, Type: ${typeof allNewsCurPage}`
-      );
-    }
-
-    res.json({ allNewsAllPages: allNewsAllPages });
+    res.json(result);
   } catch (error) {
-    console.error("Error fetching news:", error);
-    res.status(500).json({ error: "Failed to fetch news" });
+    console.error("Error in fetchNewsUntilTarget:", error);
+    res.status(500).json({
+      error: "Failed to fetch news until target",
+      details: error.message,
+    });
   }
 };
