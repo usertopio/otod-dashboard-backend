@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const { fetchWaterUsageSummaryByMonth } = require("../controllers/water.js");
+const { fetchWater } = require("../controllers/water.js");
 
-// Fetch Land Summary data from the outsource API
-router.post("/fetchWaterUsageSummaryByMonth", fetchWaterUsageSummaryByMonth);
+// 🎯 Clean "fetchWater" endpoint using GetWaterUsageSummaryByMonth
+router.post("/fetchWater", fetchWater);
 
 module.exports = router;
