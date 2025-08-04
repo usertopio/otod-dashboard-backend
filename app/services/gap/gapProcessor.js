@@ -1,6 +1,6 @@
 const { getCrops } = require("../api/crops");
 const { insertOrUpdateGap } = require("../db/gapDb");
-const { connectionDB } = require("../../config/db/gap.conf");
+const { connectionDB } = require("../../config/db/db.conf");
 const GapLogger = require("./gapLogger");
 const { OPERATIONS } = require("../../utils/constants");
 
