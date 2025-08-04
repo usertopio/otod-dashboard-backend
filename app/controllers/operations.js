@@ -1,5 +1,7 @@
 const { getOperations } = require("../services/api/operations.js");
 const { insertOperations } = require("../services/db/operationsDb.js");
+const OperationsService = require("../services/operations/operationsService");
+const { OPERATIONS_CONFIG } = require("../utils/constants");
 
 exports.fetchOperations = async (req, res) => {
   try {
@@ -59,4 +61,36 @@ exports.fetchOperations = async (req, res) => {
     console.error("Error fetching Operations:", error);
     res.status(500).json({ error: "Failed to fetch Operations" });
   }
+};
+
+class OperationsController {
+  static async fetchOperationsUntilTarget(req, res) {
+    try {
+      const targetCount =
+        (req.body && req.body.targetCount) ||
+        OPERATIONS_CONFIG.DEFAULT_TARGET_COUNT ||
+        0;
+      const maxAttempts =
+        (req.body && req.body.maxAttempts) ||
+        OPERATIONS_CONFIG.DEFAULT_MAX_ATTEMPTS ||
+        5;
+
+      const result = await OperationsService.fetchOperationsUntilTarget(
+        targetCount,
+        maxAttempts
+      );
+
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error("Error in fetchOperationsUntilTarget:", error);
+      return res.status(500).json({
+        message: "Failed to fetch operations until target",
+        error: error.message,
+      });
+    }
+  }
+}
+
+module.exports = {
+  fetchOperationsUntilTarget: OperationsController.fetchOperationsUntilTarget,
 };
