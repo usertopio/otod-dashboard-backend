@@ -1,4 +1,4 @@
-const { connectionDB } = require("../../config/db/communities.conf.js");
+const { connectionDB } = require("../../config/db/db.conf.js");
 const { OPERATIONS } = require("../../utils/constants");
 
 // 🆕 NEW: Add insertOrUpdateCommunity function (like farmers)
