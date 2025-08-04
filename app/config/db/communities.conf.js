@@ -7,22 +7,22 @@ const connectionDB = mysql.createConnection({
   database: "otod",
 });
 
-const communitiesFields = [
-  "recId",
-  "province",
-  "amphur",
-  "tambon",
-  "postCode",
-  "commId",
-  "commName",
-  "totalMembers",
-  "noOfRais",
-  "noOfTrees",
-  "forecastYield",
-  "createdTime",
-  "updatedTime",
-  "companyId",
-  "companyName",
-];
+// const communitiesFields = [
+//   "recId",
+//   "province",
+//   "amphur",
+//   "tambon",
+//   "postCode",
+//   "commId",
+//   "commName",
+//   "totalMembers",
+//   "noOfRais",
+//   "noOfTrees",
+//   "forecastYield",
+//   "createdTime",
+//   "updatedTime",
+//   "companyId",
+//   "companyName",
+// ];
 
-module.exports = { connectionDB, communitiesFields };
+module.exports = { connectionDB };
