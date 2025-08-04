@@ -4,6 +4,8 @@ const {
 const {
   insertSubstanceUsageSummaryByMonth,
 } = require("../services/db/substanceDb.js");
+const SubstanceService = require("../services/substance/substanceService");
+const { SUBSTANCE_CONFIG } = require("../utils/constants");
 
 exports.fetchSubstanceUsageSummaryByMonth = async (req, res) => {
   try {
@@ -34,4 +36,36 @@ exports.fetchSubstanceUsageSummaryByMonth = async (req, res) => {
       .status(500)
       .json({ error: "Failed to fetch SubstanceUsageSummaryByMonth" });
   }
+};
+
+class SubstanceController {
+  static async fetchSubstance(req, res) {
+    try {
+      const targetCount =
+        (req.body && req.body.targetCount) ||
+        SUBSTANCE_CONFIG.DEFAULT_TARGET_COUNT ||
+        0;
+      const maxAttempts =
+        (req.body && req.body.maxAttempts) ||
+        SUBSTANCE_CONFIG.DEFAULT_MAX_ATTEMPTS ||
+        1; // Only 1 attempt since no pagination
+
+      const result = await SubstanceService.fetchSubstance(
+        targetCount,
+        maxAttempts
+      );
+
+      return res.status(200).json(result);
+    } catch (error) {
+      console.error("Error in fetchSubstance:", error);
+      return res.status(500).json({
+        message: "Failed to fetch substance",
+        error: error.message,
+      });
+    }
+  }
+}
+
+module.exports = {
+  fetchSubstance: SubstanceController.fetchSubstance,
 };
