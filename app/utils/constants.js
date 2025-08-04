@@ -37,11 +37,16 @@ const MERCHANTS_CONFIG = {
   DEFAULT_MAX_ATTEMPTS: 5,
 };
 
+const OPERATIONS_CONFIG = {
+  DEFAULT_TARGET_COUNT: 0,
+  DEFAULT_MAX_ATTEMPTS: 5,
+};
+
 module.exports = {
-  FARMERS_CONFIG,
-  NEWS_CONFIG, // 🆕 Export news config
-  COMMUNITIES_CONFIG, // 🆕 Export communities config
-  STATUS,
   OPERATIONS,
-  MERCHANTS_CONFIG, // ADD this line
+  NEWS_CONFIG,
+  FARMERS_CONFIG,
+  COMMUNITIES_CONFIG,
+  MERCHANTS_CONFIG,
+  OPERATIONS_CONFIG, // ADD this line
 };
