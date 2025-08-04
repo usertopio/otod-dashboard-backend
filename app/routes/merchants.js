@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const { fetchMerchants } = require("../controllers/merchants.js");
+const { fetchMerchantsUntilTarget } = require("../controllers/merchants.js");
 
-// Fetch Merchants data from the outsource API
-router.post("/fetchMerchants", fetchMerchants);
+// 🎯 Only advanced "UntilTarget" endpoint
+router.post("/fetchMerchantsUntilTarget", fetchMerchantsUntilTarget);
 
 module.exports = router;
