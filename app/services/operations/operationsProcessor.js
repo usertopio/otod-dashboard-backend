@@ -50,9 +50,12 @@ class OperationsProcessor {
   static async _fetchAllPages(pages, metrics) {
     for (let page = 1; page <= pages; page++) {
       const requestBody = {
+        cropYear: OPERATIONS_CONFIG.DEFAULT_CROP_YEAR || 2024,
         provinceName: "",
         pageIndex: page,
         pageSize: OPERATIONS_CONFIG.DEFAULT_PAGE_SIZE,
+        fromDate: OPERATIONS_CONFIG.DEFAULT_FROM_DATE,
+        toDate: OPERATIONS_CONFIG.DEFAULT_TO_DATE,
       };
 
       const customHeaders = {
