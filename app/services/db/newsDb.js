@@ -1,85 +1,84 @@
 const { connectionDB } = require("../../config/db/news.conf.js");
 const { OPERATIONS } = require("../../utils/constants");
 
-// 🔧 ADD: The missing reference lookup function
-const convertNewsGroupNameToCode = async (newsGroupName) => {
-  if (!newsGroupName) return null;
+// 🔧 ADD: Copy ensureRefCode function from farmersDb.js
+async function ensureRefCode(
+  table,
+  nameColumn,
+  codeColumn,
+  name,
+  generatedCodePrefix
+) {
+  if (!name) return null;
 
   try {
-    // Check if news group already exists by name (exact match)
     const [existing] = await connectionDB
       .promise()
       .query(
-        `SELECT news_group_id FROM ref_news_groups WHERE news_group_name = ? LIMIT 1`,
-        [newsGroupName]
+        `SELECT ${codeColumn} FROM ${table} WHERE ${nameColumn} = ? LIMIT 1`,
+        [name]
       );
 
     if (existing.length > 0) {
-      console.log(
-        `✅ Found existing: "${newsGroupName}" → ${existing[0].news_group_id}`
-      );
-      return existing[0].news_group_id;
+      return existing[0][codeColumn];
     } else {
-      // 🔧 OPTIONAL: Manual mapping only if you want to force certain mappings
-      const manualMapping = {
-        // Uncomment if you want to force "ประกาศ" to map to existing NG002
-        // 'ประกาศ': "NG002",
-        // 'กิจกรรม': "NG003",
-      };
-
-      // Check manual mapping first (currently empty, so it will skip)
-      if (manualMapping[newsGroupName]) {
-        console.log(
-          `📋 Manual mapping: "${newsGroupName}" → ${manualMapping[newsGroupName]}`
-        );
-        return manualMapping[newsGroupName];
-      }
-
-      // 🆕 Create new entry for unmatched API values
-      console.log(`🔍 No exact match for "${newsGroupName}", creating new...`);
-
       const [maxResult] = await connectionDB
         .promise()
         .query(
-          `SELECT news_group_id FROM ref_news_groups ORDER BY news_group_id DESC LIMIT 1`
+          `SELECT ${codeColumn} FROM ${table} ORDER BY ${codeColumn} DESC LIMIT 1`
         );
 
-      let newGroupId;
+      let newCode;
       if (maxResult.length > 0) {
-        const lastId = maxResult[0].news_group_id;
-        const lastNumber = parseInt(lastId.replace("NG", ""));
-        newGroupId = `NG${String(lastNumber + 1).padStart(3, "0")}`;
+        const lastCode = maxResult[0][codeColumn];
+        const lastNumber = parseInt(lastCode.replace(generatedCodePrefix, ""));
+        newCode = `${generatedCodePrefix}${String(lastNumber + 1).padStart(
+          3,
+          "0"
+        )}`;
       } else {
-        newGroupId = "NG001"; // Fallback if table is empty
+        newCode = `${generatedCodePrefix}001`;
       }
 
-      // Insert new news group with exact API value
       await connectionDB.promise().query(
-        `INSERT INTO ref_news_groups (news_group_id, news_group_name, source) 
+        `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) 
          VALUES (?, ?, 'generated')`,
-        [newGroupId, newsGroupName]
+        [newCode, name]
       );
 
-      console.log(`🆕 Created new: ${newGroupId} = "${newsGroupName}"`);
-      return newGroupId;
+      console.log(`🆕 Created new ${table}: ${newCode} = "${name}"`);
+      return newCode;
     }
   } catch (err) {
-    console.error("News group lookup error:", err.message);
+    console.error(`${table} lookup error:`, err.message);
     return null;
   }
-};
+}
 
-// 🎯 ONLY: Advanced insert/update pattern for fetchNewsUntilTarget
 const insertOrUpdateNews = async (news) => {
   try {
+    // 🔧 FIX: Add province conversion like farmers
+    const provinceCode = await ensureRefCode(
+      "ref_provinces",
+      "province_name_th",
+      "province_code",
+      news.province, // 🔧 Use actual province from API
+      "GPROV"
+    );
+
+    // 🔧 REPLACE: Use ensureRefCode for news groups
+    const newsGroupCode = await ensureRefCode(
+      "ref_news_groups",
+      "news_group_name",
+      "news_group_id",
+      news.newsGroup,
+      "NG"
+    );
+
     // Check if news already exists
     const [existing] = await connectionDB
       .promise()
       .query(`SELECT id FROM news WHERE rec_id = ? LIMIT 1`, [news.recId]);
-
-    // 🔧 CRITICAL FIX: Actually call the reference lookup function
-    const newsGroupCode = await convertNewsGroupNameToCode(news.newsGroup);
-    console.log(`🔄 Converting "${news.newsGroup}" → "${newsGroupCode}"`);
 
     if (existing.length > 0) {
       // UPDATE existing news
@@ -97,10 +96,10 @@ const insertOrUpdateNews = async (news) => {
          fetch_at = NOW()
          WHERE rec_id = ?`,
         [
-          null,
+          provinceCode, // 🔧 FIX: Use actual province code
           news.newsId,
           news.announceDate || null,
-          newsGroupCode, // 🔧 FIXED: Use converted code
+          newsGroupCode,
           news.newsTopic || null,
           news.newsDetail || null,
           news.noOfLike || null,
@@ -120,10 +119,10 @@ const insertOrUpdateNews = async (news) => {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW(), ?)`,
         [
           news.recId,
-          null,
+          provinceCode, // 🔧 FIX: Use actual province code
           news.newsId,
           news.announceDate || null,
-          newsGroupCode, // 🔧 FIXED: Use converted code
+          newsGroupCode,
           news.newsTopic || null,
           news.newsDetail || null,
           news.noOfLike || null,
@@ -145,8 +144,5 @@ const insertOrUpdateNews = async (news) => {
 };
 
 module.exports = {
-  insertOrUpdateNews, // 🎯 ONLY: Export advanced function
+  insertOrUpdateNews,
 };
-
-// 🔧 REMOVED: Old simple functions
-// insertANew, insertNewsSummaryByMonth
