@@ -1,159 +1,93 @@
-const { connectionDB } = require("../../config/db/merchants.conf.js");
+const { connectionDB } = require("../../config/db/db.conf.js");
 const { OPERATIONS } = require("../../utils/constants");
 
-// 🔧 Reference lookup functions for location codes
-const convertProvinceNameToCode = async (provinceName) => {
-  if (!provinceName) return null;
+// 🔧 ADD: Copy ensureRefCode function from farmersDb.js
+async function ensureRefCode(
+  table,
+  nameColumn,
+  codeColumn,
+  name,
+  generatedCodePrefix
+) {
+  if (!name) return null;
 
   try {
     const [existing] = await connectionDB
       .promise()
       .query(
-        `SELECT province_code FROM ref_provinces WHERE province_name_th = ? LIMIT 1`,
-        [provinceName]
+        `SELECT ${codeColumn} FROM ${table} WHERE ${nameColumn} = ? LIMIT 1`,
+        [name]
       );
 
     if (existing.length > 0) {
-      return existing[0].province_code;
+      return existing[0][codeColumn];
     } else {
       const [maxResult] = await connectionDB
         .promise()
         .query(
-          `SELECT province_code FROM ref_provinces ORDER BY province_code DESC LIMIT 1`
+          `SELECT ${codeColumn} FROM ${table} ORDER BY ${codeColumn} DESC LIMIT 1`
         );
 
-      let newProvinceCode;
+      let newCode;
       if (maxResult.length > 0) {
-        const lastCode = maxResult[0].province_code;
-        const lastNumber = parseInt(lastCode.replace("P", ""));
-        newProvinceCode = `P${String(lastNumber + 1).padStart(3, "0")}`;
+        const lastCode = maxResult[0][codeColumn];
+        const lastNumber = parseInt(lastCode.replace(generatedCodePrefix, ""));
+        newCode = `${generatedCodePrefix}${String(lastNumber + 1).padStart(
+          3,
+          "0"
+        )}`;
       } else {
-        newProvinceCode = "P001";
+        newCode = `${generatedCodePrefix}001`;
       }
 
       await connectionDB.promise().query(
-        `INSERT INTO ref_provinces (province_code, province_name_th, source) 
+        `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) 
          VALUES (?, ?, 'generated')`,
-        [newProvinceCode, provinceName]
+        [newCode, name]
       );
 
-      console.log(
-        `🆕 Created new province: ${newProvinceCode} = "${provinceName}"`
-      );
-      return newProvinceCode;
+      console.log(`🆕 Created new ${table}: ${newCode} = "${name}"`);
+      return newCode;
     }
   } catch (err) {
-    console.error("Province lookup error:", err.message);
+    console.error(`${table} lookup error:`, err.message);
     return null;
   }
-};
+}
 
-const convertDistrictNameToCode = async (districtName) => {
-  if (!districtName) return null;
-
-  try {
-    const [existing] = await connectionDB
-      .promise()
-      .query(
-        `SELECT district_code FROM ref_districts WHERE district_name_th = ? LIMIT 1`,
-        [districtName]
-      );
-
-    if (existing.length > 0) {
-      return existing[0].district_code;
-    } else {
-      const [maxResult] = await connectionDB
-        .promise()
-        .query(
-          `SELECT district_code FROM ref_districts ORDER BY district_code DESC LIMIT 1`
-        );
-
-      let newDistrictCode;
-      if (maxResult.length > 0) {
-        const lastCode = maxResult[0].district_code;
-        const lastNumber = parseInt(lastCode.replace("D", ""));
-        newDistrictCode = `D${String(lastNumber + 1).padStart(3, "0")}`;
-      } else {
-        newDistrictCode = "D001";
-      }
-
-      await connectionDB.promise().query(
-        `INSERT INTO ref_districts (district_code, district_name_th, source) 
-         VALUES (?, ?, 'generated')`,
-        [newDistrictCode, districtName]
-      );
-
-      console.log(
-        `🆕 Created new district: ${newDistrictCode} = "${districtName}"`
-      );
-      return newDistrictCode;
-    }
-  } catch (err) {
-    console.error("District lookup error:", err.message);
-    return null;
-  }
-};
-
-const convertSubdistrictNameToCode = async (subdistrictName) => {
-  if (!subdistrictName) return null;
-
-  try {
-    const [existing] = await connectionDB
-      .promise()
-      .query(
-        `SELECT subdistrict_code FROM ref_subdistricts WHERE subdistrict_name_th = ? LIMIT 1`,
-        [subdistrictName]
-      );
-
-    if (existing.length > 0) {
-      return existing[0].subdistrict_code;
-    } else {
-      const [maxResult] = await connectionDB
-        .promise()
-        .query(
-          `SELECT subdistrict_code FROM ref_subdistricts ORDER BY subdistrict_code DESC LIMIT 1`
-        );
-
-      let newSubdistrictCode;
-      if (maxResult.length > 0) {
-        const lastCode = maxResult[0].subdistrict_code;
-        const lastNumber = parseInt(lastCode.replace("SD", ""));
-        newSubdistrictCode = `SD${String(lastNumber + 1).padStart(3, "0")}`;
-      } else {
-        newSubdistrictCode = "SD001";
-      }
-
-      await connectionDB.promise().query(
-        `INSERT INTO ref_subdistricts (subdistrict_code, subdistrict_name_th, source) 
-         VALUES (?, ?, 'generated')`,
-        [newSubdistrictCode, subdistrictName]
-      );
-
-      console.log(
-        `🆕 Created new subdistrict: ${newSubdistrictCode} = "${subdistrictName}"`
-      );
-      return newSubdistrictCode;
-    }
-  } catch (err) {
-    console.error("Subdistrict lookup error:", err.message);
-    return null;
-  }
-};
-
-// 🎯 ONLY: Advanced insert/update pattern for fetchMerchantsUntilTarget
 const insertOrUpdateMerchant = async (merchant) => {
   try {
+    // 🔧 REPLACE: Use ensureRefCode like farmers
+    const provinceCode = await ensureRefCode(
+      "ref_provinces",
+      "province_name_th",
+      "province_code",
+      merchant.province,
+      "GPROV"
+    );
+
+    const districtCode = await ensureRefCode(
+      "ref_districts",
+      "district_name_th",
+      "district_code",
+      merchant.amphur,
+      "GDIST"
+    );
+
+    const subdistrictCode = await ensureRefCode(
+      "ref_subdistricts",
+      "subdistrict_name_th",
+      "subdistrict_code",
+      merchant.tambon,
+      "GSUBDIST"
+    );
+
     // Check if merchant already exists
     const [existing] = await connectionDB
       .promise()
       .query(`SELECT id FROM merchants WHERE rec_id = ? LIMIT 1`, [
         merchant.recId,
       ]);
-
-    // Convert location names to codes
-    const provinceCode = await convertProvinceNameToCode(merchant.province);
-    const districtCode = await convertDistrictNameToCode(merchant.amphur);
-    const subdistrictCode = await convertSubdistrictNameToCode(merchant.tambon);
 
     if (existing.length > 0) {
       // UPDATE existing merchant
@@ -189,7 +123,7 @@ const insertOrUpdateMerchant = async (merchant) => {
          (rec_id, merchant_province_code, merchant_district_code, 
           merchant_subdistrict_code, post_code, merchant_id, merchant_name, 
           address, created_at, updated_at, fetch_at) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())`,
         [
           merchant.recId,
           provinceCode,
