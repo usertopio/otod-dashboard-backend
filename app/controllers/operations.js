@@ -63,34 +63,34 @@ exports.fetchOperations = async (req, res) => {
   }
 };
 
-class OperationsController {
-  static async fetchOperationsUntilTarget(req, res) {
-    try {
-      const targetCount =
-        (req.body && req.body.targetCount) ||
-        OPERATIONS_CONFIG.DEFAULT_TARGET_COUNT ||
-        0;
-      const maxAttempts =
-        (req.body && req.body.maxAttempts) ||
-        OPERATIONS_CONFIG.DEFAULT_MAX_ATTEMPTS ||
-        5;
+const fetchOperationsUntilTarget = async (req, res) => {
+  try {
+    const targetCount =
+      (req.body && req.body.targetCount) ||
+      OPERATIONS_CONFIG.DEFAULT_TARGET_COUNT;
+    const maxAttempts =
+      (req.body && req.body.maxAttempts) ||
+      OPERATIONS_CONFIG.DEFAULT_MAX_ATTEMPTS;
 
-      const result = await OperationsService.fetchOperationsUntilTarget(
-        targetCount,
-        maxAttempts
-      );
+    console.log(
+      `Starting fetchOperationsUntilTarget with target: ${targetCount}, max attempts: ${maxAttempts}`
+    );
 
-      return res.status(200).json(result);
-    } catch (error) {
-      console.error("Error in fetchOperationsUntilTarget:", error);
-      return res.status(500).json({
-        message: "Failed to fetch operations until target",
-        error: error.message,
-      });
-    }
+    const result = await OperationsService.fetchOperationsUntilTarget(
+      targetCount,
+      maxAttempts
+    );
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error in fetchOperationsUntilTarget:", error);
+    res.status(500).json({
+      error: "Failed to fetch operations data",
+      details: error.message,
+    });
   }
-}
+};
 
 module.exports = {
-  fetchOperationsUntilTarget: OperationsController.fetchOperationsUntilTarget,
+  fetchOperationsUntilTarget,
 };
