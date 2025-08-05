@@ -1,7 +1,7 @@
+const { connectionDB } = require("../../config/db/db.conf.js");
+const { COMMUNITIES_CONFIG, STATUS } = require("../../utils/constants");
 const CommunitiesProcessor = require("./communitiesProcessor");
 const CommunitiesLogger = require("./communitiesLogger");
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { COMMUNITIES_CONFIG } = require("../../utils/constants");
 
 class CommunitiesService {
   static async fetchCommunitiesUntilTarget(
@@ -83,6 +83,30 @@ class CommunitiesService {
       .promise()
       .query("SELECT COUNT(*) as total FROM communities");
     return result[0].total;
+  }
+
+  static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
+    const finalCount = await this._getDatabaseCount();
+    const status =
+      finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+
+    CommunitiesLogger.logFinalResults(
+      targetCount,
+      finalCount,
+      attemptsUsed,
+      maxAttempts,
+      status
+    );
+
+    return {
+      message: `Fetch loop completed - ${status}`,
+      target: targetCount,
+      achieved: finalCount,
+      attemptsUsed: attemptsUsed,
+      maxAttempts: maxAttempts,
+      status: status,
+      reachedTarget: finalCount >= targetCount,
+    };
   }
 }
 
