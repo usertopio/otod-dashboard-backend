@@ -4,7 +4,6 @@ const OPERATIONS = {
   ERROR: "ERROR",
 };
 
-// 🔧 ADD: Missing STATUS constant
 const STATUS = {
   SUCCESS: "SUCCESS",
   INCOMPLETE: "INCOMPLETE",
@@ -35,32 +34,40 @@ const MERCHANTS_CONFIG = {
   DEFAULT_TARGET_COUNT: 0,
   DEFAULT_MAX_ATTEMPTS: 5,
   DEFAULT_TOTAL_RECORDS: 0,
-  DEFAULT_PAGE_SIZE: 50,
+  DEFAULT_PAGE_SIZE: 500,
 };
 
 const OPERATIONS_CONFIG = {
   DEFAULT_TARGET_COUNT: 0,
   DEFAULT_MAX_ATTEMPTS: 5,
+  DEFAULT_TOTAL_RECORDS: 100, // 🔧 ADD: Missing pagination constant
+  DEFAULT_PAGE_SIZE: 500, // 🔧 ADD: Missing pagination constant
 };
 
 const GAP_CONFIG = {
   DEFAULT_TARGET_COUNT: 518,
   DEFAULT_MAX_ATTEMPTS: 5,
+  DEFAULT_TOTAL_RECORDS: 518, // 🔧 ADD: Missing pagination constant
+  DEFAULT_PAGE_SIZE: 500, // 🔧 ADD: Missing pagination constant
 };
 
 const SUBSTANCE_CONFIG = {
   DEFAULT_TARGET_COUNT: 0,
   DEFAULT_MAX_ATTEMPTS: 1,
+  DEFAULT_TOTAL_RECORDS: 100, // 🔧 ADD: Missing pagination constant
+  DEFAULT_PAGE_SIZE: 500, // 🔧 ADD: Missing pagination constant
 };
 
 const WATER_CONFIG = {
   DEFAULT_TARGET_COUNT: 0,
   DEFAULT_MAX_ATTEMPTS: 1,
+  DEFAULT_TOTAL_RECORDS: 100, // 🔧 ADD: Missing pagination constant
+  DEFAULT_PAGE_SIZE: 500, // 🔧 ADD: Missing pagination constant
 };
 
 module.exports = {
   OPERATIONS,
-  STATUS, // 🔧 ADD: Export STATUS
+  STATUS,
   NEWS_CONFIG,
   FARMERS_CONFIG,
   COMMUNITIES_CONFIG,
