@@ -1,128 +1,145 @@
 const { getMerchants } = require("../api/merchants");
 const { insertOrUpdateMerchant } = require("../db/merchantsDb");
-const { connectionDB } = require("../../config/db/merchants.conf");
+const { connectionDB } = require("../../config/db/db.conf.js");
+const { MERCHANTS_CONFIG, OPERATIONS } = require("../../utils/constants");
 const MerchantsLogger = require("./merchantsLogger");
-const { OPERATIONS } = require("../../utils/constants");
 
 class MerchantsProcessor {
-  constructor() {
-    this.totalFromAPI = 0;
-    this.uniqueFromAPI = 0;
-    this.inserted = 0;
-    this.updated = 0;
-    this.errors = 0;
-    this.duplicatedDataAmount = 0;
+  static async fetchAndProcessData() {
+    const pages = Math.ceil(
+      MERCHANTS_CONFIG.DEFAULT_TOTAL_RECORDS /
+        MERCHANTS_CONFIG.DEFAULT_PAGE_SIZE
+    );
+
+    // Initialize counters
+    const metrics = {
+      allMerchantsAllPages: [],
+      insertCount: 0,
+      updateCount: 0,
+      errorCount: 0,
+      processedRecIds: new Set(),
+      newRecIds: [],
+      updatedRecIds: [],
+      errorRecIds: [],
+    };
+
+    // Get database count before processing
+    const dbCountBefore = await this._getDatabaseCount();
+
+    // Fetch data from all pages
+    await this._fetchAllPages(pages, metrics);
+
+    // Process unique merchants
+    const uniqueMerchants = this._getUniqueMerchants(
+      metrics.allMerchantsAllPages
+    );
+    MerchantsLogger.logApiSummary(
+      metrics.allMerchantsAllPages.length,
+      uniqueMerchants.length
+    );
+
+    // Process each unique merchant
+    await this._processUniqueMerchants(uniqueMerchants, metrics);
+
+    // Get database count after processing
+    const dbCountAfter = await this._getDatabaseCount();
+
+    return this._buildResult(metrics, dbCountBefore, dbCountAfter);
   }
 
-  async getCurrentCount() {
-    const [result] = await connectionDB
-      .promise()
-      .query("SELECT COUNT(*) as count FROM merchants");
-    return result[0].count;
-  }
-
-  async fetchAndProcessData(attempt) {
-    const totalBefore = await this.getCurrentCount();
-
-    // Reset counters for this attempt
-    this.totalFromAPI = 0;
-    this.uniqueFromAPI = 0;
-    this.inserted = 0;
-    this.updated = 0;
-    this.errors = 0;
-
-    let allMerchantsAllPages = [];
-
-    // Fetch all pages
-    let totalRecords = 0; // Based on your target: 0
-    let pageSize = 500;
-    let pages = Math.ceil(totalRecords / pageSize) || 1; // At least 1 page
-
-    for (let page = 0; page < pages; page++) {
+  static async _fetchAllPages(pages, metrics) {
+    for (let page = 1; page <= pages; page++) {
       const requestBody = {
         provinceName: "",
         pageIndex: page,
-        pageSize: pageSize,
+        pageSize: MERCHANTS_CONFIG.DEFAULT_PAGE_SIZE,
       };
 
       const customHeaders = {
         Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
       };
 
-      try {
-        const response = await getMerchants(requestBody, customHeaders);
-        const merchants = response.data || [];
+      const merchants = await getMerchants(requestBody, customHeaders);
+      const allMerchantsCurPage = merchants.data;
+      metrics.allMerchantsAllPages =
+        metrics.allMerchantsAllPages.concat(allMerchantsCurPage);
 
-        MerchantsLogger.logPageInfo(page + 1, merchants);
-
-        allMerchantsAllPages = allMerchantsAllPages.concat(merchants);
-      } catch (error) {
-        console.error(`Error fetching page ${page + 1}:`, error.message);
-      }
+      MerchantsLogger.logPageInfo(page, allMerchantsCurPage);
     }
+  }
 
-    this.totalFromAPI = allMerchantsAllPages.length;
+  static _getUniqueMerchants(allMerchants) {
+    return allMerchants.filter(
+      (merchant, index, self) =>
+        index === self.findIndex((m) => m.recId === merchant.recId)
+    );
+  }
 
-    // Remove duplicates by recId
-    const uniqueMerchants = this._removeDuplicates(allMerchantsAllPages);
-    this.uniqueFromAPI = uniqueMerchants.length;
-    this.duplicatedDataAmount = this.totalFromAPI - this.uniqueFromAPI;
+  static async _processUniqueMerchants(uniqueMerchants, metrics) {
+    for (const merchant of uniqueMerchants) {
+      const result = await insertOrUpdateMerchant(merchant);
 
-    MerchantsLogger.logApiSummary(this.totalFromAPI, this.uniqueFromAPI);
+      switch (result.operation) {
+        case OPERATIONS.INSERT:
+          metrics.insertCount++;
+          metrics.newRecIds.push(merchant.recId);
+          break;
+        case OPERATIONS.UPDATE:
+          metrics.updateCount++;
+          metrics.updatedRecIds.push(merchant.recId);
+          break;
+        case OPERATIONS.ERROR:
+          metrics.errorCount++;
+          metrics.errorRecIds.push(merchant.recId);
+          break;
+      }
 
-    // Process unique merchants
-    await this._processUniqueMerchants(uniqueMerchants);
+      metrics.processedRecIds.add(merchant.recId);
+    }
+  }
 
-    const totalAfter = await this.getCurrentCount();
+  static async _getDatabaseCount() {
+    const [result] = await connectionDB
+      .promise()
+      .query("SELECT COUNT(*) as total FROM merchants");
+    return result[0].total;
+  }
 
+  static _buildResult(metrics, dbCountBefore, dbCountAfter) {
     return {
-      totalBefore,
-      totalAfter,
-      totalFromAPI: this.totalFromAPI,
-      uniqueFromAPI: this.uniqueFromAPI,
-      inserted: this.inserted,
-      updated: this.updated,
-      errors: this.errors,
-      duplicatedDataAmount: this.duplicatedDataAmount,
-      attempts: attempt,
+      // Database metrics
+      totalBefore: dbCountBefore,
+      totalAfter: dbCountAfter,
+      inserted: metrics.insertCount,
+      updated: metrics.updateCount,
+      errors: metrics.errorCount,
+      growth: dbCountAfter - dbCountBefore,
+
+      // API metrics
+      totalFromAPI: metrics.allMerchantsAllPages.length,
+      uniqueFromAPI: metrics.allMerchantsAllPages.filter(
+        (merchant, index, self) =>
+          index === self.findIndex((m) => m.recId === merchant.recId)
+      ).length,
+      duplicatedDataAmount:
+        metrics.allMerchantsAllPages.length -
+        metrics.insertCount -
+        metrics.updateCount,
+
+      // Record tracking
+      newRecIds: metrics.newRecIds,
+      updatedRecIds: metrics.updatedRecIds,
+      errorRecIds: metrics.errorRecIds,
+      processedRecIds: Array.from(metrics.processedRecIds),
+
+      // Additional insights
+      recordsInDbNotInAPI: dbCountBefore - metrics.updateCount,
+      totalProcessingOperations:
+        metrics.insertCount + metrics.updateCount + metrics.errorCount,
+
+      // For compatibility
+      allMerchantsAllPages: metrics.allMerchantsAllPages,
     };
-  }
-
-  _removeDuplicates(merchants) {
-    const seen = new Set();
-    return merchants.filter((merchant) => {
-      if (seen.has(merchant.recId)) {
-        return false;
-      }
-      seen.add(merchant.recId);
-      return true;
-    });
-  }
-
-  async _processUniqueMerchants(merchants) {
-    for (const merchant of merchants) {
-      try {
-        const result = await insertOrUpdateMerchant(merchant);
-
-        switch (result.operation) {
-          case OPERATIONS.INSERT:
-            this.inserted++;
-            break;
-          case OPERATIONS.UPDATE:
-            this.updated++;
-            break;
-          case OPERATIONS.ERROR:
-            this.errors++;
-            break;
-        }
-      } catch (error) {
-        console.error(
-          `Error processing merchant ${merchant.recId}:`,
-          error.message
-        );
-        this.errors++;
-      }
-    }
   }
 }
 
