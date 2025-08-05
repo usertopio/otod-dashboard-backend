@@ -1,37 +1,38 @@
 const { getNews } = require("../api/news");
 const { insertOrUpdateNews } = require("../db/newsDb");
-const NewsLogger = require("./newsLogger");
+const { connectionDB } = require("../../config/db/db.conf.js");
 const { NEWS_CONFIG, OPERATIONS } = require("../../utils/constants");
+const NewsLogger = require("./newsLogger");
 
 class NewsProcessor {
   static async fetchAndProcessData() {
-    // Calculate pages using constants
-    const totalRecords = NEWS_CONFIG?.TOTAL_RECORDS || 5;
-    const pageSize = NEWS_CONFIG?.PAGE_SIZE || 500;
-    const pages = Math.ceil(totalRecords / pageSize);
+    const pages = Math.ceil(
+      NEWS_CONFIG.DEFAULT_TOTAL_RECORDS / NEWS_CONFIG.DEFAULT_PAGE_SIZE
+    );
 
-    // Initialize metrics
+    // Initialize counters
     const metrics = {
+      allNewsAllPages: [],
       insertCount: 0,
       updateCount: 0,
       errorCount: 0,
+      processedRecIds: new Set(),
       newRecIds: [],
       updatedRecIds: [],
       errorRecIds: [],
-      processedRecIds: new Set(),
-      allNewsAllPages: [],
     };
 
     // Get database count before processing
     const dbCountBefore = await this._getDatabaseCount();
 
-    // Fetch all pages
+    // Fetch data from all pages
     await this._fetchAllPages(pages, metrics);
 
-    // Get unique news (filter duplicates by recId)
-    const uniqueNews = this._getUniqueNews(metrics.allNewsAllPages);
-
     // Process unique news
+    const uniqueNews = this._getUniqueNews(metrics.allNewsAllPages);
+    NewsLogger.logApiSummary(metrics.allNewsAllPages.length, uniqueNews.length);
+
+    // Process each unique news
     await this._processUniqueNews(uniqueNews, metrics);
 
     // Get database count after processing
@@ -44,30 +45,20 @@ class NewsProcessor {
     for (let page = 1; page <= pages; page++) {
       const requestBody = {
         provinceName: "",
-        fromDate: "2024-10-01",
-        toDate: "2024-12-31",
         pageIndex: page,
-        pageSize: 500,
+        pageSize: NEWS_CONFIG.DEFAULT_PAGE_SIZE,
       };
 
       const customHeaders = {
         Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
       };
 
-      // Fetch news data from API
-      const newsResponse = await getNews(requestBody, customHeaders);
-      const newsData = newsResponse.data || [];
+      const news = await getNews(requestBody, customHeaders);
+      const allNewsCurPage = news.data;
+      metrics.allNewsAllPages = metrics.allNewsAllPages.concat(allNewsCurPage);
 
-      // Log page info
-      NewsLogger.logPageInfo(page, newsData);
-
-      // Add to all news
-      metrics.allNewsAllPages = metrics.allNewsAllPages.concat(newsData);
+      NewsLogger.logPageInfo(page, allNewsCurPage);
     }
-
-    // Log API summary
-    const uniqueCount = this._getUniqueNews(metrics.allNewsAllPages).length;
-    NewsLogger.logApiSummary(metrics.allNewsAllPages.length, uniqueCount);
   }
 
   static _getUniqueNews(allNews) {
@@ -101,7 +92,6 @@ class NewsProcessor {
   }
 
   static async _getDatabaseCount() {
-    const { connectionDB } = require("../../config/db/news.conf.js");
     const [result] = await connectionDB
       .promise()
       .query("SELECT COUNT(*) as total FROM news");
@@ -109,9 +99,7 @@ class NewsProcessor {
   }
 
   static _buildResult(metrics, dbCountBefore, dbCountAfter) {
-    const uniqueNews = this._getUniqueNews(metrics.allNewsAllPages);
-
-    const result = {
+    return {
       // Database metrics
       totalBefore: dbCountBefore,
       totalAfter: dbCountAfter,
@@ -122,8 +110,14 @@ class NewsProcessor {
 
       // API metrics
       totalFromAPI: metrics.allNewsAllPages.length,
-      uniqueFromAPI: uniqueNews.length,
-      duplicatedDataAmount: metrics.allNewsAllPages.length - uniqueNews.length,
+      uniqueFromAPI: metrics.allNewsAllPages.filter(
+        (news, index, self) =>
+          index === self.findIndex((n) => n.recId === news.recId)
+      ).length,
+      duplicatedDataAmount:
+        metrics.allNewsAllPages.length -
+        metrics.insertCount -
+        metrics.updateCount,
 
       // Record tracking
       newRecIds: metrics.newRecIds,
@@ -132,15 +126,13 @@ class NewsProcessor {
       processedRecIds: Array.from(metrics.processedRecIds),
 
       // Additional insights
+      recordsInDbNotInAPI: dbCountBefore - metrics.updateCount,
       totalProcessingOperations:
         metrics.insertCount + metrics.updateCount + metrics.errorCount,
-      recordsInDbNotInAPI: Math.max(
-        0,
-        dbCountBefore - metrics.processedRecIds.size
-      ),
-    };
 
-    return result;
+      // For compatibility
+      allNewsAllPages: metrics.allNewsAllPages,
+    };
   }
 }
 
