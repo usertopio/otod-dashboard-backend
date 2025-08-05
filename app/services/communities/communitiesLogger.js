@@ -8,15 +8,18 @@ class CommunitiesLogger {
   }
 
   // 🔧 EXACT MATCH: Attempt start like farmers
-  static logAttemptStart(attempt, maxAttempts, currentCount, targetCount) {
+  static logAttemptStart(attempt, maxAttempts) {
     console.log(`🔄 === ATTEMPT ${attempt}/${maxAttempts} ===`);
-    console.log(`📊 Current communities in DB: ${currentCount}/${targetCount}`);
+  }
 
-    if (currentCount >= targetCount) {
-      console.log(
-        `🔄 Target reached but continuing API call for fresh data...`
-      );
-    }
+  // 🔧 EXACT MATCH: Current status like farmers
+  static logCurrentStatus(currentCount, targetCount) {
+    console.log(`📊 Current communities in DB: ${currentCount}/${targetCount}`);
+  }
+
+  // 🔧 EXACT MATCH: Target reached but continuing like farmers
+  static logTargetReachedButContinuing() {
+    console.log(`🔄 Target reached but continuing API call for fresh data...`);
   }
 
   // 🔧 EXACT MATCH: Page info like farmers
@@ -32,81 +35,35 @@ class CommunitiesLogger {
   }
 
   // 🔧 EXACT MATCH: Attempt results like farmers
-  static logAttemptResults(attempt, inserted, updated, errors, totalAfter) {
+  static logAttemptResults(attempt, result) {
     console.log(`📈 Attempt ${attempt} completed:`);
-    console.log(`   ➕ Inserted: ${inserted}`);
-    console.log(`   🔄 Updated: ${updated}`);
-    console.log(`   ❌ Errors: ${errors}`);
-    console.log(`   📊 Total now: ${totalAfter}`);
-    console.log("");
-  }
-
-  // 🔧 EXACT MATCH: API metrics like farmers
-  static logApiMetrics(result) {
-    console.log(`📊 === API METRICS ===`);
-    console.log(
-      `📥 Record amount from current API call: ${result.totalFromAPI}`
-    );
-    console.log(
-      `🔍 Unique records from current API call: ${result.uniqueFromAPI}`
-    );
-    console.log(`🆕 New records amount: ${result.inserted}`);
-    console.log(`🔄 Duplicated data amount: ${result.duplicatedDataAmount}`);
-    console.log("");
-  }
-
-  // 🔧 EXACT MATCH: Database metrics like farmers
-  static logDatabaseMetrics(result) {
-    console.log(`📊 === DATABASE METRICS ===`);
-    console.log(`📊 Previous amount records in table: ${result.totalBefore}`);
-    console.log(`📈 Current amount records in table: ${result.totalAfter}`);
-    console.log(`➕ Records INSERTED: ${result.inserted}`);
-    console.log(`🔄 Records UPDATED: ${result.updated}`);
-    console.log(`❌ Records with ERRORS: ${result.errors}`);
-    console.log("");
-  }
-
-  // 🔧 EXACT MATCH: Additional insights like farmers
-  static logAdditionalInsights(result) {
-    console.log(`📊 === ADDITIONAL INSIGHTS ===`);
-    console.log(
-      `📋 Total processing operations: ${result.totalProcessingOperations}`
-    );
-    console.log(
-      `📍 Records in DB but not in current API: ${result.recordsInDbNotInAPI}`
-    );
-    console.log(`⏱️ Database growth: ${result.growth} records`);
-    console.log("");
-  }
-
-  // 🔧 EXACT MATCH: New record IDs like farmers
-  static logNewRecordIds(result) {
-    if (result.newRecIds && result.newRecIds.length > 0) {
-      console.log(`🆕 NEW REC_IDS INSERTED: [${result.newRecIds.join(", ")}]`);
-    } else {
-      console.log(`🆕 NEW REC_IDS INSERTED: None`);
-    }
-    console.log("==========================================");
+    console.log(`   ➕ Inserted: ${result.inserted}`);
+    console.log(`   🔄 Updated: ${result.updated}`);
+    console.log(`   ❌ Errors: ${result.errors}`);
+    console.log(`   📊 Total now: ${result.totalAfter}`);
     console.log("");
   }
 
   // 🔧 EXACT MATCH: Target reached like farmers
-  static logTargetReached(currentCount, targetCount, attempts) {
+  static logTargetReached(targetCount, attemptsUsed) {
     console.log(
-      `🎯 Target of ${targetCount} reached after ${attempts} attempts`
+      `🎯 Target of ${targetCount} reached after ${attemptsUsed} attempts ✅`
     );
-    console.log("");
   }
 
   // 🔧 EXACT MATCH: Final result like farmers
-  static logFinalResults(result) {
-    console.log("🏁 === FINAL RESULT ===");
-    console.log(`🎯 Target: ${result.target}`);
-    console.log(`📊 Achieved: ${result.achieved}`);
-    console.log(
-      `🔄 Attempts used: ${result.attemptsUsed}/${result.maxAttempts}`
-    );
-    console.log(`✅ Status: ${result.status}`);
+  static logFinalResults(
+    targetCount,
+    finalCount,
+    attemptsUsed,
+    maxAttempts,
+    status
+  ) {
+    console.log(`🏁 === FINAL RESULT ===`);
+    console.log(`🎯 Target: ${targetCount}`);
+    console.log(`📊 Achieved: ${finalCount}`);
+    console.log(`🔄 Attempts used: ${attemptsUsed}/${maxAttempts}`);
+    console.log(`✅ Status: ${status}`);
   }
 }
 
