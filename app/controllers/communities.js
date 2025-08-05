@@ -1,33 +1,32 @@
 const CommunitiesService = require("../services/communities/communitiesService");
 const { COMMUNITIES_CONFIG } = require("../utils/constants");
 
-class CommunitiesController {
-  static async fetchCommunitiesUntilTarget(req, res) {
-    try {
-      const targetCount =
-        (req.body && req.body.targetCount) ||
-        COMMUNITIES_CONFIG.DEFAULT_TARGET_COUNT;
-      const maxAttempts =
-        (req.body && req.body.maxAttempts) ||
-        COMMUNITIES_CONFIG.DEFAULT_MAX_ATTEMPTS;
+const fetchCommunitiesUntilTarget = async (req, res) => {
+  try {
+    const targetCount =
+      req.body.targetCount || COMMUNITIES_CONFIG.DEFAULT_TARGET_COUNT;
+    const maxAttempts =
+      req.body.maxAttempts || COMMUNITIES_CONFIG.DEFAULT_MAX_ATTEMPTS;
 
-      const result = await CommunitiesService.fetchCommunitiesUntilTarget(
-        targetCount,
-        maxAttempts
-      );
+    console.log(
+      `Starting fetchCommunitiesUntilTarget with target: ${targetCount}, max attempts: ${maxAttempts}`
+    );
 
-      return res.status(200).json(result);
-    } catch (error) {
-      console.error("Error in fetchCommunitiesUntilTarget:", error);
-      return res.status(500).json({
-        message: "Failed to fetch communities until target",
-        error: error.message,
-      });
-    }
+    const result = await CommunitiesService.fetchCommunitiesUntilTarget(
+      targetCount,
+      maxAttempts
+    );
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error in fetchCommunitiesUntilTarget:", error);
+    res.status(500).json({
+      error: "Failed to fetch communities data",
+      details: error.message,
+    });
   }
-}
+};
 
 module.exports = {
-  fetchCommunitiesUntilTarget:
-    CommunitiesController.fetchCommunitiesUntilTarget,
+  fetchCommunitiesUntilTarget,
 };
