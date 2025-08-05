@@ -63,34 +63,32 @@ exports.fetchMerchants = async (req, res) => {
   }
 };
 
-class MerchantsController {
-  static async fetchMerchantsUntilTarget(req, res) {
-    try {
-      const targetCount =
-        (req.body && req.body.targetCount) ||
-        MERCHANTS_CONFIG.DEFAULT_TARGET_COUNT ||
-        0;
-      const maxAttempts =
-        (req.body && req.body.maxAttempts) ||
-        MERCHANTS_CONFIG.DEFAULT_MAX_ATTEMPTS ||
-        5;
+const fetchMerchantsUntilTarget = async (req, res) => {
+  try {
+    const targetCount =
+      req.body.targetCount || MERCHANTS_CONFIG.DEFAULT_TARGET_COUNT;
+    const maxAttempts =
+      req.body.maxAttempts || MERCHANTS_CONFIG.DEFAULT_MAX_ATTEMPTS;
 
-      const result = await MerchantsService.fetchMerchantsUntilTarget(
-        targetCount,
-        maxAttempts
-      );
+    console.log(
+      `Starting fetchMerchantsUntilTarget with target: ${targetCount}, max attempts: ${maxAttempts}`
+    );
 
-      return res.status(200).json(result);
-    } catch (error) {
-      console.error("Error in fetchMerchantsUntilTarget:", error);
-      return res.status(500).json({
-        message: "Failed to fetch merchants until target",
-        error: error.message,
-      });
-    }
+    const result = await MerchantsService.fetchMerchantsUntilTarget(
+      targetCount,
+      maxAttempts
+    );
+
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error in fetchMerchantsUntilTarget:", error);
+    res.status(500).json({
+      error: "Failed to fetch merchants data",
+      details: error.message,
+    });
   }
-}
+};
 
 module.exports = {
-  fetchMerchantsUntilTarget: MerchantsController.fetchMerchantsUntilTarget,
+  fetchMerchantsUntilTarget,
 };
