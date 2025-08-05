@@ -76,7 +76,6 @@ class CommunitiesProcessor {
     );
   }
 
-  // 🔧 EXACT SAME PATTERN AS FARMERS
   static async _processUniqueCommunities(uniqueCommunities, metrics) {
     for (const community of uniqueCommunities) {
       const result = await insertOrUpdateCommunity(community);
@@ -108,7 +107,7 @@ class CommunitiesProcessor {
   }
 
   static _buildResult(metrics, dbCountBefore, dbCountAfter) {
-    const result = {
+    return {
       // Database metrics
       totalBefore: dbCountBefore,
       totalAfter: dbCountAfter,
@@ -123,13 +122,10 @@ class CommunitiesProcessor {
         (community, index, self) =>
           index === self.findIndex((c) => c.recId === community.recId)
       ).length,
-      // 🔧 FIXED: Calculate duplicated data correctly like farmers
       duplicatedDataAmount:
         metrics.allCommunitiesAllPages.length -
-        metrics.allCommunitiesAllPages.filter(
-          (community, index, self) =>
-            index === self.findIndex((c) => c.recId === community.recId)
-        ).length,
+        metrics.insertCount -
+        metrics.updateCount,
 
       // Record tracking
       newRecIds: metrics.newRecIds,
@@ -137,16 +133,14 @@ class CommunitiesProcessor {
       errorRecIds: metrics.errorRecIds,
       processedRecIds: Array.from(metrics.processedRecIds),
 
-      // Additional insights (like farmers)
+      // Additional insights
+      recordsInDbNotInAPI: dbCountBefore - metrics.updateCount,
       totalProcessingOperations:
         metrics.insertCount + metrics.updateCount + metrics.errorCount,
-      recordsInDbNotInAPI: Math.max(
-        0,
-        dbCountBefore - metrics.processedRecIds.size
-      ),
-    };
 
-    return result;
+      // For compatibility
+      allCommunitiesAllPages: metrics.allCommunitiesAllPages,
+    };
   }
 }
 
