@@ -1,128 +1,145 @@
 const { getOperations } = require("../api/operations");
 const { insertOrUpdateOperation } = require("../db/operationsDb");
-const { connectionDB } = require("../../config/db/operations.conf");
+const { connectionDB } = require("../../config/db/db.conf.js");
+const { OPERATIONS_CONFIG, OPERATIONS } = require("../../utils/constants");
 const OperationsLogger = require("./operationsLogger");
-const { OPERATIONS } = require("../../utils/constants");
 
 class OperationsProcessor {
-  constructor() {
-    this.totalFromAPI = 0;
-    this.uniqueFromAPI = 0;
-    this.inserted = 0;
-    this.updated = 0;
-    this.errors = 0;
-    this.duplicatedDataAmount = 0;
+  static async fetchAndProcessData() {
+    const pages = Math.ceil(
+      OPERATIONS_CONFIG.DEFAULT_TOTAL_RECORDS /
+        OPERATIONS_CONFIG.DEFAULT_PAGE_SIZE
+    );
+
+    // Initialize counters
+    const metrics = {
+      allOperationsAllPages: [],
+      insertCount: 0,
+      updateCount: 0,
+      errorCount: 0,
+      processedRecIds: new Set(),
+      newRecIds: [],
+      updatedRecIds: [],
+      errorRecIds: [],
+    };
+
+    // Get database count before processing
+    const dbCountBefore = await this._getDatabaseCount();
+
+    // Fetch data from all pages
+    await this._fetchAllPages(pages, metrics);
+
+    // Process unique operations
+    const uniqueOperations = this._getUniqueOperations(
+      metrics.allOperationsAllPages
+    );
+    OperationsLogger.logApiSummary(
+      metrics.allOperationsAllPages.length,
+      uniqueOperations.length
+    );
+
+    // Process each unique operation
+    await this._processUniqueOperations(uniqueOperations, metrics);
+
+    // Get database count after processing
+    const dbCountAfter = await this._getDatabaseCount();
+
+    return this._buildResult(metrics, dbCountBefore, dbCountAfter);
   }
 
-  async getCurrentCount() {
-    const [result] = await connectionDB
-      .promise()
-      .query("SELECT COUNT(*) as count FROM operations");
-    return result[0].count;
-  }
-
-  async fetchAndProcessData(attempt) {
-    const totalBefore = await this.getCurrentCount();
-
-    // Reset counters for this attempt
-    this.totalFromAPI = 0;
-    this.uniqueFromAPI = 0;
-    this.inserted = 0;
-    this.updated = 0;
-    this.errors = 0;
-
-    let allOperationsAllPages = [];
-
-    // Fetch all pages
-    let totalRecords = 0; // Based on your target: 0
-    let pageSize = 500;
-    let pages = Math.ceil(totalRecords / pageSize) || 1; // At least 1 page
-
-    for (let page = 0; page < pages; page++) {
+  static async _fetchAllPages(pages, metrics) {
+    for (let page = 1; page <= pages; page++) {
       const requestBody = {
         provinceName: "",
         pageIndex: page,
-        pageSize: pageSize,
+        pageSize: OPERATIONS_CONFIG.DEFAULT_PAGE_SIZE,
       };
 
       const customHeaders = {
         Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
       };
 
-      try {
-        const response = await getOperations(requestBody, customHeaders);
-        const operations = response.data || [];
+      const operations = await getOperations(requestBody, customHeaders);
+      const allOperationsCurPage = operations.data;
+      metrics.allOperationsAllPages =
+        metrics.allOperationsAllPages.concat(allOperationsCurPage);
 
-        OperationsLogger.logPageInfo(page + 1, operations);
-
-        allOperationsAllPages = allOperationsAllPages.concat(operations);
-      } catch (error) {
-        console.error(`Error fetching page ${page + 1}:`, error.message);
-      }
+      OperationsLogger.logPageInfo(page, allOperationsCurPage);
     }
+  }
 
-    this.totalFromAPI = allOperationsAllPages.length;
+  static _getUniqueOperations(allOperations) {
+    return allOperations.filter(
+      (operation, index, self) =>
+        index === self.findIndex((o) => o.recId === operation.recId)
+    );
+  }
 
-    // Remove duplicates by recId
-    const uniqueOperations = this._removeDuplicates(allOperationsAllPages);
-    this.uniqueFromAPI = uniqueOperations.length;
-    this.duplicatedDataAmount = this.totalFromAPI - this.uniqueFromAPI;
+  static async _processUniqueOperations(uniqueOperations, metrics) {
+    for (const operation of uniqueOperations) {
+      const result = await insertOrUpdateOperation(operation);
 
-    OperationsLogger.logApiSummary(this.totalFromAPI, this.uniqueFromAPI);
+      switch (result.operation) {
+        case OPERATIONS.INSERT:
+          metrics.insertCount++;
+          metrics.newRecIds.push(operation.recId);
+          break;
+        case OPERATIONS.UPDATE:
+          metrics.updateCount++;
+          metrics.updatedRecIds.push(operation.recId);
+          break;
+        case OPERATIONS.ERROR:
+          metrics.errorCount++;
+          metrics.errorRecIds.push(operation.recId);
+          break;
+      }
 
-    // Process unique operations
-    await this._processUniqueOperations(uniqueOperations);
+      metrics.processedRecIds.add(operation.recId);
+    }
+  }
 
-    const totalAfter = await this.getCurrentCount();
+  static async _getDatabaseCount() {
+    const [result] = await connectionDB
+      .promise()
+      .query("SELECT COUNT(*) as total FROM operations");
+    return result[0].total;
+  }
 
+  static _buildResult(metrics, dbCountBefore, dbCountAfter) {
     return {
-      totalBefore,
-      totalAfter,
-      totalFromAPI: this.totalFromAPI,
-      uniqueFromAPI: this.uniqueFromAPI,
-      inserted: this.inserted,
-      updated: this.updated,
-      errors: this.errors,
-      duplicatedDataAmount: this.duplicatedDataAmount,
-      attempts: attempt,
+      // Database metrics
+      totalBefore: dbCountBefore,
+      totalAfter: dbCountAfter,
+      inserted: metrics.insertCount,
+      updated: metrics.updateCount,
+      errors: metrics.errorCount,
+      growth: dbCountAfter - dbCountBefore,
+
+      // API metrics
+      totalFromAPI: metrics.allOperationsAllPages.length,
+      uniqueFromAPI: metrics.allOperationsAllPages.filter(
+        (operation, index, self) =>
+          index === self.findIndex((o) => o.recId === operation.recId)
+      ).length,
+      duplicatedDataAmount:
+        metrics.allOperationsAllPages.length -
+        metrics.insertCount -
+        metrics.updateCount,
+
+      // Record tracking
+      newRecIds: metrics.newRecIds,
+      updatedRecIds: metrics.updatedRecIds,
+      errorRecIds: metrics.errorRecIds,
+      processedRecIds: Array.from(metrics.processedRecIds),
+
+      // Additional insights
+      recordsInDbNotInAPI: dbCountBefore - metrics.updateCount,
+      totalProcessingOperations:
+        metrics.insertCount + metrics.updateCount + metrics.errorCount,
+
+      // For compatibility
+      allOperationsAllPages: metrics.allOperationsAllPages,
     };
-  }
-
-  _removeDuplicates(operations) {
-    const seen = new Set();
-    return operations.filter((operation) => {
-      if (seen.has(operation.recId)) {
-        return false;
-      }
-      seen.add(operation.recId);
-      return true;
-    });
-  }
-
-  async _processUniqueOperations(operations) {
-    for (const operation of operations) {
-      try {
-        const result = await insertOrUpdateOperation(operation);
-
-        switch (result.operation) {
-          case OPERATIONS.INSERT:
-            this.inserted++;
-            break;
-          case OPERATIONS.UPDATE:
-            this.updated++;
-            break;
-          case OPERATIONS.ERROR:
-            this.errors++;
-            break;
-        }
-      } catch (error) {
-        console.error(
-          `Error processing operation ${operation.recId}:`,
-          error.message
-        );
-        this.errors++;
-      }
-    }
   }
 }
 
