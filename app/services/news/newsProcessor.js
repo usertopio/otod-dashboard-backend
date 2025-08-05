@@ -47,6 +47,9 @@ class NewsProcessor {
         provinceName: "",
         pageIndex: page,
         pageSize: NEWS_CONFIG.DEFAULT_PAGE_SIZE,
+        // 🔧 ADD: Required date parameters
+        fromDate: "2024-01-01", // or use dynamic date
+        toDate: "2024-12-31",   // or use current date
       };
 
       const customHeaders = {
