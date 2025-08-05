@@ -1,75 +1,75 @@
+const { connectionDB } = require("../../config/db/db.conf.js");
+const { MERCHANTS_CONFIG, STATUS } = require("../../utils/constants");
 const MerchantsProcessor = require("./merchantsProcessor");
 const MerchantsLogger = require("./merchantsLogger");
-const { MERCHANTS_CONFIG } = require("../../utils/constants");
 
 class MerchantsService {
   static async fetchMerchantsUntilTarget(targetCount, maxAttempts) {
-    const processor = new MerchantsProcessor();
+    let attempt = 1;
+    let currentCount = 0;
+    let attemptsUsed = 0;
 
-    MerchantsLogger.logTargetStart(targetCount, maxAttempts);
+    console.log(
+      `🎯 Target: ${targetCount} merchants, Max attempts: ${maxAttempts}`
+    );
 
-    let currentAttempt = 1;
-    let result = null;
+    // Main processing loop
+    while (attempt <= maxAttempts) {
+      MerchantsLogger.logAttemptStart(attempt, maxAttempts);
 
-    while (currentAttempt <= maxAttempts) {
-      const currentCount = await processor.getCurrentCount();
+      // Get current count before this attempt
+      currentCount = await this._getDatabaseCount();
+      MerchantsLogger.logCurrentStatus(currentCount, targetCount);
 
-      MerchantsLogger.logAttemptStart(
-        currentAttempt,
-        maxAttempts,
-        currentCount,
-        targetCount
-      );
+      // Always make API call
+      attemptsUsed++;
+      const result = await MerchantsProcessor.fetchAndProcessData();
 
-      if (currentCount >= targetCount && currentAttempt > 1) {
-        MerchantsLogger.logTargetReachedButContinuing();
-      }
+      // Log detailed metrics for this attempt
+      MerchantsLogger.logAttemptResults(attempt, result);
 
-      result = await processor.fetchAndProcessData(currentAttempt);
+      currentCount = result.totalAfter;
+      attempt++;
 
-      MerchantsLogger.logAttemptResults(
-        currentAttempt,
-        result.inserted,
-        result.updated,
-        result.errors,
-        result.totalAfter
-      );
-
-      if (result.totalAfter >= targetCount) {
-        console.log(
-          `🎯 Target of ${targetCount} reached after ${currentAttempt} attempts ✅`
-        );
+      // Stop when target is reached
+      if (currentCount >= targetCount) {
+        MerchantsLogger.logTargetReached(targetCount, attemptsUsed);
         break;
       }
-
-      currentAttempt++;
     }
 
-    if (result && result.totalAfter < targetCount) {
-      console.log(
-        `⚠️ Target not reached after ${maxAttempts} attempts. Current: ${result.totalAfter}/${targetCount}`
-      );
-    }
+    return this._buildFinalResult(targetCount, attemptsUsed, maxAttempts);
+  }
 
-    if (result) {
-      MerchantsLogger.logApiMetrics(result);
-      MerchantsLogger.logDatabaseMetrics(result);
-      MerchantsLogger.logAdditionalInsights(result);
-    }
+  static async _getDatabaseCount() {
+    const [result] = await connectionDB
+      .promise()
+      .query("SELECT COUNT(*) as total FROM merchants");
+    return result[0].total;
+  }
 
-    return (
-      result || {
-        totalBefore: 0,
-        totalAfter: 0,
-        totalFromAPI: 0,
-        uniqueFromAPI: 0,
-        inserted: 0,
-        updated: 0,
-        errors: 0,
-        duplicatedDataAmount: 0,
-        attempts: currentAttempt - 1,
-      }
+  static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
+    const finalCount = await this._getDatabaseCount();
+    const status =
+      finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+
+    MerchantsLogger.logFinalResults(
+      targetCount,
+      finalCount,
+      attemptsUsed,
+      maxAttempts,
+      status
     );
+
+    return {
+      message: `Fetch loop completed - ${status}`,
+      target: targetCount,
+      achieved: finalCount,
+      attemptsUsed: attemptsUsed,
+      maxAttempts: maxAttempts,
+      status: status,
+      reachedTarget: finalCount >= targetCount,
+    };
   }
 }
 
