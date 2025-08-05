@@ -4,86 +4,41 @@ const NewsProcessor = require("./newsProcessor");
 const NewsLogger = require("./newsLogger");
 
 class NewsService {
-  static async fetchNewsUntilTarget(
-    targetCount = NEWS_CONFIG?.DEFAULT_TARGET_COUNT || 5, // 🔧 FIXED: Add fallback
-    maxAttempts = NEWS_CONFIG?.DEFAULT_MAX_ATTEMPTS || 5 // 🔧 FIXED: Add fallback
-  ) {
-    NewsLogger.logTargetStart(targetCount, maxAttempts);
-
-    let currentAttempt = 0;
+  static async fetchNewsUntilTarget(targetCount, maxAttempts) {
+    let attempt = 1;
     let currentCount = 0;
-    let allResults = [];
+    let attemptsUsed = 0;
 
-    while (currentAttempt < maxAttempts) {
-      currentAttempt++;
+    console.log(`🎯 Target: ${targetCount} news, Max attempts: ${maxAttempts}`);
 
-      // Check current database count
+    // Main processing loop
+    while (attempt <= maxAttempts) {
+      NewsLogger.logAttemptStart(attempt, maxAttempts);
+
+      // Get current count before this attempt
       currentCount = await this._getDatabaseCount();
+      NewsLogger.logCurrentStatus(currentCount, targetCount);
 
-      NewsLogger.logAttemptStart(
-        currentAttempt,
-        maxAttempts,
-        currentCount,
-        targetCount
-      );
-
-      // If we've reached the target, continue for fresh data (like farmers)
-      if (currentCount >= targetCount) {
-        console.log(
-          `🔄 Target reached but continuing API call for fresh data...`
-        );
-      }
-
-      // Process this attempt
+      // Always make API call
+      attemptsUsed++;
       const result = await NewsProcessor.fetchAndProcessData();
-      allResults.push(result);
 
-      // Log attempt results
-      NewsLogger.logAttemptResults(
-        currentAttempt,
-        result.inserted,
-        result.updated,
-        result.errors,
-        result.totalAfter
-      );
+      // 🔧 FIX: Should be logAttemptResults, NOT logApiMetrics
+      NewsLogger.logAttemptResults(attempt, result); // ✅ Correct method
 
-      // Log detailed metrics
-      NewsLogger.logApiMetrics(result);
-      NewsLogger.logDatabaseMetrics(result);
-      NewsLogger.logAdditionalInsights(result);
-      NewsLogger.logNewRecordIds(result);
+      currentCount = result.totalAfter;
+      attempt++;
 
-      // Check if we reached target after this attempt
-      if (result.totalAfter >= targetCount) {
-        NewsLogger.logTargetReached(
-          result.totalAfter,
-          targetCount,
-          currentAttempt
-        );
+      // Stop when target is reached
+      if (currentCount >= targetCount) {
+        NewsLogger.logTargetReached(targetCount, attemptsUsed);
         break;
       }
     }
 
-    // Final count and results
-    const finalCount = await this._getDatabaseCount();
-    const finalResult = {
-      message:
-        finalCount >= targetCount
-          ? "Fetch loop completed - SUCCESS"
-          : "Fetch loop completed - INCOMPLETE",
-      target: targetCount,
-      achieved: finalCount,
-      attemptsUsed: currentAttempt,
-      maxAttempts: maxAttempts,
-      status: finalCount >= targetCount ? "SUCCESS" : "INCOMPLETE",
-      reachedTarget: finalCount >= targetCount,
-    };
-
-    NewsLogger.logFinalResults(finalResult);
-    return finalResult;
+    return this._buildFinalResult(targetCount, attemptsUsed, maxAttempts);
   }
 
-  // Get current database count
   static async _getDatabaseCount() {
     const [result] = await connectionDB
       .promise()
