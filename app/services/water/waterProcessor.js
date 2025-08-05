@@ -1,6 +1,6 @@
 const { getWaterUsageSummaryByMonth } = require("../api/water");
 const { insertOrUpdateWater } = require("../db/waterDb");
-const { connectionDB } = require("../../config/db/water.conf");
+const { connectionDB } = require("../../config/db/db.conf");
 const WaterLogger = require("./waterLogger");
 const { OPERATIONS } = require("../../utils/constants");
 

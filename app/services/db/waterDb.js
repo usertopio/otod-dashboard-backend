@@ -1,4 +1,4 @@
-const { connectionDB } = require("../../config/db/water.conf.js");
+const { connectionDB } = require("../../config/db/db.conf.js");
 const { OPERATIONS } = require("../../utils/constants");
 
 // 🔧 Reference lookup function for province codes
@@ -54,21 +54,23 @@ const insertOrUpdateWater = async (water) => {
     // Convert province name to code
     const provinceCode = await convertProvinceNameToCode(water.provinceName);
 
-    // Check if water record already exists based on unique combination
+    // Check if water record already exists - ADD STR_TO_DATE
     const [existing] = await connectionDB.promise().query(
       `SELECT id FROM water 
-         WHERE crop_year = ? AND water_province_code = ? AND oper_month = ? 
+         WHERE crop_year = ? AND water_province_code = ? 
+         AND oper_month = STR_TO_DATE(CONCAT(?, '-01'), '%Y-%m-%d')
          LIMIT 1`,
-      [water.cropYear, provinceCode, water.operMonth]
+      [water.cropYear, provinceCode, water.operMonth] // "2025-07" becomes "2025-07-01"
     );
 
     if (existing.length > 0) {
-      // UPDATE existing water record
+      // UPDATE existing water record - ADD STR_TO_DATE
       await connectionDB.promise().query(
         `UPDATE water SET 
          total_litre = ?, 
          fetch_at = NOW()
-         WHERE crop_year = ? AND water_province_code = ? AND oper_month = ?`,
+         WHERE crop_year = ? AND water_province_code = ? 
+         AND oper_month = STR_TO_DATE(CONCAT(?, '-01'), '%Y-%m-%d')`,
         [water.totalLitre || 0, water.cropYear, provinceCode, water.operMonth]
       );
 
@@ -77,12 +79,12 @@ const insertOrUpdateWater = async (water) => {
         water: `${water.provinceName}-${water.operMonth}`,
       };
     } else {
-      // INSERT new water record
+      // INSERT new water record - ADD STR_TO_DATE
       await connectionDB.promise().query(
         `INSERT INTO water 
          (crop_year, water_province_code, oper_month, total_litre, fetch_at) 
-         VALUES (?, ?, ?, ?, NOW())`,
-        [water.cropYear, provinceCode, water.operMonth, water.totalLitre || 0]
+         VALUES (?, ?, STR_TO_DATE(CONCAT(?, '-01'), '%Y-%m-%d'), ?, NOW())`,
+        [water.cropYear, provinceCode, water.operMonth, water.totalLitre || 0] // "2025-07" becomes "2025-07-01"
       );
 
       return {
