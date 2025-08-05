@@ -1,7 +1,7 @@
+const { connectionDB } = require("../../config/db/db.conf.js");
+const { NEWS_CONFIG, STATUS } = require("../../utils/constants");
 const NewsProcessor = require("./newsProcessor");
 const NewsLogger = require("./newsLogger");
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { NEWS_CONFIG } = require("../../utils/constants");
 
 class NewsService {
   static async fetchNewsUntilTarget(
@@ -89,6 +89,30 @@ class NewsService {
       .promise()
       .query("SELECT COUNT(*) as total FROM news");
     return result[0].total;
+  }
+
+  static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
+    const finalCount = await this._getDatabaseCount();
+    const status =
+      finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+
+    NewsLogger.logFinalResults(
+      targetCount,
+      finalCount,
+      attemptsUsed,
+      maxAttempts,
+      status
+    );
+
+    return {
+      message: `Fetch loop completed - ${status}`,
+      target: targetCount,
+      achieved: finalCount,
+      attemptsUsed: attemptsUsed,
+      maxAttempts: maxAttempts,
+      status: status,
+      reachedTarget: finalCount >= targetCount,
+    };
   }
 }
 
