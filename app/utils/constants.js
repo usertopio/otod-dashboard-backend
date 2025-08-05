@@ -4,14 +4,22 @@ const OPERATIONS = {
   ERROR: "ERROR",
 };
 
+// 🔧 ADD: Missing STATUS constant
+const STATUS = {
+  SUCCESS: "SUCCESS",
+  INCOMPLETE: "INCOMPLETE",
+};
+
 const NEWS_CONFIG = {
   DEFAULT_TARGET_COUNT: 0,
   DEFAULT_MAX_ATTEMPTS: 5,
 };
 
 const FARMERS_CONFIG = {
-  DEFAULT_TARGET_COUNT: 0,
-  DEFAULT_MAX_ATTEMPTS: 5,
+  DEFAULT_TARGET_COUNT: 1114,
+  DEFAULT_MAX_ATTEMPTS: 10,
+  DEFAULT_TOTAL_RECORDS: 1114, // 🔧 ADD: Also add this for farmers processor
+  DEFAULT_PAGE_SIZE: 500, // 🔧 ADD: Also add this for farmers processor
 };
 
 const COMMUNITIES_CONFIG = {
@@ -46,6 +54,7 @@ const WATER_CONFIG = {
 
 module.exports = {
   OPERATIONS,
+  STATUS, // 🔧 ADD: Export STATUS
   NEWS_CONFIG,
   FARMERS_CONFIG,
   COMMUNITIES_CONFIG,
