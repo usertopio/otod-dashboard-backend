@@ -4,80 +4,43 @@ const CommunitiesProcessor = require("./communitiesProcessor");
 const CommunitiesLogger = require("./communitiesLogger");
 
 class CommunitiesService {
-  static async fetchCommunitiesUntilTarget(
-    targetCount = COMMUNITIES_CONFIG.DEFAULT_TARGET_COUNT,
-    maxAttempts = COMMUNITIES_CONFIG.DEFAULT_MAX_ATTEMPTS
-  ) {
-    CommunitiesLogger.logTargetStart(targetCount, maxAttempts);
-
-    let currentAttempt = 0;
+  static async fetchCommunitiesUntilTarget(targetCount, maxAttempts) {
+    let attempt = 1;
     let currentCount = 0;
-    let allResults = [];
+    let attemptsUsed = 0;
 
-    while (currentAttempt < maxAttempts) {
-      currentAttempt++;
+    console.log(
+      `🎯 Target: ${targetCount} communities, Max attempts: ${maxAttempts}`
+    );
 
-      // Check current database count
+    // Main processing loop
+    while (attempt <= maxAttempts) {
+      CommunitiesLogger.logAttemptStart(attempt, maxAttempts);
+
+      // Get current count before this attempt
       currentCount = await this._getDatabaseCount();
+      CommunitiesLogger.logCurrentStatus(currentCount, targetCount);
 
-      CommunitiesLogger.logAttemptStart(
-        currentAttempt,
-        maxAttempts,
-        currentCount,
-        targetCount
-      );
-
-      // Process this attempt
+      // Always make API call
+      attemptsUsed++;
       const result = await CommunitiesProcessor.fetchAndProcessData();
-      allResults.push(result);
 
-      CommunitiesLogger.logAttemptResults(
-        currentAttempt,
-        result.inserted,
-        result.updated,
-        result.errors,
-        result.totalAfter
-      );
+      // 🔧 FIX: Make sure this calls the correct method
+      CommunitiesLogger.logAttemptResults(attempt, result); // ✅ Not logApiMetrics
 
-      CommunitiesLogger.logApiMetrics(result);
-      CommunitiesLogger.logDatabaseMetrics(result);
-      CommunitiesLogger.logAdditionalInsights(result);
-      CommunitiesLogger.logNewRecordIds(result);
+      currentCount = result.totalAfter;
+      attempt++;
 
-      // Check if we reached target after this attempt
-      if (result.totalAfter >= targetCount) {
-        CommunitiesLogger.logTargetReached(
-          result.totalAfter,
-          targetCount,
-          currentAttempt
-        );
+      // Stop when target is reached
+      if (currentCount >= targetCount) {
+        CommunitiesLogger.logTargetReached(targetCount, attemptsUsed);
         break;
       }
     }
 
-    // Final count and results
-    const finalCount = await this._getDatabaseCount();
-
-    // 🔧 FIXED: Build result in exact farmers format
-    const finalResult = {
-      // 🔧 EXACT MATCH: Same fields as farmers response
-      message:
-        finalCount >= targetCount
-          ? "Fetch loop completed - SUCCESS"
-          : "Fetch loop completed - INCOMPLETE",
-      target: targetCount,
-      achieved: finalCount,
-      attemptsUsed: currentAttempt,
-      maxAttempts: maxAttempts,
-      status: finalCount >= targetCount ? "SUCCESS" : "INCOMPLETE",
-      reachedTarget: finalCount >= targetCount, // 🔧 ADD: This field from farmers
-    };
-
-    CommunitiesLogger.logFinalResults(finalResult);
-    return finalResult;
+    return this._buildFinalResult(targetCount, attemptsUsed, maxAttempts);
   }
 
-  // 🔧 SAME AS FARMERS: Get current database count
   static async _getDatabaseCount() {
     const [result] = await connectionDB
       .promise()
