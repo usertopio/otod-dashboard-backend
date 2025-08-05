@@ -6,8 +6,11 @@ class MerchantsLogger {
     console.log("");
   }
 
-  static logAttemptStart(attempt, maxAttempts, currentCount, targetCount) {
+  static logAttemptStart(attempt, maxAttempts) {
     console.log(`🔄 === ATTEMPT ${attempt}/${maxAttempts} ===`);
+  }
+
+  static logCurrentStatus(currentCount, targetCount) {
     console.log(`📊 Current merchants in DB: ${currentCount}/${targetCount}`);
   }
 
@@ -25,62 +28,33 @@ class MerchantsLogger {
     console.log(`📊 Total from API: ${totalFromAPI}, Unique: ${uniqueFromAPI}`);
   }
 
-  static logAttemptResults(attempt, inserted, updated, errors, totalAfter) {
+  static logAttemptResults(attempt, result) {
     console.log(`📈 Attempt ${attempt} completed:`);
-    console.log(`   ➕ Inserted: ${inserted}`);
-    console.log(`   🔄 Updated: ${updated}`);
-    console.log(`   ❌ Errors: ${errors}`);
-    console.log(`   📊 Total now: ${totalAfter}`);
+    console.log(`   ➕ Inserted: ${result.inserted}`);
+    console.log(`   🔄 Updated: ${result.updated}`);
+    console.log(`   ❌ Errors: ${result.errors}`);
+    console.log(`   📊 Total now: ${result.totalAfter}`);
     console.log("");
   }
 
-  static logApiMetrics(result) {
-    console.log(`📊 === API METRICS ===`);
+  static logTargetReached(targetCount, attemptsUsed) {
     console.log(
-      `📥 Record amount from current API call: ${result.totalFromAPI}`
+      `🎯 Target of ${targetCount} reached after ${attemptsUsed} attempts ✅`
     );
-    console.log(
-      `🔍 Unique records from current API call: ${result.uniqueFromAPI}`
-    );
-    console.log(`🆕 New records amount: ${result.inserted}`);
-    console.log(`🔄 Duplicated data amount: ${result.duplicatedDataAmount}`);
-    console.log("");
   }
 
-  static logDatabaseMetrics(result) {
-    console.log(`📊 === DATABASE METRICS ===`);
-    console.log(`📊 Previous amount records in table: ${result.totalBefore}`);
-    console.log(`📈 Current amount records in table: ${result.totalAfter}`);
-    console.log(`➕ Records INSERTED: ${result.inserted}`);
-    console.log(`🔄 Records UPDATED: ${result.updated}`);
-    console.log(`❌ Records with ERRORS: ${result.errors}`);
-    console.log("");
-  }
-
-  static logAdditionalInsights(result) {
-    console.log(`📊 === ADDITIONAL INSIGHTS ===`);
-    console.log(`🔄 Total attempts made: ${result.attempts}`);
-    console.log(
-      `📈 Net records added: ${result.totalAfter - result.totalBefore}`
-    );
-
-    if (result.uniqueFromAPI > 0) {
-      const successRate = (
-        ((result.inserted + result.updated) / result.uniqueFromAPI) *
-        100
-      ).toFixed(1);
-      console.log(`✅ Success rate: ${successRate}%`);
-    }
-
-    if (result.duplicatedDataAmount > 0) {
-      const duplicateRate = (
-        (result.duplicatedDataAmount / result.totalFromAPI) *
-        100
-      ).toFixed(1);
-      console.log(`🔄 Duplicate rate: ${duplicateRate}%`);
-    }
-
-    console.log("");
+  static logFinalResults(
+    targetCount,
+    finalCount,
+    attemptsUsed,
+    maxAttempts,
+    status
+  ) {
+    console.log(`🏁 === FINAL RESULT ===`);
+    console.log(`🎯 Target: ${targetCount}`);
+    console.log(`📊 Achieved: ${finalCount}`);
+    console.log(`🔄 Attempts used: ${attemptsUsed}/${maxAttempts}`);
+    console.log(`✅ Status: ${status}`);
   }
 }
 
