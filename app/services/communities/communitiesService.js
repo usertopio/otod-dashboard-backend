@@ -4,7 +4,35 @@ const CommunitiesProcessor = require("./communitiesProcessor");
 const CommunitiesLogger = require("./communitiesLogger");
 
 class CommunitiesService {
+  // 🔧 ADD: Reset only communities table
+  static async resetOnlyCommunitiesTable() {
+    const connection = connectionDB.promise();
+
+    try {
+      console.log("🧹 Resetting ONLY communities table...");
+
+      // Disable foreign key checks
+      await connection.query("SET FOREIGN_KEY_CHECKS = 0");
+
+      // Delete only communities
+      await connection.query("TRUNCATE TABLE communities");
+
+      // Re-enable foreign key checks
+      await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+
+      console.log("✅ Only communities table reset - next ID will be 1");
+      return { success: true, message: "Only communities table reset" };
+    } catch (error) {
+      await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+      console.error("❌ Error resetting communities table:", error);
+      throw error;
+    }
+  }
+
   static async fetchCommunitiesUntilTarget(targetCount, maxAttempts) {
+    // 🔧 ADD: Reset communities table before fetching
+    await this.resetOnlyCommunitiesTable();
+
     let attempt = 1;
     let currentCount = 0;
     let attemptsUsed = 0;
@@ -25,8 +53,8 @@ class CommunitiesService {
       attemptsUsed++;
       const result = await CommunitiesProcessor.fetchAndProcessData();
 
-      // 🔧 FIX: Make sure this calls the correct method
-      CommunitiesLogger.logAttemptResults(attempt, result); // ✅ Not logApiMetrics
+      // Log detailed metrics for this attempt
+      CommunitiesLogger.logAttemptResults(attempt, result);
 
       currentCount = result.totalAfter;
       attempt++;
