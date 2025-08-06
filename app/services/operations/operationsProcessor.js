@@ -54,8 +54,8 @@ class OperationsProcessor {
         provinceName: "",
         pageIndex: page,
         pageSize: OPERATIONS_CONFIG.DEFAULT_PAGE_SIZE,
-        fromDate: OPERATIONS_CONFIG.DEFAULT_FROM_DATE,
-        toDate: OPERATIONS_CONFIG.DEFAULT_TO_DATE,
+        fromDate: OPERATIONS_CONFIG.DEFAULT_FROM_DATE || "2024-01-01",
+        toDate: OPERATIONS_CONFIG.DEFAULT_TO_DATE || "2024-12-31",
       };
 
       const customHeaders = {
