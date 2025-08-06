@@ -1,39 +1,52 @@
 const { getWaterUsageSummaryByMonth } = require("../api/water");
 const { insertOrUpdateWater } = require("../db/waterDb");
-const { connectionDB } = require("../../config/db/db.conf");
+const { connectionDB } = require("../../config/db/db.conf.js");
+const { WATER_CONFIG, OPERATIONS } = require("../../utils/constants");
 const WaterLogger = require("./waterLogger");
-const { OPERATIONS } = require("../../utils/constants");
 
 class WaterProcessor {
-  constructor() {
-    this.totalFromAPI = 0;
-    this.uniqueFromAPI = 0;
-    this.inserted = 0;
-    this.updated = 0;
-    this.errors = 0;
-    this.duplicatedDataAmount = 0;
+  static async fetchAndProcessData() {
+    // Water API doesn't use pagination, so we just make one call
+    const pages = 1;
+
+    // Initialize counters
+    const metrics = {
+      allWaterAllPages: [],
+      insertCount: 0,
+      updateCount: 0,
+      errorCount: 0,
+      processedRecIds: new Set(),
+      newRecIds: [],
+      updatedRecIds: [],
+      errorRecIds: [],
+    };
+
+    // Get database count before processing
+    const dbCountBefore = await this._getDatabaseCount();
+
+    // Fetch data from API (single call)
+    await this._fetchAllPages(pages, metrics);
+
+    // Process unique water records
+    const uniqueWater = this._getUniqueWater(metrics.allWaterAllPages);
+    WaterLogger.logApiSummary(
+      metrics.allWaterAllPages.length,
+      uniqueWater.length
+    );
+
+    // Process each unique water record
+    await this._processUniqueWater(uniqueWater, metrics);
+
+    // Get database count after processing
+    const dbCountAfter = await this._getDatabaseCount();
+
+    return this._buildResult(metrics, dbCountBefore, dbCountAfter);
   }
 
-  async getCurrentCount() {
-    const [result] = await connectionDB
-      .promise()
-      .query("SELECT COUNT(*) as count FROM water");
-    return result[0].count;
-  }
-
-  async fetchAndProcessData(attempt) {
-    const totalBefore = await this.getCurrentCount();
-
-    // Reset counters for this attempt
-    this.totalFromAPI = 0;
-    this.uniqueFromAPI = 0;
-    this.inserted = 0;
-    this.updated = 0;
-    this.errors = 0;
-
-    // Single API call - GetWaterUsageSummaryByMonth only
+  static async _fetchAllPages(pages, metrics) {
+    // Single API call for water data
     const requestBody = {
-      cropYear: 2024,
+      cropYear: WATER_CONFIG.DEFAULT_CROP_YEAR || 2024,
       provinceName: "",
     };
 
@@ -41,84 +54,103 @@ class WaterProcessor {
       Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
     };
 
-    let allWaterData = [];
+    const waterResponse = await getWaterUsageSummaryByMonth(
+      requestBody,
+      customHeaders
+    );
+    const allWaterCurPage = waterResponse.data || [];
+    metrics.allWaterAllPages = metrics.allWaterAllPages.concat(allWaterCurPage);
 
-    try {
-      const response = await getWaterUsageSummaryByMonth(
-        requestBody,
-        customHeaders
-      );
-      allWaterData = response.data || [];
+    WaterLogger.logPageInfo(1, allWaterCurPage);
+  }
 
-      WaterLogger.logApiCall(allWaterData);
-    } catch (error) {
-      console.error(`Error fetching water data:`, error.message);
+  static _getUniqueWater(allWater) {
+    return allWater.filter(
+      (water, index, self) =>
+        index ===
+        self.findIndex(
+          (w) =>
+            w.cropYear === water.cropYear &&
+            w.provinceName === water.provinceName &&
+            w.operMonth === water.operMonth
+        )
+    );
+  }
+
+  static async _processUniqueWater(uniqueWater, metrics) {
+    for (const water of uniqueWater) {
+      const result = await insertOrUpdateWater(water);
+
+      // Create unique ID for tracking
+      const waterRecId = `${water.cropYear}-${water.provinceName}-${water.operMonth}`;
+
+      switch (result.operation) {
+        case OPERATIONS.INSERT:
+          metrics.insertCount++;
+          metrics.newRecIds.push(waterRecId);
+          break;
+        case OPERATIONS.UPDATE:
+          metrics.updateCount++;
+          metrics.updatedRecIds.push(waterRecId);
+          break;
+        case OPERATIONS.ERROR:
+          metrics.errorCount++;
+          metrics.errorRecIds.push(waterRecId);
+          break;
+      }
+
+      metrics.processedRecIds.add(waterRecId);
     }
+  }
 
-    this.totalFromAPI = allWaterData.length;
+  static async _getDatabaseCount() {
+    const [result] = await connectionDB
+      .promise()
+      .query("SELECT COUNT(*) as total FROM water");
+    return result[0].total;
+  }
 
-    // Remove duplicates by unique combination of cropYear, provinceName, operMonth
-    const uniqueWaterData = this._removeDuplicates(allWaterData);
-    this.uniqueFromAPI = uniqueWaterData.length;
-    this.duplicatedDataAmount = this.totalFromAPI - this.uniqueFromAPI;
-
-    WaterLogger.logApiSummary(this.totalFromAPI, this.uniqueFromAPI);
-
-    // Process unique water data
-    await this._processUniqueWaterData(uniqueWaterData);
-
-    const totalAfter = await this.getCurrentCount();
-
+  static _buildResult(metrics, dbCountBefore, dbCountAfter) {
     return {
-      totalBefore,
-      totalAfter,
-      totalFromAPI: this.totalFromAPI,
-      uniqueFromAPI: this.uniqueFromAPI,
-      inserted: this.inserted,
-      updated: this.updated,
-      errors: this.errors,
-      duplicatedDataAmount: this.duplicatedDataAmount,
-      attempts: attempt,
+      // Database metrics
+      totalBefore: dbCountBefore,
+      totalAfter: dbCountAfter,
+      inserted: metrics.insertCount,
+      updated: metrics.updateCount,
+      errors: metrics.errorCount,
+      growth: dbCountAfter - dbCountBefore,
+
+      // API metrics
+      totalFromAPI: metrics.allWaterAllPages.length,
+      uniqueFromAPI: metrics.allWaterAllPages.filter(
+        (water, index, self) =>
+          index ===
+          self.findIndex(
+            (w) =>
+              w.cropYear === water.cropYear &&
+              w.provinceName === water.provinceName &&
+              w.operMonth === water.operMonth
+          )
+      ).length,
+      duplicatedDataAmount:
+        metrics.allWaterAllPages.length -
+        metrics.insertCount -
+        metrics.updateCount,
+
+      // Record tracking
+      newRecIds: metrics.newRecIds,
+      updatedRecIds: metrics.updatedRecIds,
+      errorRecIds: metrics.errorRecIds,
+      processedRecIds: Array.from(metrics.processedRecIds),
+
+      // Additional insights
+      recordsInDbNotInAPI: dbCountBefore - metrics.updateCount,
+      totalProcessingOperations:
+        metrics.insertCount + metrics.updateCount + metrics.errorCount,
+
+      // For compatibility
+      allWaterAllPages: metrics.allWaterAllPages,
     };
-  }
-
-  _removeDuplicates(waterData) {
-    const seen = new Set();
-    return waterData.filter((water) => {
-      // Create unique key from combination of fields
-      const uniqueKey = `${water.cropYear}-${water.provinceName}-${water.operMonth}`;
-      if (seen.has(uniqueKey)) {
-        return false;
-      }
-      seen.add(uniqueKey);
-      return true;
-    });
-  }
-
-  async _processUniqueWaterData(waterData) {
-    for (const water of waterData) {
-      try {
-        const result = await insertOrUpdateWater(water);
-
-        switch (result.operation) {
-          case OPERATIONS.INSERT:
-            this.inserted++;
-            break;
-          case OPERATIONS.UPDATE:
-            this.updated++;
-            break;
-          case OPERATIONS.ERROR:
-            this.errors++;
-            break;
-        }
-      } catch (error) {
-        console.error(
-          `Error processing water ${water.provinceName}-${water.operMonth}:`,
-          error.message
-        );
-        this.errors++;
-      }
-    }
   }
 }
 
