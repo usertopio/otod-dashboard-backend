@@ -64,8 +64,33 @@ class SubstanceController {
       });
     }
   }
+
+  static async fetchSubstanceUntilTarget(req, res) {
+    try {
+      const targetCount =
+        (req.body && req.body.targetCount) ||
+        SUBSTANCE_CONFIG.DEFAULT_TARGET_COUNT;
+      const maxAttempts =
+        (req.body && req.body.maxAttempts) ||
+        SUBSTANCE_CONFIG.DEFAULT_MAX_ATTEMPTS;
+
+      const result = await SubstanceService.fetchSubstanceUntilTarget(
+        targetCount,
+        maxAttempts
+      );
+
+      return res.status(200).json(result);
+    } catch (err) {
+      console.error("Error in fetchSubstanceUntilTarget:", err);
+      return res.status(500).json({
+        message: "Failed to fetch substance until target",
+        error: err.message,
+      });
+    }
+  }
 }
 
 module.exports = {
   fetchSubstance: SubstanceController.fetchSubstance,
+  fetchSubstanceUntilTarget: SubstanceController.fetchSubstanceUntilTarget,
 };
