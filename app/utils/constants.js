@@ -67,8 +67,8 @@ const SUBSTANCE_CONFIG = {
 
 // 🔧 ADD: Crops configuration
 const CROPS_CONFIG = {
-  DEFAULT_TARGET_COUNT: 10, // 🔧 Start small for testing
-  DEFAULT_MAX_ATTEMPTS: 3, // 🔧 Small number for testing
+  DEFAULT_TARGET_COUNT: 518, // 🔧 Start small for testing
+  DEFAULT_MAX_ATTEMPTS: 10, // 🔧 Small number for testing
   DEFAULT_TOTAL_RECORDS: 518, // 🔧 From your current crops config
   DEFAULT_PAGE_SIZE: 500, // 🔧 From your current crops config
   DEFAULT_CROP_YEAR: 2024, // 🔧 Default crop year
