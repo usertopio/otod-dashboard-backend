@@ -74,6 +74,14 @@ const CROPS_CONFIG = {
   DEFAULT_CROP_YEAR: 2024, // 🔧 Default crop year
 };
 
+// 🌿 NEW: Durian Gardens configuration following farmers template
+const DURIAN_GARDENS_CONFIG = {
+  DEFAULT_TARGET_COUNT: 1143, // 🌿 Reasonable target for gardens
+  DEFAULT_MAX_ATTEMPTS: 5, // 🌿 Same as other configs
+  DEFAULT_TOTAL_RECORDS: 1143, // 🌿 From GetLands API info
+  DEFAULT_PAGE_SIZE: 500, // 🌿 From GetLands API config
+};
+
 // 🔧 IMPORTANT: Make sure CROPS_CONFIG is exported
 module.exports = {
   OPERATIONS,
@@ -87,4 +95,5 @@ module.exports = {
   WATER_CONFIG,
   SUBSTANCE_CONFIG,
   CROPS_CONFIG, // 🔧 MUST BE INCLUDED HERE
+  DURIAN_GARDENS_CONFIG, // 🌿 ADD: Durian Gardens configuration
 };
