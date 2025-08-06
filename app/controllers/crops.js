@@ -5,10 +5,16 @@ const { CROPS_CONFIG } = require("../utils/constants");
 class CropsController {
   static async fetchCropsUntilTarget(req, res) {
     try {
+      // 🔧 Add fallback values in case CROPS_CONFIG is undefined
       const targetCount =
-        (req.body && req.body.targetCount) || CROPS_CONFIG.DEFAULT_TARGET_COUNT;
+        (req.body && req.body.targetCount) ||
+        (CROPS_CONFIG && CROPS_CONFIG.DEFAULT_TARGET_COUNT) ||
+        10; // Fallback value
+
       const maxAttempts =
-        (req.body && req.body.maxAttempts) || CROPS_CONFIG.DEFAULT_MAX_ATTEMPTS;
+        (req.body && req.body.maxAttempts) ||
+        (CROPS_CONFIG && CROPS_CONFIG.DEFAULT_MAX_ATTEMPTS) ||
+        3; // Fallback value
 
       console.log(
         `🎯 Starting fetchCropsUntilTarget - Target: ${targetCount}, Max attempts: ${maxAttempts}`
