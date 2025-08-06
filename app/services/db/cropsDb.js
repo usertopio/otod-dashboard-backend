@@ -4,29 +4,32 @@ const { OPERATIONS } = require("../../utils/constants");
 // 🔧 Modern insertOrUpdate function with correct field mappings
 async function insertOrUpdateCrop(crop) {
   try {
-    // 🔧 Map fields based on actual API responses and database schema
+    // 🔧 Convert breed_id to string to match ref_breeds VARCHAR(10)
     const values = {
-      rec_id: crop.recId || null, // From GetCrops API
-      farmer_id: crop.farmerId, // From both APIs
-      land_id: crop.landId || "", // From both APIs
-      crop_id: crop.cropId, // From both APIs (UNIQUE key)
-      crop_year: crop.cropYear || null, // From both APIs
-      crop_name: crop.cropName || null, // From GetCrops API
-      breed_id: crop.breedId || null, // From GetCrops API
-      crop_start_date: crop.cropStartDate || null, // From GetCrops API
-      crop_end_date: crop.cropEndDate || null, // From GetCrops API
-      total_trees: crop.totalTrees || null, // From GetCrops API
-      forecast_kg: crop.forecastKg || null, // From GetCrops API
-      forecast_baht: crop.forecastBaht || null, // From GetCrops API
-      forecast_worker_cost: crop.forecastWorkerCost || null, // From GetCrops API
-      forecast_fertilizer_cost: crop.forecastFertilizerCost || null, // From GetCrops API
-      forecast_equipment_cost: crop.forecastEquipmentCost || null, // From GetCrops API
-      forecast_petrol_cost: crop.forecastPetrolCost || null, // From GetCrops API
-      durian_stage_id: crop.durianStageId || null, // From GetCrops API
-      lot_number: crop.lotNumber || null, // From GetCropHarvests API
-      created_at: crop.createdTime || null, // From GetCrops API
-      updated_at: crop.updatedTime || null, // From GetCrops API
-      fetch_at: new Date(), // Current timestamp
+      rec_id: crop.recId || null,
+      farmer_id: crop.farmerId,
+      land_id: crop.landId,
+      crop_id: crop.cropId,
+      crop_year: crop.cropYear,
+      crop_name: crop.cropName || null,
+
+      // 🌾 FIX: Convert numeric breed_id to string
+      breed_id: crop.breedId ? String(crop.breedId) : null,
+
+      crop_start_date: crop.cropStartDate || null,
+      crop_end_date: crop.cropEndDate || null,
+      total_trees: crop.totalTrees || null,
+      forecast_kg: crop.forecastKg || null,
+      forecast_baht: crop.forecastBaht || null,
+      forecast_worker_cost: crop.forecastWorkerCost || null,
+      forecast_fertilizer_cost: crop.forecastFertilizerCost || null,
+      forecast_equipment_cost: crop.forecastEquipmentCost || null,
+      forecast_petrol_cost: crop.forecastPetrolCost || null,
+      durian_stage_id: crop.durianStageId || null,
+      lot_number: crop.lotNumber || null,
+      created_at: crop.createdTime || null,
+      updated_at: crop.updatedTime || null,
+      fetch_at: new Date(),
     };
 
     // Handle date formatting for MySQL
