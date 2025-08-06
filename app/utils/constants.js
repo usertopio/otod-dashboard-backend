@@ -56,10 +56,11 @@ const GAP_CONFIG = {
 };
 
 const SUBSTANCE_CONFIG = {
-  DEFAULT_TARGET_COUNT: 0,
-  DEFAULT_MAX_ATTEMPTS: 10,
-  DEFAULT_TOTAL_RECORDS: 100,
-  DEFAULT_PAGE_SIZE: 500,
+  DEFAULT_TARGET_COUNT: 100, // 🔧 Reasonable target for substance records
+  DEFAULT_MAX_ATTEMPTS: 5, // 🔧 Fewer attempts (substance API is simpler)
+  DEFAULT_TOTAL_RECORDS: 100, // 🔧 Expected substance records available
+  DEFAULT_PAGE_SIZE: 50, // 🔧 Reasonable page size
+  DEFAULT_CROP_YEAR: 2024, // 🔧 Default crop year for substance data
 };
 
 const WATER_CONFIG = {
@@ -79,6 +80,6 @@ module.exports = {
   MERCHANTS_CONFIG,
   OPERATIONS_CONFIG,
   GAP_CONFIG,
-  SUBSTANCE_CONFIG,
   WATER_CONFIG,
+  SUBSTANCE_CONFIG,
 };
