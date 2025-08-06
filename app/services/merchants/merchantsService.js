@@ -4,7 +4,35 @@ const MerchantsProcessor = require("./merchantsProcessor");
 const MerchantsLogger = require("./merchantsLogger");
 
 class MerchantsService {
+  // 🔧 ADD: Reset only merchants table
+  static async resetOnlyMerchantsTable() {
+    const connection = connectionDB.promise();
+
+    try {
+      console.log("🧹 Resetting ONLY merchants table...");
+
+      // Disable foreign key checks
+      await connection.query("SET FOREIGN_KEY_CHECKS = 0");
+
+      // Delete only merchants
+      await connection.query("TRUNCATE TABLE merchants");
+
+      // Re-enable foreign key checks
+      await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+
+      console.log("✅ Only merchants table reset - next ID will be 1");
+      return { success: true, message: "Only merchants table reset" };
+    } catch (error) {
+      await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+      console.error("❌ Error resetting merchants table:", error);
+      throw error;
+    }
+  }
+
   static async fetchMerchantsUntilTarget(targetCount, maxAttempts) {
+    // 🔧 ADD: Reset merchants table before fetching
+    await this.resetOnlyMerchantsTable();
+
     let attempt = 1;
     let currentCount = 0;
     let attemptsUsed = 0;
