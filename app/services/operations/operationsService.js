@@ -4,7 +4,35 @@ const OperationsProcessor = require("./operationsProcessor");
 const OperationsLogger = require("./operationsLogger");
 
 class OperationsService {
+  // 🔧 ADD: Reset only operations table
+  static async resetOnlyOperationsTable() {
+    const connection = connectionDB.promise();
+
+    try {
+      console.log("🧹 Resetting ONLY operations table...");
+
+      // Disable foreign key checks
+      await connection.query("SET FOREIGN_KEY_CHECKS = 0");
+
+      // Delete only operations
+      await connection.query("TRUNCATE TABLE operations");
+
+      // Re-enable foreign key checks
+      await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+
+      console.log("✅ Only operations table reset - next ID will be 1");
+      return { success: true, message: "Only operations table reset" };
+    } catch (error) {
+      await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+      console.error("❌ Error resetting operations table:", error);
+      throw error;
+    }
+  }
+
   static async fetchOperationsUntilTarget(targetCount, maxAttempts) {
+    // 🔧 ADD: Reset operations table before fetching
+    await this.resetOnlyOperationsTable();
+
     let attempt = 1;
     let currentCount = 0;
     let attemptsUsed = 0;
