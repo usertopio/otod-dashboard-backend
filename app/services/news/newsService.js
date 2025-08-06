@@ -4,7 +4,35 @@ const NewsProcessor = require("./newsProcessor");
 const NewsLogger = require("./newsLogger");
 
 class NewsService {
+  // 🔧 ADD: Reset only news table
+  static async resetOnlyNewsTable() {
+    const connection = connectionDB.promise();
+
+    try {
+      console.log("🧹 Resetting ONLY news table...");
+
+      // Disable foreign key checks
+      await connection.query("SET FOREIGN_KEY_CHECKS = 0");
+
+      // Delete only news
+      await connection.query("TRUNCATE TABLE news");
+
+      // Re-enable foreign key checks
+      await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+
+      console.log("✅ Only news table reset - next ID will be 1");
+      return { success: true, message: "Only news table reset" };
+    } catch (error) {
+      await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+      console.error("❌ Error resetting news table:", error);
+      throw error;
+    }
+  }
+
   static async fetchNewsUntilTarget(targetCount, maxAttempts) {
+    // 🔧 ADD: Reset news table before fetching
+    await this.resetOnlyNewsTable();
+
     let attempt = 1;
     let currentCount = 0;
     let attemptsUsed = 0;
@@ -23,8 +51,8 @@ class NewsService {
       attemptsUsed++;
       const result = await NewsProcessor.fetchAndProcessData();
 
-      // 🔧 FIX: Should be logAttemptResults, NOT logApiMetrics
-      NewsLogger.logAttemptResults(attempt, result); // ✅ Correct method
+      // Log detailed metrics for this attempt
+      NewsLogger.logAttemptResults(attempt, result);
 
       currentCount = result.totalAfter;
       attempt++;
