@@ -1,53 +1,66 @@
 const { connectionDB } = require("../../config/db/db.conf.js");
 const { OPERATIONS } = require("../../utils/constants");
 
-// 🌿 Helper function to ensure reference codes exist
+// 🔧 Copy ensureRefCode function from farmersDb.js pattern
 async function ensureRefCode(
-  tableName,
-  nameField,
-  codeField,
-  nameValue,
-  prefix
+  table,
+  nameColumn,
+  codeColumn,
+  name,
+  generatedCodePrefix
 ) {
-  if (!nameValue) return null;
+  if (!name) return null;
 
-  // Check if the code already exists
-  const [existing] = await connectionDB
-    .promise()
-    .query(
-      `SELECT ${codeField} FROM ${tableName} WHERE ${nameField} = ? LIMIT 1`,
-      [nameValue]
-    );
+  try {
+    // Check if name exists in reference table
+    const [existing] = await connectionDB
+      .promise()
+      .query(
+        `SELECT ${codeColumn} FROM ${table} WHERE ${nameColumn} = ? LIMIT 1`,
+        [name]
+      );
 
-  if (existing.length > 0) {
-    return existing[0][codeField];
+    if (existing.length > 0) {
+      return existing[0][codeColumn];
+    } else {
+      // Generate new code if not found
+      const [maxResult] = await connectionDB
+        .promise()
+        .query(
+          `SELECT ${codeColumn} FROM ${table} ORDER BY ${codeColumn} DESC LIMIT 1`
+        );
+
+      let newCode;
+      if (maxResult.length > 0) {
+        const lastCode = maxResult[0][codeColumn];
+        const lastNumber = parseInt(lastCode.replace(generatedCodePrefix, ""));
+        newCode = `${generatedCodePrefix}${String(lastNumber + 1).padStart(
+          3,
+          "0"
+        )}`;
+      } else {
+        newCode = `${generatedCodePrefix}001`;
+      }
+
+      await connectionDB.promise().query(
+        `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) 
+         VALUES (?, ?, 'generated')`,
+        [newCode, name]
+      );
+
+      console.log(`🆕 Created new ${table}: ${newCode} = "${name}"`);
+      return newCode;
+    }
+  } catch (err) {
+    console.error(`${table} lookup error:`, err.message);
+    return null;
   }
-
-  // Generate new code if not exists
-  const [maxResult] = await connectionDB
-    .promise()
-    .query(
-      `SELECT MAX(CAST(SUBSTRING(${codeField}, 6) AS UNSIGNED)) as maxNum FROM ${tableName} WHERE ${codeField} LIKE '${prefix}%'`
-    );
-
-  const nextNum = (maxResult[0].maxNum || 0) + 1;
-  const newCode = `${prefix}${nextNum.toString().padStart(4, "0")}`;
-
-  // Insert new reference code
-  await connectionDB
-    .promise()
-    .query(
-      `INSERT INTO ${tableName} (${codeField}, ${nameField}) VALUES (?, ?)`,
-      [newCode, nameValue]
-    );
-
-  return newCode;
 }
 
-// 🌿 Modern insertOrUpdate function with correct field mappings
+// 🌿 Modern insertOrUpdate function with CORRECT column names
 async function insertOrUpdateDurianGarden(garden) {
   try {
-    // === Map province, district, subdistrict to codes ===
+    // 🔧 Create ALL reference codes with CORRECT column names
     const provinceCode = await ensureRefCode(
       "ref_provinces",
       "province_name_th",
@@ -72,45 +85,82 @@ async function insertOrUpdateDurianGarden(garden) {
       "GSUBDIST"
     );
 
-    // 🌿 Map fields based on actual API responses and database schema
+    // 🔧 FIXED: Use correct column name from schema
+    const landTypeId = await ensureRefCode(
+      "ref_land_types",
+      "land_type", // 🔧 This is the correct column name!
+      "land_type_id",
+      garden.landType,
+      "GLAND"
+    );
+
+    // 🔧 Properly handle geojson field
+    let geoJsonValue = null;
+    if (garden.geojson) {
+      if (typeof garden.geojson === "string") {
+        try {
+          const parsed = JSON.parse(garden.geojson);
+          geoJsonValue = JSON.stringify(parsed);
+        } catch (e) {
+          geoJsonValue = JSON.stringify({
+            type: "FeatureCollection",
+            features: [
+              {
+                type: "Feature",
+                properties: { originalData: garden.geojson },
+                geometry: null,
+              },
+            ],
+          });
+        }
+      } else if (typeof garden.geojson === "object") {
+        geoJsonValue = JSON.stringify(garden.geojson);
+      }
+    }
+
+    // 🌿 Map fields with proper reference codes
     const values = {
-      rec_id: garden.recId || null, // From GetLands API
-      farmer_id: garden.farmerId, // From both APIs
-      land_id: garden.landId, // From both APIs (UNIQUE key)
-      garden_province_code: provinceCode,
-      garden_district_code: districtCode,
-      garden_subdistrict_code: subdistrictCode,
-      land_type_id: garden.landType || "", // From both APIs
-      lat: garden.lat || null, // From both APIs
-      lon: garden.lon || null, // From both APIs
-      no_of_rais: garden.noOfRais || null, // From both APIs
-      no_of_ngan: garden.noOfNgan || null, // From both APIs
-      no_of_wah: garden.noOfWah || null, // From both APIs
-      kml: garden.kml || null, // From GetLands API
-      geojson: garden.geojson || null, // From GetLandGeoJSON API
-      created_at: garden.createdTime || null, // From GetLands API
-      updated_at: garden.updatedTime || null, // From GetLands API
-      company_id: garden.companyId || null, // From GetLands API
-      fetch_at: new Date(), // Current timestamp
+      rec_id: garden.recId || null,
+      farmer_id: garden.farmerId,
+      land_id: garden.landId,
+      garden_province_code: provinceCode || "UNKNOWN",
+      garden_district_code: districtCode || "UNKNOWN",
+      garden_subdistrict_code: subdistrictCode || "UNKNOWN",
+      land_type_id: landTypeId || "UNKNOWN",
+      lat: garden.lat || null,
+      lon: garden.lon || null,
+      no_of_rais: garden.noOfRais || null,
+      no_of_ngan: garden.noOfNgan || null,
+      no_of_wah: garden.noOfWah || null,
+      kml: garden.kml || null,
+      geojson: geoJsonValue,
+      created_at: garden.createdTime || null,
+      updated_at: garden.updatedTime || null,
+      company_id: garden.companyId || null,
+      fetch_at: new Date(),
     };
 
     // Handle date formatting for MySQL
     if (values.created_at && typeof values.created_at === "string") {
-      values.created_at = new Date(values.created_at);
-    }
-    if (values.updated_at && typeof values.updated_at === "string") {
-      values.updated_at = new Date(values.updated_at);
-    }
-
-    // Handle JSON field
-    if (values.geojson && typeof values.geojson === "string") {
       try {
-        values.geojson = JSON.parse(values.geojson);
+        values.created_at = new Date(values.created_at);
       } catch (e) {
-        // If it's not valid JSON, store as string
-        values.geojson = values.geojson;
+        values.created_at = null;
       }
     }
+    if (values.updated_at && typeof values.updated_at === "string") {
+      try {
+        values.updated_at = new Date(values.updated_at);
+      } catch (e) {
+        values.updated_at = null;
+      }
+    }
+
+    console.log("🔧 Processed values for land_id:", garden.landId);
+    console.log("🔧 Province code:", values.garden_province_code);
+    console.log("🔧 District code:", values.garden_district_code);
+    console.log("🔧 Subdistrict code:", values.garden_subdistrict_code);
+    console.log("🔧 Land type code:", values.land_type_id);
 
     // 🌿 Check for existing land_id (unique key)
     const [existing] = await connectionDB
@@ -126,31 +176,46 @@ async function insertOrUpdateDurianGarden(garden) {
         .map((key) => `${key} = ?`)
         .join(", ");
 
+      const updateValues = Object.values(values).filter(
+        (_, i) => Object.keys(values)[i] !== "land_id"
+      );
+
       await connectionDB
         .promise()
         .query(`UPDATE durian_gardens SET ${updateFields} WHERE land_id = ?`, [
-          ...Object.values(values).filter(
-            (_, i) => Object.keys(values)[i] !== "land_id"
-          ),
+          ...updateValues,
           garden.landId,
         ]);
 
       return { operation: OPERATIONS.UPDATE, landId: garden.landId };
     } else {
       // === Insert ===
-      await connectionDB.promise().query(
-        `INSERT INTO durian_gardens (${Object.keys(values).join(
-          ", "
-        )}) VALUES (${Object.keys(values)
-          .map(() => "?")
-          .join(", ")})`,
-        Object.values(values)
-      );
+      const insertFields = Object.keys(values);
+      const insertPlaceholders = insertFields.map(() => "?");
+      const insertValues = Object.values(values);
+
+      await connectionDB
+        .promise()
+        .query(
+          `INSERT INTO durian_gardens (${insertFields.join(
+            ", "
+          )}) VALUES (${insertPlaceholders.join(", ")})`,
+          insertValues
+        );
 
       return { operation: OPERATIONS.INSERT, landId: garden.landId };
     }
   } catch (err) {
-    console.error("Durian garden insert/update error:", err);
+    console.error("🔧 Durian garden insert/update error:", err);
+    console.error("🔧 Garden data causing error:", {
+      landId: garden.landId,
+      farmerId: garden.farmerId,
+      province: garden.province,
+      amphur: garden.amphur,
+      tambon: garden.tambon,
+      landType: garden.landType,
+      hasGeojson: !!garden.geojson,
+    });
     return {
       operation: OPERATIONS.ERROR,
       landId: garden.landId,
@@ -159,7 +224,6 @@ async function insertOrUpdateDurianGarden(garden) {
   }
 }
 
-// 🌿 Export only the modern function
 module.exports = {
   insertOrUpdateDurianGarden,
 };
