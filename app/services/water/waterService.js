@@ -1,66 +1,103 @@
+const { connectionDB } = require("../../config/db/db.conf.js");
+const { WATER_CONFIG, STATUS } = require("../../utils/constants");
 const WaterProcessor = require("./waterProcessor");
 const WaterLogger = require("./waterLogger");
-const { WATER_CONFIG } = require("../../utils/constants");
 
 class WaterService {
-  static async fetchWater(targetCount, maxAttempts) {
-    const processor = new WaterProcessor();
+  // 🔧 ADD: Reset only water table
+  static async resetOnlyWaterTable() {
+    const connection = connectionDB.promise();
 
-    WaterLogger.logTargetStart(targetCount, maxAttempts);
+    try {
+      console.log("🧹 Resetting ONLY water table...");
 
-    let currentAttempt = 1;
-    let result = null;
+      // Disable foreign key checks
+      await connection.query("SET FOREIGN_KEY_CHECKS = 0");
 
-    while (currentAttempt <= maxAttempts) {
-      const currentCount = await processor.getCurrentCount();
+      // Delete only water
+      await connection.query("TRUNCATE TABLE water");
 
-      WaterLogger.logAttemptStart(
-        currentAttempt,
-        maxAttempts,
-        currentCount,
-        targetCount
-      );
+      // Re-enable foreign key checks
+      await connection.query("SET FOREIGN_KEY_CHECKS = 1");
 
-      if (currentCount >= targetCount && currentAttempt > 1) {
-        WaterLogger.logTargetReachedButContinuing();
-      }
-
-      result = await processor.fetchAndProcessData(currentAttempt);
-
-      WaterLogger.logAttemptResults(
-        currentAttempt,
-        result.inserted,
-        result.updated,
-        result.errors,
-        result.totalAfter
-      );
-
-      // Since no pagination and no target, we complete after first attempt
-      console.log(
-        `✅ Water data fetch completed after ${currentAttempt} attempt(s)`
-      );
-      break;
+      console.log("✅ Only water table reset - next ID will be 1");
+      return { success: true, message: "Only water table reset" };
+    } catch (error) {
+      await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+      console.error("❌ Error resetting water table:", error);
+      throw error;
     }
+  }
 
-    if (result) {
-      WaterLogger.logApiMetrics(result);
-      WaterLogger.logDatabaseMetrics(result);
-      WaterLogger.logAdditionalInsights(result);
-    }
+  static async fetchWaterUntilTarget(targetCount, maxAttempts) {
+    // 🔧 ADD: Reset water table before fetching
+    await this.resetOnlyWaterTable();
 
-    return (
-      result || {
-        totalBefore: 0,
-        totalAfter: 0,
-        totalFromAPI: 0,
-        uniqueFromAPI: 0,
-        inserted: 0,
-        updated: 0,
-        errors: 0,
-        duplicatedDataAmount: 0,
-        attempts: currentAttempt,
-      }
+    let attempt = 1;
+    let currentCount = 0;
+    let attemptsUsed = 0;
+
+    console.log(
+      `🎯 Target: ${targetCount} water records, Max attempts: ${maxAttempts}`
     );
+
+    // Main processing loop
+    while (attempt <= maxAttempts) {
+      WaterLogger.logAttemptStart(attempt, maxAttempts);
+
+      // Get current count before this attempt
+      currentCount = await this._getDatabaseCount();
+      WaterLogger.logCurrentStatus(currentCount, targetCount);
+
+      // Always make API call
+      attemptsUsed++;
+      const result = await WaterProcessor.fetchAndProcessData();
+
+      // Log detailed metrics for this attempt
+      WaterLogger.logAttemptResults(attempt, result);
+
+      currentCount = result.totalAfter;
+      attempt++;
+
+      // Stop when target is reached
+      if (currentCount >= targetCount) {
+        WaterLogger.logTargetReached(targetCount, attemptsUsed);
+        break;
+      }
+    }
+
+    return this._buildFinalResult(targetCount, attemptsUsed, maxAttempts);
+  }
+
+  static async _getDatabaseCount() {
+    const [result] = await connectionDB
+      .promise()
+      .query("SELECT COUNT(*) as total FROM water");
+    return result[0].total;
+  }
+
+  static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
+    const finalCount = await this._getDatabaseCount();
+    const status =
+      finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+
+    WaterLogger.logFinalResults(
+      targetCount,
+      finalCount,
+      attemptsUsed,
+      maxAttempts,
+      status
+    );
+
+    return {
+      message: `Fetch loop completed - ${status}`,
+      target: targetCount,
+      achieved: finalCount,
+      attemptsUsed: attemptsUsed,
+      maxAttempts: maxAttempts,
+      status: status,
+      reachedTarget: finalCount >= targetCount,
+    };
   }
 }
 
