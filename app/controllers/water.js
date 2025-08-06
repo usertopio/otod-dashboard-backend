@@ -2,30 +2,29 @@ const WaterService = require("../services/water/waterService");
 const { WATER_CONFIG } = require("../utils/constants");
 
 class WaterController {
-  static async fetchWater(req, res) {
+  static async fetchWaterUntilTarget(req, res) {
     try {
       const targetCount =
-        (req.body && req.body.targetCount) ||
-        WATER_CONFIG.DEFAULT_TARGET_COUNT ||
-        0;
+        (req.body && req.body.targetCount) || WATER_CONFIG.DEFAULT_TARGET_COUNT;
       const maxAttempts =
-        (req.body && req.body.maxAttempts) ||
-        WATER_CONFIG.DEFAULT_MAX_ATTEMPTS ||
-        1; // Only 1 attempt since no pagination
+        (req.body && req.body.maxAttempts) || WATER_CONFIG.DEFAULT_MAX_ATTEMPTS;
 
-      const result = await WaterService.fetchWater(targetCount, maxAttempts);
+      const result = await WaterService.fetchWaterUntilTarget(
+        targetCount,
+        maxAttempts
+      );
 
       return res.status(200).json(result);
-    } catch (error) {
-      console.error("Error in fetchWater:", error);
+    } catch (err) {
+      console.error("Error in fetchWaterUntilTarget:", err);
       return res.status(500).json({
-        message: "Failed to fetch water",
-        error: error.message,
+        message: "Failed to fetch water until target",
+        error: err.message,
       });
     }
   }
 }
 
 module.exports = {
-  fetchWater: WaterController.fetchWater,
+  fetchWaterUntilTarget: WaterController.fetchWaterUntilTarget,
 };
