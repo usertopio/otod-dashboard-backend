@@ -49,19 +49,6 @@ class SubstanceLogger {
     console.log(`✅ Status: ${status}`);
   }
 
-  static logApiCall(substanceData) {
-    const firstFive = substanceData.slice(0, 5);
-    const substances = firstFive.map((s) => `${s.substance}(${s.operMonth})`);
-    console.log(
-      `📄 API Response: First 5 substances: [${substances.join(", ")}]`
-    );
-    console.log(`📄 API Response: Total records: ${substanceData.length}`);
-  }
-
-  static logApiSummary(totalFromAPI, uniqueCount) {
-    console.log(`📊 Total from API: ${totalFromAPI}, Unique: ${uniqueCount}`);
-  }
-
   static logAttemptResults(attempt, result) {
     console.log(`📈 Attempt ${attempt} completed:`);
     console.log(`   ➕ Inserted: ${result.inserted}`);
@@ -130,10 +117,14 @@ class SubstanceLogger {
     console.log(
       `📄 Page ${page}: First 5 substance records: [${substanceRecords
         .slice(0, 5)
-        .map((s) => `${s.substanceName}(${s.operMonth})`)
+        .map((s) => `${s.substance}(${s.operMonth})`)
         .join(", ")}]`
     );
     console.log(`📄 Page ${page}: Length: ${substanceRecords.length}`);
+  }
+
+  static logApiSummary(totalFromAPI, uniqueCount) {
+    console.log(`📊 Total from API: ${totalFromAPI}, Unique: ${uniqueCount}`);
   }
 }
 

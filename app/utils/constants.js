@@ -56,11 +56,11 @@ const GAP_CONFIG = {
 };
 
 const SUBSTANCE_CONFIG = {
-  DEFAULT_TARGET_COUNT: 100, // 🔧 Reasonable target for substance records
-  DEFAULT_MAX_ATTEMPTS: 5, // 🔧 Fewer attempts (substance API is simpler)
-  DEFAULT_TOTAL_RECORDS: 100, // 🔧 Expected substance records available
-  DEFAULT_PAGE_SIZE: 50, // 🔧 Reasonable page size
-  DEFAULT_CROP_YEAR: 2024, // 🔧 Default crop year for substance data
+  DEFAULT_TARGET_COUNT: 27,
+  DEFAULT_MAX_ATTEMPTS: 5,
+  DEFAULT_TOTAL_RECORDS: 27,
+  DEFAULT_PAGE_SIZE: 500,
+  DEFAULT_CROP_YEAR: 2024,
 };
 
 const WATER_CONFIG = {

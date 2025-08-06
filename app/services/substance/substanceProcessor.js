@@ -76,7 +76,7 @@ class SubstanceProcessor {
             s.cropYear === substance.cropYear &&
             s.provinceName === substance.provinceName &&
             s.operMonth === substance.operMonth &&
-            s.substanceName === substance.substanceName
+            s.substance === substance.substance
         )
     );
   }
@@ -86,7 +86,7 @@ class SubstanceProcessor {
       const result = await insertOrUpdateSubstance(substance);
 
       // Create unique ID for tracking
-      const substanceRecId = `${substance.cropYear}-${substance.provinceName}-${substance.operMonth}-${substance.substanceName}`;
+      const substanceRecId = `${substance.cropYear}-${substance.provinceName}-${substance.operMonth}-${substance.substance}`;
 
       switch (result.operation) {
         case OPERATIONS.INSERT:
@@ -134,7 +134,7 @@ class SubstanceProcessor {
               s.cropYear === substance.cropYear &&
               s.provinceName === substance.provinceName &&
               s.operMonth === substance.operMonth &&
-              s.substanceName === substance.substanceName
+              s.substance === substance.substance
           )
       ).length,
       duplicatedDataAmount:
