@@ -6,18 +6,46 @@ class WaterLogger {
     console.log(`📝 Note: Single API call with no pagination\n`);
   }
 
-  static logAttemptStart(
-    currentAttempt,
-    maxAttempts,
-    currentCount,
-    targetCount
-  ) {
-    console.log(`🔄 === ATTEMPT ${currentAttempt}/${maxAttempts} ===`);
-    console.log(`📊 Current water records in DB: ${currentCount}`);
+  static logAttemptStart(attempt, maxAttempts) {
+    console.log(`\n🔄 === ATTEMPT ${attempt}/${maxAttempts} ===`);
   }
 
-  static logTargetReachedButContinuing() {
-    console.log(`✅ Target reached, but continuing with remaining attempts...`);
+  static logCurrentStatus(currentCount, targetCount) {
+    console.log(
+      `📊 Current water records in DB: ${currentCount}/${targetCount}`
+    );
+
+    if (currentCount < targetCount) {
+      console.log(
+        `📊 Need ${
+          targetCount - currentCount
+        } more water records - calling API...`
+      );
+    } else {
+      console.log(
+        `🔄 Target reached but continuing API call for fresh data...`
+      );
+    }
+  }
+
+  static logTargetReached(targetCount, attemptsUsed) {
+    console.log(
+      `🎯 Target of ${targetCount} reached after ${attemptsUsed} attempts`
+    );
+  }
+
+  static logFinalResults(
+    targetCount,
+    achieved,
+    attemptsUsed,
+    maxAttempts,
+    status
+  ) {
+    console.log(`\n🏁 === FINAL RESULT ===`);
+    console.log(`🎯 Target: ${targetCount}`);
+    console.log(`📊 Achieved: ${achieved}`);
+    console.log(`🔄 Attempts used: ${attemptsUsed}/${maxAttempts}`);
+    console.log(`✅ Status: ${status}`);
   }
 
   static logApiCall(waterData) {
@@ -33,47 +61,80 @@ class WaterLogger {
     }
   }
 
-  static logApiSummary(totalFromAPI, uniqueFromAPI) {
-    console.log(`📊 Total from API: ${totalFromAPI}, Unique: ${uniqueFromAPI}`);
+  static logApiSummary(totalFromAPI, uniqueCount) {
+    console.log(`📊 Total from API: ${totalFromAPI}, Unique: ${uniqueCount}`);
   }
 
-  static logAttemptResults(attempt, inserted, updated, errors, totalAfter) {
+  static logAttemptResults(attempt, result) {
     console.log(`📈 Attempt ${attempt} completed:`);
-    console.log(`   ➕ Inserted: ${inserted}`);
-    console.log(`   🔄 Updated: ${updated}`);
-    console.log(`   ❌ Errors: ${errors}`);
-    console.log(`   📊 Total now: ${totalAfter}\n`);
+    console.log(`   ➕ Inserted: ${result.inserted}`);
+    console.log(`   🔄 Updated: ${result.updated}`);
+    console.log(`   ❌ Errors: ${result.errors}`);
+    console.log(`   📊 Total now: ${result.totalAfter}`);
+
+    this._logApiMetrics(result);
+    this._logDatabaseMetrics(result);
+    this._logInsights(result);
+    this._logNewRecIds(result);
+    this._logErrorRecIds(result);
+
+    console.log("==========================================\n");
   }
 
-  static logApiMetrics(result) {
-    console.log(`📊 === API METRICS ===`);
-    console.log(`📥 Record amount from API call: ${result.totalFromAPI}`);
-    console.log(`🔍 Unique records from API call: ${result.uniqueFromAPI}`);
+  static _logApiMetrics(result) {
+    console.log("\n📊 === API METRICS ===");
+    console.log(
+      `📥 Record amount from current API call: ${result.totalFromAPI}`
+    );
+    console.log(
+      `🔍 Unique records from current API call: ${result.uniqueFromAPI}`
+    );
     console.log(`🆕 New records amount: ${result.inserted}`);
-    console.log(`🔄 Duplicated data amount: ${result.duplicatedDataAmount}\n`);
+    console.log(`🔄 Duplicated data amount: ${result.duplicatedDataAmount}`);
   }
 
-  static logDatabaseMetrics(result) {
-    console.log(`📊 === DATABASE METRICS ===`);
-    console.log(`📊 Previous water records in table: ${result.totalBefore}`);
-    console.log(`📈 Current water records in table: ${result.totalAfter}`);
+  static _logDatabaseMetrics(result) {
+    console.log("\n📊 === DATABASE METRICS ===");
+    console.log(`📊 Previous amount records in table: ${result.totalBefore}`);
+    console.log(`📈 Current amount records in table: ${result.totalAfter}`);
     console.log(`➕ Records INSERTED: ${result.inserted}`);
     console.log(`🔄 Records UPDATED: ${result.updated}`);
-    console.log(`❌ Records with ERRORS: ${result.errors}\n`);
+    console.log(`❌ Records with ERRORS: ${result.errors}`);
   }
 
-  static logAdditionalInsights(result) {
-    console.log(`📊 === ADDITIONAL INSIGHTS ===`);
-    console.log(`🔄 Total attempts made: ${result.attempts}`);
-    console.log(`📈 Net records added: ${result.inserted}`);
-    const successRate =
-      result.uniqueFromAPI > 0
-        ? (
-            ((result.inserted + result.updated) / result.uniqueFromAPI) *
-            100
-          ).toFixed(1)
-        : 0;
-    console.log(`✅ Success rate: ${successRate}%\n`);
+  static _logInsights(result) {
+    console.log("\n📊 === ADDITIONAL INSIGHTS ===");
+    console.log(
+      `📋 Total processing operations: ${result.totalProcessingOperations}`
+    );
+    console.log(
+      `📍 Records in DB but not in current API: ${result.recordsInDbNotInAPI}`
+    );
+    console.log(`⏱️ Database growth: ${result.growth} records`);
+  }
+
+  static _logNewRecIds(result) {
+    if (result.newRecIds.length > 0) {
+      console.log(`\n🆕 NEW WATER RECORDS (${result.newRecIds.length}):`);
+      console.log(`   [${result.newRecIds.slice(0, 10).join(", ")}]`);
+    }
+  }
+
+  static _logErrorRecIds(result) {
+    if (result.errorRecIds.length > 0) {
+      console.log(`\n❌ ERROR WATER RECORDS (${result.errorRecIds.length}):`);
+      console.log(`   [${result.errorRecIds.slice(0, 10).join(", ")}]`);
+    }
+  }
+
+  static logPageInfo(page, waterRecords) {
+    console.log(
+      `📄 Page ${page}: First 5 water records: [${waterRecords
+        .slice(0, 5)
+        .map((w) => `${w.provinceName}(${w.operMonth})`)
+        .join(", ")}]`
+    );
+    console.log(`📄 Page ${page}: Length: ${waterRecords.length}`);
   }
 }
 
