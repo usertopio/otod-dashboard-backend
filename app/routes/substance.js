@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const { fetchSubstance } = require("../controllers/substance.js");
+const { fetchSubstanceUntilTarget } = require("../controllers/substance");
 
-// 🎯 Clean "fetchSubstance" endpoint using GetSubstanceUsageSummaryByMonth
-router.post("/fetchSubstance", fetchSubstance);
+// Main substance endpoints
+router.post("/fetchSubstanceUntilTarget", fetchSubstanceUntilTarget);
 
 module.exports = router;
