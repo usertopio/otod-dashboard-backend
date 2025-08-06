@@ -4,7 +4,37 @@ const FarmersProcessor = require("./farmersProcessor");
 const FarmersLogger = require("./farmersLogger");
 
 class FarmersService {
+  // 🔧 ADD: Reset only farmers table
+  static async resetOnlyFarmersTable() {
+    const connection = connectionDB.promise();
+
+    try {
+      console.log("🧹 Resetting ONLY farmers table...");
+
+      // Disable foreign key checks
+      await connection.query("SET FOREIGN_KEY_CHECKS = 0");
+
+      // Delete only farmers
+      await connection.query("TRUNCATE TABLE farmers");
+
+      // Re-enable foreign key checks
+      await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+
+      console.log(
+        "✅ Only farmers table reset - gap/operations kept with orphaned references"
+      );
+      return { success: true, message: "Only farmers table reset" };
+    } catch (error) {
+      await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+      console.error("❌ Error resetting farmers table:", error);
+      throw error;
+    }
+  }
+
   static async fetchFarmersUntilTarget(targetCount, maxAttempts) {
+    // 🔧 ADD: Reset farmers table before fetching
+    await this.resetOnlyFarmersTable();
+
     let attempt = 1;
     let currentCount = 0;
     let attemptsUsed = 0;
