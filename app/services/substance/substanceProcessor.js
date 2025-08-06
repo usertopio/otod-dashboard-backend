@@ -1,39 +1,54 @@
 const { getSubstanceUsageSummaryByMonth } = require("../api/substance");
 const { insertOrUpdateSubstance } = require("../db/substanceDb");
-const { connectionDB } = require("../../config/db/db.conf");
+const { connectionDB } = require("../../config/db/db.conf.js");
+const { SUBSTANCE_CONFIG, OPERATIONS } = require("../../utils/constants");
 const SubstanceLogger = require("./substanceLogger");
-const { OPERATIONS } = require("../../utils/constants");
 
 class SubstanceProcessor {
-  constructor() {
-    this.totalFromAPI = 0;
-    this.uniqueFromAPI = 0;
-    this.inserted = 0;
-    this.updated = 0;
-    this.errors = 0;
-    this.duplicatedDataAmount = 0;
+  static async fetchAndProcessData() {
+    // Substance API doesn't use pagination, so we just make one call
+    const pages = 1;
+
+    // Initialize counters
+    const metrics = {
+      allSubstanceAllPages: [],
+      insertCount: 0,
+      updateCount: 0,
+      errorCount: 0,
+      processedRecIds: new Set(),
+      newRecIds: [],
+      updatedRecIds: [],
+      errorRecIds: [],
+    };
+
+    // Get database count before processing
+    const dbCountBefore = await this._getDatabaseCount();
+
+    // Fetch data from API (single call)
+    await this._fetchAllPages(pages, metrics);
+
+    // Process unique substance records
+    const uniqueSubstance = this._getUniqueSubstance(
+      metrics.allSubstanceAllPages
+    );
+    SubstanceLogger.logApiSummary(
+      metrics.allSubstanceAllPages.length,
+      uniqueSubstance.length
+    );
+
+    // Process each unique substance record
+    await this._processUniqueSubstance(uniqueSubstance, metrics);
+
+    // Get database count after processing
+    const dbCountAfter = await this._getDatabaseCount();
+
+    return this._buildResult(metrics, dbCountBefore, dbCountAfter);
   }
 
-  async getCurrentCount() {
-    const [result] = await connectionDB
-      .promise()
-      .query("SELECT COUNT(*) as count FROM substance");
-    return result[0].count;
-  }
-
-  async fetchAndProcessData(attempt) {
-    const totalBefore = await this.getCurrentCount();
-
-    // Reset counters for this attempt
-    this.totalFromAPI = 0;
-    this.uniqueFromAPI = 0;
-    this.inserted = 0;
-    this.updated = 0;
-    this.errors = 0;
-
-    // Single API call - GetSubstanceUsageSummaryByMonth only
+  static async _fetchAllPages(pages, metrics) {
+    // Single API call for substance data
     const requestBody = {
-      cropYear: 2024,
+      cropYear: SUBSTANCE_CONFIG.DEFAULT_CROP_YEAR || 2024,
       provinceName: "",
     };
 
@@ -41,84 +56,106 @@ class SubstanceProcessor {
       Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
     };
 
-    let allSubstanceData = [];
+    const substanceResponse = await getSubstanceUsageSummaryByMonth(
+      requestBody,
+      customHeaders
+    );
+    const allSubstanceCurPage = substanceResponse.data || [];
+    metrics.allSubstanceAllPages =
+      metrics.allSubstanceAllPages.concat(allSubstanceCurPage);
 
-    try {
-      const response = await getSubstanceUsageSummaryByMonth(
-        requestBody,
-        customHeaders
-      );
-      allSubstanceData = response.data || [];
+    SubstanceLogger.logPageInfo(1, allSubstanceCurPage);
+  }
 
-      SubstanceLogger.logApiCall(allSubstanceData);
-    } catch (error) {
-      console.error(`Error fetching substance data:`, error.message);
+  static _getUniqueSubstance(allSubstance) {
+    return allSubstance.filter(
+      (substance, index, self) =>
+        index ===
+        self.findIndex(
+          (s) =>
+            s.cropYear === substance.cropYear &&
+            s.provinceName === substance.provinceName &&
+            s.operMonth === substance.operMonth &&
+            s.substanceName === substance.substanceName
+        )
+    );
+  }
+
+  static async _processUniqueSubstance(uniqueSubstance, metrics) {
+    for (const substance of uniqueSubstance) {
+      const result = await insertOrUpdateSubstance(substance);
+
+      // Create unique ID for tracking
+      const substanceRecId = `${substance.cropYear}-${substance.provinceName}-${substance.operMonth}-${substance.substanceName}`;
+
+      switch (result.operation) {
+        case OPERATIONS.INSERT:
+          metrics.insertCount++;
+          metrics.newRecIds.push(substanceRecId);
+          break;
+        case OPERATIONS.UPDATE:
+          metrics.updateCount++;
+          metrics.updatedRecIds.push(substanceRecId);
+          break;
+        case OPERATIONS.ERROR:
+          metrics.errorCount++;
+          metrics.errorRecIds.push(substanceRecId);
+          break;
+      }
+
+      metrics.processedRecIds.add(substanceRecId);
     }
+  }
 
-    this.totalFromAPI = allSubstanceData.length;
+  static async _getDatabaseCount() {
+    const [result] = await connectionDB
+      .promise()
+      .query("SELECT COUNT(*) as total FROM substance");
+    return result[0].total;
+  }
 
-    // Remove duplicates by unique combination of cropYear, provinceName, substance, operMonth
-    const uniqueSubstanceData = this._removeDuplicates(allSubstanceData);
-    this.uniqueFromAPI = uniqueSubstanceData.length;
-    this.duplicatedDataAmount = this.totalFromAPI - this.uniqueFromAPI;
-
-    SubstanceLogger.logApiSummary(this.totalFromAPI, this.uniqueFromAPI);
-
-    // Process unique substance data
-    await this._processUniqueSubstanceData(uniqueSubstanceData);
-
-    const totalAfter = await this.getCurrentCount();
-
+  static _buildResult(metrics, dbCountBefore, dbCountAfter) {
     return {
-      totalBefore,
-      totalAfter,
-      totalFromAPI: this.totalFromAPI,
-      uniqueFromAPI: this.uniqueFromAPI,
-      inserted: this.inserted,
-      updated: this.updated,
-      errors: this.errors,
-      duplicatedDataAmount: this.duplicatedDataAmount,
-      attempts: attempt,
+      // Database metrics
+      totalBefore: dbCountBefore,
+      totalAfter: dbCountAfter,
+      inserted: metrics.insertCount,
+      updated: metrics.updateCount,
+      errors: metrics.errorCount,
+      growth: dbCountAfter - dbCountBefore,
+
+      // API metrics
+      totalFromAPI: metrics.allSubstanceAllPages.length,
+      uniqueFromAPI: metrics.allSubstanceAllPages.filter(
+        (substance, index, self) =>
+          index ===
+          self.findIndex(
+            (s) =>
+              s.cropYear === substance.cropYear &&
+              s.provinceName === substance.provinceName &&
+              s.operMonth === substance.operMonth &&
+              s.substanceName === substance.substanceName
+          )
+      ).length,
+      duplicatedDataAmount:
+        metrics.allSubstanceAllPages.length -
+        metrics.insertCount -
+        metrics.updateCount,
+
+      // Record tracking
+      newRecIds: metrics.newRecIds,
+      updatedRecIds: metrics.updatedRecIds,
+      errorRecIds: metrics.errorRecIds,
+      processedRecIds: Array.from(metrics.processedRecIds),
+
+      // Additional insights
+      recordsInDbNotInAPI: dbCountBefore - metrics.updateCount,
+      totalProcessingOperations:
+        metrics.insertCount + metrics.updateCount + metrics.errorCount,
+
+      // For compatibility
+      allSubstanceAllPages: metrics.allSubstanceAllPages,
     };
-  }
-
-  _removeDuplicates(substanceData) {
-    const seen = new Set();
-    return substanceData.filter((substance) => {
-      // Create unique key from combination of fields
-      const uniqueKey = `${substance.cropYear}-${substance.provinceName}-${substance.substance}-${substance.operMonth}`;
-      if (seen.has(uniqueKey)) {
-        return false;
-      }
-      seen.add(uniqueKey);
-      return true;
-    });
-  }
-
-  async _processUniqueSubstanceData(substanceData) {
-    for (const substance of substanceData) {
-      try {
-        const result = await insertOrUpdateSubstance(substance);
-
-        switch (result.operation) {
-          case OPERATIONS.INSERT:
-            this.inserted++;
-            break;
-          case OPERATIONS.UPDATE:
-            this.updated++;
-            break;
-          case OPERATIONS.ERROR:
-            this.errors++;
-            break;
-        }
-      } catch (error) {
-        console.error(
-          `Error processing substance ${substance.substance}:`,
-          error.message
-        );
-        this.errors++;
-      }
-    }
   }
 }
 
