@@ -1,75 +1,103 @@
+const { connectionDB } = require("../../config/db/db.conf.js");
+const { GAP_CONFIG, STATUS } = require("../../utils/constants");
 const GapProcessor = require("./gapProcessor");
 const GapLogger = require("./gapLogger");
-const { GAP_CONFIG } = require("../../utils/constants");
 
 class GapService {
+  // 🔧 ADD: Reset only gap table
+  static async resetOnlyGapTable() {
+    const connection = connectionDB.promise();
+
+    try {
+      console.log("🧹 Resetting ONLY gap table...");
+
+      // Disable foreign key checks
+      await connection.query("SET FOREIGN_KEY_CHECKS = 0");
+
+      // Delete only gap
+      await connection.query("TRUNCATE TABLE gap");
+
+      // Re-enable foreign key checks
+      await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+
+      console.log("✅ Only gap table reset - next ID will be 1");
+      return { success: true, message: "Only gap table reset" };
+    } catch (error) {
+      await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+      console.error("❌ Error resetting gap table:", error);
+      throw error;
+    }
+  }
+
   static async fetchGapUntilTarget(targetCount, maxAttempts) {
-    const processor = new GapProcessor();
+    // 🔧 ADD: Reset gap table before fetching
+    await this.resetOnlyGapTable();
 
-    GapLogger.logTargetStart(targetCount, maxAttempts);
+    let attempt = 1;
+    let currentCount = 0;
+    let attemptsUsed = 0;
 
-    let currentAttempt = 1;
-    let result = null;
+    console.log(
+      `🎯 Target: ${targetCount} gap certificates, Max attempts: ${maxAttempts}`
+    );
 
-    while (currentAttempt <= maxAttempts) {
-      const currentCount = await processor.getCurrentCount();
+    // Main processing loop
+    while (attempt <= maxAttempts) {
+      GapLogger.logAttemptStart(attempt, maxAttempts);
 
-      GapLogger.logAttemptStart(
-        currentAttempt,
-        maxAttempts,
-        currentCount,
-        targetCount
-      );
+      // Get current count before this attempt
+      currentCount = await this._getDatabaseCount();
+      GapLogger.logCurrentStatus(currentCount, targetCount);
 
-      if (currentCount >= targetCount && currentAttempt > 1) {
-        GapLogger.logTargetReachedButContinuing();
-      }
+      // Always make API call
+      attemptsUsed++;
+      const result = await GapProcessor.fetchAndProcessData();
 
-      result = await processor.fetchAndProcessData(currentAttempt);
+      // Log detailed metrics for this attempt
+      GapLogger.logAttemptResults(attempt, result);
 
-      GapLogger.logAttemptResults(
-        currentAttempt,
-        result.inserted,
-        result.updated,
-        result.errors,
-        result.totalAfter
-      );
+      currentCount = result.totalAfter;
+      attempt++;
 
-      if (result.totalAfter >= targetCount) {
-        console.log(
-          `🎯 Target of ${targetCount} reached after ${currentAttempt} attempts ✅`
-        );
+      // Stop when target is reached
+      if (currentCount >= targetCount) {
+        GapLogger.logTargetReached(targetCount, attemptsUsed);
         break;
       }
-
-      currentAttempt++;
     }
 
-    if (result && result.totalAfter < targetCount) {
-      console.log(
-        `⚠️ Target not reached after ${maxAttempts} attempts. Current: ${result.totalAfter}/${targetCount}`
-      );
-    }
+    return this._buildFinalResult(targetCount, attemptsUsed, maxAttempts);
+  }
 
-    if (result) {
-      GapLogger.logApiMetrics(result);
-      GapLogger.logDatabaseMetrics(result);
-      GapLogger.logAdditionalInsights(result);
-    }
+  static async _getDatabaseCount() {
+    const [result] = await connectionDB
+      .promise()
+      .query("SELECT COUNT(*) as total FROM gap");
+    return result[0].total;
+  }
 
-    return (
-      result || {
-        totalBefore: 0,
-        totalAfter: 0,
-        totalFromAPI: 0,
-        uniqueFromAPI: 0,
-        inserted: 0,
-        updated: 0,
-        errors: 0,
-        duplicatedDataAmount: 0,
-        attempts: currentAttempt - 1,
-      }
+  static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
+    const finalCount = await this._getDatabaseCount();
+    const status =
+      finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+
+    GapLogger.logFinalResults(
+      targetCount,
+      finalCount,
+      attemptsUsed,
+      maxAttempts,
+      status
     );
+
+    return {
+      message: `Fetch loop completed - ${status}`,
+      target: targetCount,
+      achieved: finalCount,
+      attemptsUsed: attemptsUsed,
+      maxAttempts: maxAttempts,
+      status: status,
+      reachedTarget: finalCount >= targetCount,
+    };
   }
 }
 

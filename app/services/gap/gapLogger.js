@@ -6,92 +6,122 @@ class GapLogger {
     console.log("");
   }
 
-  static logAttemptStart(attempt, maxAttempts, currentCount, targetCount) {
-    console.log(`🔄 === ATTEMPT ${attempt}/${maxAttempts} ===`);
+  static logAttemptStart(attempt, maxAttempts) {
+    console.log(`\n🔄 === ATTEMPT ${attempt}/${maxAttempts} ===`);
+  }
+
+  static logCurrentStatus(currentCount, targetCount) {
     console.log(
       `📊 Current gap certificates in DB: ${currentCount}/${targetCount}`
     );
+
+    if (currentCount < targetCount) {
+      console.log(
+        `📊 Need ${
+          targetCount - currentCount
+        } more gap certificates - calling API...`
+      );
+    } else {
+      console.log(
+        `🔄 Target reached but continuing API call for fresh data...`
+      );
+    }
   }
 
-  static logTargetReachedButContinuing() {
-    console.log(`🔄 Target reached but continuing API call for fresh data...`);
-  }
-
-  static logPageInfo(page, crops) {
-    const recIds = crops.slice(0, 5).map((c) => c.recId);
-    console.log(`📄 Page ${page}: First 5 crop recId: [${recIds.join(", ")}]`);
-    console.log(`📄 Page ${page}: Total crops: ${crops.length}`);
-
-    // Count GAP certificates in this page
-    const gapCount = crops.filter(
-      (crop) => crop.gapCertNumber && crop.gapCertNumber.trim() !== ""
-    ).length;
-    console.log(`📄 Page ${page}: GAP certificates: ${gapCount}`);
-  }
-
-  static logApiSummary(totalFromAPI, uniqueFromAPI) {
+  static logTargetReached(targetCount, attemptsUsed) {
     console.log(
-      `📊 Total crops from API: ${totalFromAPI}, Unique GAP certificates: ${uniqueFromAPI}`
+      `🎯 Target of ${targetCount} reached after ${attemptsUsed} attempts`
     );
   }
 
-  static logAttemptResults(attempt, inserted, updated, errors, totalAfter) {
+  static logFinalResults(
+    targetCount,
+    achieved,
+    attemptsUsed,
+    maxAttempts,
+    status
+  ) {
+    console.log(`\n🏁 === FINAL RESULT ===`);
+    console.log(`🎯 Target: ${targetCount}`);
+    console.log(`📊 Achieved: ${achieved}`);
+    console.log(`🔄 Attempts used: ${attemptsUsed}/${maxAttempts}`);
+    console.log(`✅ Status: ${status}`);
+  }
+
+  static logAttemptResults(attempt, result) {
     console.log(`📈 Attempt ${attempt} completed:`);
-    console.log(`   ➕ Inserted: ${inserted}`);
-    console.log(`   🔄 Updated: ${updated}`);
-    console.log(`   ❌ Errors: ${errors}`);
-    console.log(`   📊 Total now: ${totalAfter}`);
-    console.log("");
+    console.log(`   ➕ Inserted: ${result.inserted}`);
+    console.log(`   🔄 Updated: ${result.updated}`);
+    console.log(`   ❌ Errors: ${result.errors}`);
+    console.log(`   📊 Total now: ${result.totalAfter}`);
+
+    this._logApiMetrics(result);
+    this._logDatabaseMetrics(result);
+    this._logInsights(result);
+    this._logNewRecIds(result);
+    this._logErrorRecIds(result);
+
+    console.log("==========================================\n");
   }
 
-  static logApiMetrics(result) {
-    console.log(`📊 === API METRICS ===`);
-    console.log(`📥 Total crops from API call: ${result.totalFromAPI}`);
+  static _logApiMetrics(result) {
+    console.log("\n📊 === API METRICS ===");
     console.log(
-      `🔍 Unique GAP certificates extracted: ${result.uniqueFromAPI}`
+      `📥 Record amount from current API call: ${result.totalFromAPI}`
     );
-    console.log(`🆕 New GAP certificates: ${result.inserted}`);
     console.log(
-      `🔄 Duplicated GAP certificates: ${result.duplicatedDataAmount}`
+      `🔍 Unique records from current API call: ${result.uniqueFromAPI}`
     );
-    console.log("");
+    console.log(`🆕 New records amount: ${result.inserted}`);
+    console.log(`🔄 Duplicated data amount: ${result.duplicatedDataAmount}`);
   }
 
-  static logDatabaseMetrics(result) {
-    console.log(`📊 === DATABASE METRICS ===`);
-    console.log(`📊 Previous GAP certificates in table: ${result.totalBefore}`);
-    console.log(`📈 Current GAP certificates in table: ${result.totalAfter}`);
+  static _logDatabaseMetrics(result) {
+    console.log("\n📊 === DATABASE METRICS ===");
+    console.log(`📊 Previous amount records in table: ${result.totalBefore}`);
+    console.log(`📈 Current amount records in table: ${result.totalAfter}`);
     console.log(`➕ Records INSERTED: ${result.inserted}`);
     console.log(`🔄 Records UPDATED: ${result.updated}`);
     console.log(`❌ Records with ERRORS: ${result.errors}`);
-    console.log("");
   }
 
-  static logAdditionalInsights(result) {
-    console.log(`📊 === ADDITIONAL INSIGHTS ===`);
-    console.log(`🔄 Total attempts made: ${result.attempts}`);
+  static _logInsights(result) {
+    console.log("\n📊 === ADDITIONAL INSIGHTS ===");
     console.log(
-      `📈 Net GAP certificates added: ${result.totalAfter - result.totalBefore}`
+      `📋 Total processing operations: ${result.totalProcessingOperations}`
     );
+    console.log(
+      `📍 Records in DB but not in current API: ${result.recordsInDbNotInAPI}`
+    );
+    console.log(`⏱️ Database growth: ${result.growth} records`);
+  }
 
-    if (result.uniqueFromAPI > 0) {
-      const successRate = (
-        ((result.inserted + result.updated) / result.uniqueFromAPI) *
-        100
-      ).toFixed(1);
-      console.log(`✅ Success rate: ${successRate}%`);
+  static _logNewRecIds(result) {
+    if (result.newRecIds.length > 0) {
+      console.log(`\n🆕 NEW REC_IDS (${result.newRecIds.length}):`);
+      console.log(`   [${result.newRecIds.slice(0, 10).join(", ")}]`);
     }
+  }
 
-    if (result.duplicatedDataAmount > 0) {
-      const duplicateRate = (
-        (result.duplicatedDataAmount /
-          (result.uniqueFromAPI + result.duplicatedDataAmount)) *
-        100
-      ).toFixed(1);
-      console.log(`🔄 Duplicate rate: ${duplicateRate}%`);
+  static _logErrorRecIds(result) {
+    if (result.errorRecIds.length > 0) {
+      console.log(`\n❌ ERROR REC_IDS (${result.errorRecIds.length}):`);
+      console.log(`   [${result.errorRecIds.slice(0, 10).join(", ")}]`);
     }
+  }
 
-    console.log("");
+  static logPageInfo(page, gapCertificates) {
+    console.log(
+      `📄 Page ${page}: First 5 recId: [${gapCertificates
+        .slice(0, 5)
+        .map((g) => g.recId)
+        .join(", ")}]`
+    );
+    console.log(`📄 Page ${page}: Length: ${gapCertificates.length}`);
+  }
+
+  static logApiSummary(totalFromAPI, uniqueCount) {
+    console.log(`📊 Total from API: ${totalFromAPI}, Unique: ${uniqueCount}`);
   }
 }
 
