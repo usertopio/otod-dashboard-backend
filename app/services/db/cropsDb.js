@@ -1,53 +1,7 @@
-const {
-  connectionDB,
-  cropFields,
-  cropHarvestFields,
-} = require("../../config/db/crops.conf.js");
+const { connectionDB } = require("../../config/db/db.conf.js");
 const { OPERATIONS } = require("../../utils/constants");
 
-// 🔧 KEEP: Legacy functions
-const insertCrop = (crop) => {
-  const insertCropsQuery = `
-          INSERT INTO crops (${cropFields.join(", ")})
-          VALUES (${cropFields.map(() => "?").join(", ")})`;
-
-  const values = cropFields.map((cropField) => {
-    if (
-      (cropField === "gapIssuedDate" ||
-        cropField === "gapExpiryDate" ||
-        cropField === "cropStartDate" ||
-        cropField === "cropEndDate") &&
-      crop[cropField] === ""
-    ) {
-      return null;
-    }
-    return crop[cropField];
-  });
-
-  connectionDB.query(insertCropsQuery, values, (err) => {
-    if (err) {
-      console.error("Insert error:", err);
-    }
-  });
-};
-
-const insertCropHarvests = (cropHarvest) => {
-  const insertCropHarvestsQuery = `
-          INSERT INTO crop_harvests (${cropHarvestFields.join(", ")})
-          VALUES (${cropHarvestFields.map(() => "?").join(", ")})`;
-
-  const values = cropHarvestFields.map((cropHarvestField) => {
-    return cropHarvest[cropHarvestField];
-  });
-
-  connectionDB.query(insertCropHarvestsQuery, values, (err) => {
-    if (err) {
-      console.error("Insert error:", err);
-    }
-  });
-};
-
-// 🔧 NEW: Modern insertOrUpdate function with correct field mappings
+// 🔧 Modern insertOrUpdate function with correct field mappings
 async function insertOrUpdateCrop(crop) {
   try {
     // 🔧 Map fields based on actual API responses and database schema
@@ -130,8 +84,7 @@ async function insertOrUpdateCrop(crop) {
   }
 }
 
+// 🔧 Export only the modern function
 module.exports = {
-  insertCrop,
-  insertCropHarvests,
-  insertOrUpdateCrop, // 🔧 NEW: Modern insert/update function
+  insertOrUpdateCrop,
 };
