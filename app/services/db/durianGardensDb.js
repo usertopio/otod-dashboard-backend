@@ -129,9 +129,13 @@ async function insertOrUpdateDurianGarden(garden) {
       land_type_id: landTypeId || "UNKNOWN",
       lat: garden.lat || null,
       lon: garden.lon || null,
-      no_of_rais: garden.noOfRais || null,
-      no_of_ngan: garden.noOfNgan || null,
-      no_of_wah: garden.noOfWah || null,
+
+      // 🔧 FIX: Use nullish coalescing (??) instead of logical OR (||)
+      // This preserves 0 values instead of converting them to null
+      no_of_rais: garden.noOfRais ?? 0,
+      no_of_ngan: garden.noOfNgan ?? 0,
+      no_of_wah: garden.noOfWah ?? 0,
+
       kml: garden.kml || null,
       geojson: geoJsonValue,
       created_at: garden.createdTime || null,
