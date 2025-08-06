@@ -1,124 +1,36 @@
-const { getCrops, getCropHarvests } = require("../services/api/crops.js");
-const { insertCrop, insertCropHarvests } = require("../services/db/cropsDb");
+const CropsService = require("../services/crops/cropsService");
+const { CROPS_CONFIG } = require("../utils/constants");
 
-exports.fetchCrops = async (req, res) => {
-  try {
-    // Detail provided by the outsource
-    let totalRecords = 518;
-    let pageSize = 500;
-    let pages = Math.ceil(totalRecords / pageSize);
+// 🔧 Modern controller following farmers template
+class CropsController {
+  static async fetchCropsUntilTarget(req, res) {
+    try {
+      const targetCount =
+        (req.body && req.body.targetCount) || CROPS_CONFIG.DEFAULT_TARGET_COUNT;
+      const maxAttempts =
+        (req.body && req.body.maxAttempts) || CROPS_CONFIG.DEFAULT_MAX_ATTEMPTS;
 
-    // Initialize arrays to hold all farmers data and current page farmers data for logging
-    let allCropsAllPages = [];
-    let allCropsCurPage = [];
-    // let TotalemptyIdCardExpiryDateCurPage = 0;
-
-    for (let page = 1; page <= pages; page++) {
-      const requestBody = {
-        cropYear: 2024,
-        provinceName: "",
-        pageIndex: page,
-        pageSize: 500,
-      };
-
-      // Custom headers for the API request
-      const customHeaders = {
-        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-      };
-
-      // Fetch crops data in the current page from the outsource API
-      const crops = await getCrops(requestBody, customHeaders);
-
-      allCropsCurPage = crops.data;
-
-      // Concatinate the fetched crops from pages
-      allCropsAllPages = allCropsAllPages.concat(allCropsCurPage);
-
-      // Insert a crop into the database one by one
-      allCropsCurPage.forEach(insertCrop);
-
-      // Log: Log the first 5 recId for the current page
       console.log(
-        `First 5 recId for page ${page}:`,
-        allCropsCurPage.slice(0, 5).map((f) => f.recId)
+        `🎯 Starting fetchCropsUntilTarget - Target: ${targetCount}, Max attempts: ${maxAttempts}`
       );
 
-      // Log: Log the fetched data for each page
-      console.log(
-        `Fetched data for page ${page}: Length: ${
-          allCropsCurPage.length
-        }, Type: ${typeof allCropsCurPage}`
+      const result = await CropsService.fetchCropsUntilTarget(
+        targetCount,
+        maxAttempts
       );
+
+      return res.status(200).json(result);
+    } catch (err) {
+      console.error("Error in fetchCropsUntilTarget:", err);
+      return res.status(500).json({
+        message: "Failed to fetch crops until target",
+        error: err.message,
+      });
     }
-
-    res.json({ allCropsAllPages: allCropsAllPages });
-  } catch (error) {
-    console.error("Error fetching crops:", error);
-    res.status(500).json({ error: "Failed to fetch crops" });
   }
-};
+}
 
-exports.fetchCropHarvests = async (req, res) => {
-  try {
-    // Detail provided by the outsource
-    let totalRecords = 0;
-    let pageSize = 500;
-    let pages = Math.ceil(totalRecords / pageSize);
-
-    // Initialize arrays to hold all farmers data and current page farmers data for logging
-    let allCropHarvestsAllPage = [];
-    let allCropHarvestsCurPage = [];
-
-    // Loop through the number of pages to fetch all land data
-    for (let page = 0; page <= pages; page++) {
-      // Prepare the request body for the API request
-      let requestBody = {
-        cropYear: 2024,
-        provinceName: "",
-        fromDate: "2024-09-01",
-        toDate: "2024-12-31",
-        pageIndex: page,
-        pageSize: pageSize,
-      };
-
-      // Custom headers for the API request
-      let customHeaders = {
-        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-      };
-
-      // Fetch CropHarvests in the current page from the outsource API
-      let cropHarvests = await getCropHarvests(requestBody, customHeaders);
-
-      allCropHarvestsCurPage = cropHarvests.data;
-
-      // Concatinate the fetched lands from pages
-      allCropHarvestsAllPage = allCropHarvestsAllPage.concat(
-        allCropHarvestsCurPage
-      );
-
-      // Insert a CropHarvests into the database one by one
-      allCropHarvestsCurPage.forEach(insertCropHarvests);
-
-      // Log: Log the first 5 recId for the current page
-      console.log(
-        `First 5 recId for page ${page}:`,
-        allCropHarvestsCurPage.slice(0, 5).map((f) => f.recId)
-      );
-
-      // Log: Log the fetched data for each page
-      console.log(
-        `Fetched data for page ${page}: Length: ${
-          allCropHarvestsCurPage.length
-        }, Type: ${typeof allCropHarvestsCurPage}`
-      );
-    }
-
-    // Respond with all land data
-    res.json({
-      allCropHarvestsAllPage: allCropHarvestsAllPage.data,
-    });
-  } catch (error) {
-    console.error("Error fetching CropHarvests:", error);
-    res.status(500).json({ error: "Failed to fetch CropHarvests" });
-  }
+// 🔧 Export only the modern function
+module.exports = {
+  fetchCropsUntilTarget: CropsController.fetchCropsUntilTarget,
 };
