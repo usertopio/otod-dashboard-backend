@@ -1,10 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const { fetchCrops, fetchCropHarvests } = require("../controllers/crops.js");
+const { fetchCropsUntilTarget } = require("../controllers/crops.js");
 
-// Fetch crops data from the outsource API
-router.post("/fetchCrops", fetchCrops);
-
-router.post("/fetchCropHarvests", fetchCropHarvests);
+// 🔧 Modern endpoint following farmers template
+router.post("/fetchCropsUntilTarget", fetchCropsUntilTarget);
 
 module.exports = router;
