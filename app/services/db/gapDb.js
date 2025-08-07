@@ -1,7 +1,14 @@
+// ===================== Imports =====================
 const { connectionDB } = require("../../config/db/db.conf.js");
 const { OPERATIONS } = require("../../utils/constants");
 
-// 🎯 ONLY: Advanced insert/update pattern for fetchGapUntilTarget
+// ===================== Insert/Update =====================
+/**
+ * Inserts or updates a GAP certificate record in the database.
+ * Checks for existence, and upserts accordingly.
+ * @param {object} gap - GAP certificate data object.
+ * @returns {Promise<object>} - Operation result.
+ */
 const insertOrUpdateGap = async (gap) => {
   try {
     // Check if GAP certificate already exists
@@ -62,6 +69,7 @@ const insertOrUpdateGap = async (gap) => {
   }
 };
 
+// ===================== Exports =====================
 module.exports = {
   insertOrUpdateGap,
 };

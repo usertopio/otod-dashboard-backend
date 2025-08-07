@@ -1,10 +1,17 @@
+// ===================== Imports =====================
 const { getCrops } = require("../api/crops");
 const { insertOrUpdateGap } = require("../db/gapDb");
 const { connectionDB } = require("../../config/db/db.conf.js");
 const { GAP_CONFIG, OPERATIONS } = require("../../utils/constants");
 const GapLogger = require("./gapLogger");
 
+// ===================== Processor =====================
+// GapProcessor handles fetching, deduplication, and DB upserts for GAP certificates.
 class GapProcessor {
+  /**
+   * Fetches all GAP certificate data from the API, deduplicates, and upserts into DB.
+   * Returns a result object with metrics and tracking info.
+   */
   static async fetchAndProcessData() {
     const pages = Math.ceil(
       GAP_CONFIG.DEFAULT_TOTAL_RECORDS / GAP_CONFIG.DEFAULT_PAGE_SIZE
@@ -41,6 +48,11 @@ class GapProcessor {
     return this._buildResult(metrics, dbCountBefore, dbCountAfter);
   }
 
+  /**
+   * Fetches all pages of crops from the API and extracts GAP certificates.
+   * @param {number} pages - Number of pages to fetch.
+   * @param {object} metrics - Metrics object to accumulate results.
+   */
   static async _fetchAllPages(pages, metrics) {
     for (let page = 1; page <= pages; page++) {
       const requestBody = {
@@ -65,6 +77,11 @@ class GapProcessor {
     }
   }
 
+  /**
+   * Extracts GAP certificates from crop records.
+   * @param {Array} crops - Array of crop records.
+   * @returns {Array} - Array of GAP certificate objects.
+   */
   static _extractGapCertificates(crops) {
     const gapCertificates = [];
 
@@ -86,6 +103,11 @@ class GapProcessor {
     return gapCertificates;
   }
 
+  /**
+   * Deduplicates GAP certificates by recId.
+   * @param {Array} allGap - Array of all GAP certificates from API.
+   * @returns {Array} - Array of unique GAP certificates.
+   */
   static _getUniqueGap(allGap) {
     return allGap.filter(
       (gap, index, self) =>
@@ -93,6 +115,11 @@ class GapProcessor {
     );
   }
 
+  /**
+   * Upserts each unique GAP certificate into the DB and updates metrics.
+   * @param {Array} uniqueGap - Array of unique GAP certificates.
+   * @param {object} metrics - Metrics object to update.
+   */
   static async _processUniqueGap(uniqueGap, metrics) {
     for (const gap of uniqueGap) {
       const result = await insertOrUpdateGap(gap);
@@ -116,6 +143,10 @@ class GapProcessor {
     }
   }
 
+  /**
+   * Gets the current count of GAP certificates in the DB.
+   * @returns {Promise<number>} - Total number of GAP certificates.
+   */
   static async _getDatabaseCount() {
     const [result] = await connectionDB
       .promise()
@@ -123,6 +154,13 @@ class GapProcessor {
     return result[0].total;
   }
 
+  /**
+   * Builds a detailed result object with metrics and insights.
+   * @param {object} metrics - Metrics object.
+   * @param {number} dbCountBefore - DB count before processing.
+   * @param {number} dbCountAfter - DB count after processing.
+   * @returns {object} - Result summary.
+   */
   static _buildResult(metrics, dbCountBefore, dbCountAfter) {
     return {
       // Database metrics
@@ -161,4 +199,5 @@ class GapProcessor {
   }
 }
 
+// ===================== Exports =====================
 module.exports = GapProcessor;

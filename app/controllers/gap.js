@@ -1,7 +1,16 @@
+// ===================== Imports =====================
+// Import the GapService for business logic
 const GapService = require("../services/gap/gapService");
 const { GAP_CONFIG } = require("../utils/constants");
 
+// ===================== Controller =====================
+// Handles HTTP requests for GAP-related operations
 class GapController {
+  /**
+   * Handle POST /fetchGap
+   * Fetches GAP certificates from the API and stores them in the database.
+   * Accepts optional targetCount and maxAttempts in the request body.
+   */
   static async fetchGap(req, res) {
     try {
       const targetCount =
@@ -22,6 +31,7 @@ class GapController {
   }
 }
 
+// ===================== Exports =====================
 module.exports = {
   fetchGap: GapController.fetchGap,
 };

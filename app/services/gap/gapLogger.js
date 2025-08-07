@@ -1,3 +1,5 @@
+// ===================== Logger =====================
+// GapLogger provides structured logging for the GAP fetch/process workflow.
 class GapLogger {
   static logTargetStart(targetCount, maxAttempts) {
     console.log(
@@ -46,7 +48,6 @@ class GapLogger {
     console.log(`📊 Achieved: ${achieved}`);
     console.log(`🔄 Attempts used: ${attemptsUsed}/${maxAttempts}`);
     console.log(`✅ Status: ${status}`);
-    
   }
 
   static logAttemptResults(attempt, result) {
@@ -113,4 +114,5 @@ class GapLogger {
   }
 }
 
+// ===================== Exports =====================
 module.exports = GapLogger;
