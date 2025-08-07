@@ -4,20 +4,16 @@ const NewsProcessor = require("./newsProcessor");
 const NewsLogger = require("./newsLogger");
 
 class NewsService {
-  // 🔧 ADD: Reset only news table
   static async resetOnlyNewsTable() {
     const connection = connectionDB.promise();
 
     try {
       console.log("🧹 Resetting ONLY news table...");
 
-      // Disable foreign key checks
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
 
-      // Delete only news
       await connection.query("TRUNCATE TABLE news");
 
-      // Re-enable foreign key checks
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
 
       console.log("✅ Only news table reset - next ID will be 1");
@@ -29,8 +25,7 @@ class NewsService {
     }
   }
 
-  static async fetchNewsUntilTarget(targetCount, maxAttempts) {
-    // 🔧 ADD: Reset news table before fetching
+  static async fetchNews(targetCount, maxAttempts) {
     await this.resetOnlyNewsTable();
 
     let attempt = 1;
@@ -39,25 +34,20 @@ class NewsService {
 
     console.log(`🎯 Target: ${targetCount} news, Max attempts: ${maxAttempts}`);
 
-    // Main processing loop
     while (attempt <= maxAttempts) {
       NewsLogger.logAttemptStart(attempt, maxAttempts);
 
-      // Get current count before this attempt
       currentCount = await this._getDatabaseCount();
       NewsLogger.logCurrentStatus(currentCount, targetCount);
 
-      // Always make API call
       attemptsUsed++;
       const result = await NewsProcessor.fetchAndProcessData();
 
-      // Log detailed metrics for this attempt
       NewsLogger.logAttemptResults(attempt, result);
 
       currentCount = result.totalAfter;
       attempt++;
 
-      // Stop when target is reached
       if (currentCount >= targetCount) {
         NewsLogger.logTargetReached(targetCount, attemptsUsed);
         break;
