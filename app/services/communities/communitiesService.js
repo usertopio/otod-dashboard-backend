@@ -4,20 +4,14 @@ const CommunitiesProcessor = require("./communitiesProcessor");
 const CommunitiesLogger = require("./communitiesLogger");
 
 class CommunitiesService {
-  // 🔧 ADD: Reset only communities table
   static async resetOnlyCommunitiesTable() {
     const connection = connectionDB.promise();
 
     try {
       console.log("🧹 Resetting ONLY communities table...");
 
-      // Disable foreign key checks
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
-
-      // Delete only communities
       await connection.query("TRUNCATE TABLE communities");
-
-      // Re-enable foreign key checks
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
 
       console.log("✅ Only communities table reset - next ID will be 1");
@@ -29,8 +23,7 @@ class CommunitiesService {
     }
   }
 
-  static async fetchCommunitiesUntilTarget(targetCount, maxAttempts) {
-    // 🔧 ADD: Reset communities table before fetching
+  static async fetchCommunities(targetCount, maxAttempts) {
     await this.resetOnlyCommunitiesTable();
 
     let attempt = 1;
@@ -41,25 +34,20 @@ class CommunitiesService {
       `🎯 Target: ${targetCount} communities, Max attempts: ${maxAttempts}`
     );
 
-    // Main processing loop
     while (attempt <= maxAttempts) {
       CommunitiesLogger.logAttemptStart(attempt, maxAttempts);
 
-      // Get current count before this attempt
       currentCount = await this._getDatabaseCount();
       CommunitiesLogger.logCurrentStatus(currentCount, targetCount);
 
-      // Always make API call
       attemptsUsed++;
       const result = await CommunitiesProcessor.fetchAndProcessData();
 
-      // Log detailed metrics for this attempt
       CommunitiesLogger.logAttemptResults(attempt, result);
 
       currentCount = result.totalAfter;
       attempt++;
 
-      // Stop when target is reached
       if (currentCount >= targetCount) {
         CommunitiesLogger.logTargetReached(targetCount, attemptsUsed);
         break;
