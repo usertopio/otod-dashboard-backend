@@ -1,8 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const { fetchMerchantsUntilTarget } = require("../controllers/merchants.js");
+const { fetchMerchants } = require("../controllers/merchants.js");
 
-// 🎯 Only advanced "UntilTarget" endpoint
-router.post("/fetchMerchantsUntilTarget", fetchMerchantsUntilTarget);
+router.post("/fetchMerchants", fetchMerchants);
 
 module.exports = router;

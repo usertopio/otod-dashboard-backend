@@ -4,20 +4,16 @@ const MerchantsProcessor = require("./merchantsProcessor");
 const MerchantsLogger = require("./merchantsLogger");
 
 class MerchantsService {
-  // 🔧 ADD: Reset only merchants table
   static async resetOnlyMerchantsTable() {
     const connection = connectionDB.promise();
 
     try {
       console.log("🧹 Resetting ONLY merchants table...");
 
-      // Disable foreign key checks
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
 
-      // Delete only merchants
       await connection.query("TRUNCATE TABLE merchants");
 
-      // Re-enable foreign key checks
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
 
       console.log("✅ Only merchants table reset - next ID will be 1");
@@ -29,8 +25,7 @@ class MerchantsService {
     }
   }
 
-  static async fetchMerchantsUntilTarget(targetCount, maxAttempts) {
-    // 🔧 ADD: Reset merchants table before fetching
+  static async fetchMerchants(targetCount, maxAttempts) {
     await this.resetOnlyMerchantsTable();
 
     let attempt = 1;
@@ -41,25 +36,20 @@ class MerchantsService {
       `🎯 Target: ${targetCount} merchants, Max attempts: ${maxAttempts}`
     );
 
-    // Main processing loop
     while (attempt <= maxAttempts) {
       MerchantsLogger.logAttemptStart(attempt, maxAttempts);
 
-      // Get current count before this attempt
       currentCount = await this._getDatabaseCount();
       MerchantsLogger.logCurrentStatus(currentCount, targetCount);
 
-      // Always make API call
       attemptsUsed++;
       const result = await MerchantsProcessor.fetchAndProcessData();
 
-      // Log detailed metrics for this attempt
       MerchantsLogger.logAttemptResults(attempt, result);
 
       currentCount = result.totalAfter;
       attempt++;
 
-      // Stop when target is reached
       if (currentCount >= targetCount) {
         MerchantsLogger.logTargetReached(targetCount, attemptsUsed);
         break;
