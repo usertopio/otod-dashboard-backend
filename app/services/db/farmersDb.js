@@ -1,6 +1,18 @@
+// ===================== Imports =====================
+// Import DB connection for executing SQL queries
 const { connectionDB } = require("../../config/db/db.conf.js");
 
-// Required for name → code lookup
+// ===================== DB Utilities =====================
+// Provides helper functions for reference code lookup and upserting farmers
+
+/**
+ * Looks up a reference code in a reference table by name.
+ * @param {string} table - Reference table name.
+ * @param {string} nameColumn - Column for the name.
+ * @param {string} codeColumn - Column for the code.
+ * @param {string} name - Name to look up.
+ * @returns {Promise<string|null>} - The code if found, else null.
+ */
 async function getRefCode(table, nameColumn, codeColumn, name) {
   const [rows] = await connectionDB
     .promise()
@@ -11,7 +23,15 @@ async function getRefCode(table, nameColumn, codeColumn, name) {
   return rows.length > 0 ? rows[0][codeColumn] : null;
 }
 
-// If not found in ref → insert as 'generated'
+/**
+ * Ensures a reference code exists in the table, inserts if not found.
+ * @param {string} table - Reference table name.
+ * @param {string} nameColumn - Column for the name.
+ * @param {string} codeColumn - Column for the code.
+ * @param {string} name - Name to look up or insert.
+ * @param {string} generatedCodePrefix - Prefix for generated codes.
+ * @returns {Promise<string>} - The code.
+ */
 async function ensureRefCode(
   table,
   nameColumn,
@@ -21,7 +41,6 @@ async function ensureRefCode(
 ) {
   let code = await getRefCode(table, nameColumn, codeColumn, name);
   if (!code) {
-    // Create new code with prefix + timestamp
     code = `${generatedCodePrefix}${Date.now()}`;
     await connectionDB
       .promise()
@@ -33,7 +52,12 @@ async function ensureRefCode(
   return code;
 }
 
-// Main insertOrUpdate function
+/**
+ * Inserts or updates a farmer record in the database.
+ * Maps reference codes, checks for existence, and upserts accordingly.
+ * @param {object} farmer - Farmer data object.
+ * @returns {Promise<object>} - Operation result.
+ */
 async function insertOrUpdateFarmer(farmer) {
   try {
     // === Map province, district, subdistrict to codes ===
@@ -61,7 +85,7 @@ async function insertOrUpdateFarmer(farmer) {
       "GSUBDIST"
     );
 
-    // === Prepare transformed data ===
+    // === Prepare transformed data for DB ===
     const values = {
       rec_id: farmer.recId,
       farmer_province_code: provinceCode,
@@ -96,7 +120,7 @@ async function insertOrUpdateFarmer(farmer) {
       ]);
 
     if (existing.length > 0) {
-      // === Update ===
+      // === Update existing record ===
       const updateFields = Object.keys(values)
         .filter((key) => key !== "rec_id")
         .map((key) => `${key} = ?`)
@@ -113,7 +137,7 @@ async function insertOrUpdateFarmer(farmer) {
 
       return { operation: "UPDATE", recId: farmer.recId };
     } else {
-      // === Insert ===
+      // === Insert new record ===
       await connectionDB.promise().query(
         `INSERT INTO farmers (${Object.keys(values).join(
           ", "
@@ -126,9 +150,11 @@ async function insertOrUpdateFarmer(farmer) {
       return { operation: "INSERT", recId: farmer.recId };
     }
   } catch (err) {
+    // Log and return error operation
     console.error("Farmer insert/update error:", err);
     return { operation: "ERROR", recId: farmer.recId, error: err.message };
   }
 }
 
+// ===================== Exports =====================
 module.exports = { insertOrUpdateFarmer };

@@ -1,8 +1,16 @@
+// ===================== Logger =====================
+// FarmersLogger provides structured logging for the farmers fetch/process workflow.
 class FarmersLogger {
+  /**
+   * Logs the start of an attempt.
+   */
   static logAttemptStart(attempt, maxAttempts) {
     console.log(`\n🔄 === ATTEMPT ${attempt}/${maxAttempts} ===`);
   }
 
+  /**
+   * Logs the current status of the database.
+   */
   static logCurrentStatus(currentCount, targetCount) {
     console.log(`📊 Current farmers in DB: ${currentCount}/${targetCount}`);
 
@@ -17,12 +25,18 @@ class FarmersLogger {
     }
   }
 
+  /**
+   * Logs when the target is reached.
+   */
   static logTargetReached(targetCount, attemptsUsed) {
     console.log(
       `🎯 Target of ${targetCount} reached after ${attemptsUsed} attempts`
     );
   }
 
+  /**
+   * Logs the final results of the fetch operation.
+   */
   static logFinalResults(
     targetCount,
     achieved,
@@ -37,6 +51,9 @@ class FarmersLogger {
     console.log(`✅ Status: ${status}`);
   }
 
+  /**
+   * Logs the results of a single attempt.
+   */
   static logAttemptResults(attempt, result) {
     console.log(`📈 Attempt ${attempt} completed:`);
     console.log(`   ➕ Inserted: ${result.inserted}`);
@@ -53,6 +70,9 @@ class FarmersLogger {
     console.log("==========================================\n");
   }
 
+  /**
+   * Logs API metrics for the current batch.
+   */
   static _logApiMetrics(result) {
     console.log("\n📊 === API METRICS ===");
     console.log(
@@ -65,6 +85,9 @@ class FarmersLogger {
     console.log(`🔄 Duplicated data amount: ${result.duplicatedDataAmount}`);
   }
 
+  /**
+   * Logs database metrics for the current batch.
+   */
   static _logDatabaseMetrics(result) {
     console.log("\n📊 === DATABASE METRICS ===");
     console.log(`📊 Previous amount records in table: ${result.totalBefore}`);
@@ -74,6 +97,9 @@ class FarmersLogger {
     console.log(`❌ Records with ERRORS: ${result.errors}`);
   }
 
+  /**
+   * Logs additional insights for the current batch.
+   */
   static _logInsights(result) {
     console.log("\n📊 === ADDITIONAL INSIGHTS ===");
     console.log(
@@ -85,6 +111,9 @@ class FarmersLogger {
     console.log(`⏱️ Database growth: ${result.growth} records`);
   }
 
+  /**
+   * Logs error recIds for failed upserts.
+   */
   static _logErrorRecIds(result) {
     if (result.errorRecIds.length > 0) {
       console.log(`\n❌ ERROR REC_IDS (${result.errorRecIds.length}):`);
@@ -92,13 +121,20 @@ class FarmersLogger {
     }
   }
 
+  /**
+   * Logs info for each API page.
+   */
   static logPageInfo(page, farmers) {
     console.log(`📄 Page ${page}: Length: ${farmers.length}`);
   }
 
+  /**
+   * Logs API summary after deduplication.
+   */
   static logApiSummary(totalFromAPI, uniqueCount) {
     console.log(`📊 Total from API: ${totalFromAPI}, Unique: ${uniqueCount}`);
   }
 }
 
+// ===================== Exports =====================
 module.exports = FarmersLogger;
