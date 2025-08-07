@@ -24,8 +24,6 @@ class CommunitiesLogger {
 
   // 🔧 EXACT MATCH: Page info like farmers
   static logPageInfo(page, communities) {
-    const recIds = communities.slice(0, 5).map((c) => c.recId);
-    console.log(`📄 Page ${page}: First 5 recId: [${recIds.join(", ")}]`);
     console.log(`📄 Page ${page}: Length: ${communities.length}`);
   }
 
@@ -41,7 +39,14 @@ class CommunitiesLogger {
     console.log(`   🔄 Updated: ${result.updated}`);
     console.log(`   ❌ Errors: ${result.errors}`);
     console.log(`   📊 Total now: ${result.totalAfter}`);
-    console.log("");
+
+    if (result.recordsInDbNotInAPI > 0) {
+      console.log(
+        `📍 Records in DB but not in current API: ${result.recordsInDbNotInAPI}`
+      );
+    }
+
+    console.log("==========================================\n");
   }
 
   // 🔧 EXACT MATCH: Target reached like farmers

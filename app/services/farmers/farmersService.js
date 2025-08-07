@@ -8,6 +8,10 @@ class FarmersService {
     const connection = connectionDB.promise();
 
     try {
+      console.log("==========================================");
+      console.log(`🔄  Calling API Endpoint: {{LOCAL_HOST}}/api/fetchFarmers`);
+      console.log("==========================================\n");
+
       console.log("🧹 Resetting ONLY farmers table...");
 
       // Disable foreign key checks

@@ -18,8 +18,6 @@ class NewsLogger {
   }
 
   static logPageInfo(page, news) {
-    const recIds = news.slice(0, 5).map((n) => n.recId);
-    console.log(`📄 Page ${page}: First 5 recId: [${recIds.join(", ")}]`);
     console.log(`📄 Page ${page}: Length: ${news.length}`);
   }
 
@@ -33,7 +31,14 @@ class NewsLogger {
     console.log(`   🔄 Updated: ${result.updated}`);
     console.log(`   ❌ Errors: ${result.errors}`);
     console.log(`   📊 Total now: ${result.totalAfter}`);
-    console.log("");
+
+    if (result.recordsInDbNotInAPI > 0) {
+      console.log(
+        `📍 Records in DB but not in current API: ${result.recordsInDbNotInAPI}`
+      );
+    }
+
+    console.log("==========================================\n");
   }
 
   static logTargetReached(targetCount, attemptsUsed) {
@@ -54,6 +59,7 @@ class NewsLogger {
     console.log(`📊 Achieved: ${finalCount}`);
     console.log(`🔄 Attempts used: ${attemptsUsed}/${maxAttempts}`);
     console.log(`✅ Status: ${status}`);
+    
   }
 }
 

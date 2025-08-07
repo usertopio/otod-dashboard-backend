@@ -8,6 +8,10 @@ class NewsService {
     const connection = connectionDB.promise();
 
     try {
+      console.log("==========================================");
+      console.log(`🔄  Calling API Endpoint: {{LOCAL_HOST}}/api/fetchNews`);
+      console.log("==========================================\n");
+
       console.log("🧹 Resetting ONLY news table...");
 
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");

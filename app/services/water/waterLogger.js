@@ -46,6 +46,7 @@ class WaterLogger {
     console.log(`📊 Achieved: ${achieved}`);
     console.log(`🔄 Attempts used: ${attemptsUsed}/${maxAttempts}`);
     console.log(`✅ Status: ${status}`);
+    
   }
 
   static logApiCall(waterData) {
@@ -72,11 +73,11 @@ class WaterLogger {
     console.log(`   ❌ Errors: ${result.errors}`);
     console.log(`   📊 Total now: ${result.totalAfter}`);
 
-    this._logApiMetrics(result);
-    this._logDatabaseMetrics(result);
-    this._logInsights(result);
-    this._logNewRecIds(result);
-    this._logErrorRecIds(result);
+    if (result.recordsInDbNotInAPI > 0) {
+      console.log(
+        `📍 Records in DB but not in current API: ${result.recordsInDbNotInAPI}`
+      );
+    }
 
     console.log("==========================================\n");
   }
@@ -114,10 +115,7 @@ class WaterLogger {
   }
 
   static _logNewRecIds(result) {
-    if (result.newRecIds.length > 0) {
-      console.log(`\n🆕 NEW WATER RECORDS (${result.newRecIds.length}):`);
-      console.log(`   [${result.newRecIds.slice(0, 10).join(", ")}]`);
-    }
+    // Removed - no longer logging new water records
   }
 
   static _logErrorRecIds(result) {
@@ -128,12 +126,6 @@ class WaterLogger {
   }
 
   static logPageInfo(page, waterRecords) {
-    console.log(
-      `📄 Page ${page}: First 5 water records: [${waterRecords
-        .slice(0, 5)
-        .map((w) => `${w.provinceName}(${w.operMonth})`)
-        .join(", ")}]`
-    );
     console.log(`📄 Page ${page}: Length: ${waterRecords.length}`);
   }
 }

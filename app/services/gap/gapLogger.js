@@ -46,6 +46,7 @@ class GapLogger {
     console.log(`📊 Achieved: ${achieved}`);
     console.log(`🔄 Attempts used: ${attemptsUsed}/${maxAttempts}`);
     console.log(`✅ Status: ${status}`);
+    
   }
 
   static logAttemptResults(attempt, result) {
@@ -55,11 +56,11 @@ class GapLogger {
     console.log(`   ❌ Errors: ${result.errors}`);
     console.log(`   📊 Total now: ${result.totalAfter}`);
 
-    this._logApiMetrics(result);
-    this._logDatabaseMetrics(result);
-    this._logInsights(result);
-    this._logNewRecIds(result);
-    this._logErrorRecIds(result);
+    if (result.recordsInDbNotInAPI > 0) {
+      console.log(
+        `📍 Records in DB but not in current API: ${result.recordsInDbNotInAPI}`
+      );
+    }
 
     console.log("==========================================\n");
   }
@@ -96,13 +97,6 @@ class GapLogger {
     console.log(`⏱️ Database growth: ${result.growth} records`);
   }
 
-  static _logNewRecIds(result) {
-    if (result.newRecIds.length > 0) {
-      console.log(`\n🆕 NEW REC_IDS (${result.newRecIds.length}):`);
-      console.log(`   [${result.newRecIds.slice(0, 10).join(", ")}]`);
-    }
-  }
-
   static _logErrorRecIds(result) {
     if (result.errorRecIds.length > 0) {
       console.log(`\n❌ ERROR REC_IDS (${result.errorRecIds.length}):`);
@@ -111,12 +105,6 @@ class GapLogger {
   }
 
   static logPageInfo(page, gapCertificates) {
-    console.log(
-      `📄 Page ${page}: First 5 recId: [${gapCertificates
-        .slice(0, 5)
-        .map((g) => g.recId)
-        .join(", ")}]`
-    );
     console.log(`📄 Page ${page}: Length: ${gapCertificates.length}`);
   }
 

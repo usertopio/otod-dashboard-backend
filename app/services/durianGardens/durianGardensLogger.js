@@ -37,6 +37,7 @@ class DurianGardensLogger {
     console.log(`📊 Achieved: ${achieved}`);
     console.log(`🔄 Attempts used: ${attemptsUsed}/${maxAttempts}`);
     console.log(`✅ Status: ${status}`);
+    
   }
 
   static logAttemptResults(attempt, result) {
@@ -46,11 +47,11 @@ class DurianGardensLogger {
     console.log(`   ❌ Errors: ${result.errors}`);
     console.log(`   📊 Total now: ${result.totalAfter}`);
 
-    this._logApiMetrics(result);
-    this._logDatabaseMetrics(result);
-    this._logInsights(result);
-    this._logNewRecIds(result);
-    this._logErrorRecIds(result);
+    if (result.recordsInDbNotInAPI > 0) {
+      console.log(
+        `📍 Records in DB but not in current API: ${result.recordsInDbNotInAPI}`
+      );
+    }
 
     console.log("==========================================\n");
   }
@@ -91,13 +92,6 @@ class DurianGardensLogger {
     console.log(`⏱️ Database growth: ${result.growth} records`);
   }
 
-  static _logNewRecIds(result) {
-    if (result.newRecIds.length > 0) {
-      console.log(`\n🆕 NEW LAND_IDS (${result.newRecIds.length}):`);
-      console.log(`   [${result.newRecIds.slice(0, 10).join(", ")}]`);
-    }
-  }
-
   static _logErrorRecIds(result) {
     if (result.errorRecIds.length > 0) {
       console.log(`\n❌ ERROR LAND_IDS (${result.errorRecIds.length}):`);
@@ -106,12 +100,6 @@ class DurianGardensLogger {
   }
 
   static logPageInfo(page, records, apiType) {
-    console.log(
-      `📄 ${apiType} Page ${page}: First 3 land_ids: [${records
-        .slice(0, 3)
-        .map((r) => r.landId)
-        .join(", ")}]`
-    );
     console.log(`📄 ${apiType} Page ${page}: Length: ${records.length}`);
   }
 

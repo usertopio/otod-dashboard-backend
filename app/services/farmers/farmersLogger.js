@@ -44,11 +44,11 @@ class FarmersLogger {
     console.log(`   ❌ Errors: ${result.errors}`);
     console.log(`   📊 Total now: ${result.totalAfter}`);
 
-    this._logApiMetrics(result);
-    this._logDatabaseMetrics(result);
-    this._logInsights(result);
-    this._logNewRecIds(result);
-    this._logErrorRecIds(result);
+    if (result.recordsInDbNotInAPI > 0) {
+      console.log(
+        `📍 Records in DB but not in current API: ${result.recordsInDbNotInAPI}`
+      );
+    }
 
     console.log("==========================================\n");
   }
@@ -85,25 +85,6 @@ class FarmersLogger {
     console.log(`⏱️ Database growth: ${result.growth} records`);
   }
 
-  static _logNewRecIds(result) {
-    if (result.newRecIds.length > 0) {
-      console.log(`\n🆕 NEW REC_IDS INSERTED (${result.newRecIds.length}):`);
-      if (result.newRecIds.length <= 20) {
-        console.log(`   [${result.newRecIds.join(", ")}]`);
-      } else {
-        console.log(
-          `   First 10: [${result.newRecIds.slice(0, 10).join(", ")}]`
-        );
-        console.log(`   Last 10:  [${result.newRecIds.slice(-10).join(", ")}]`);
-        console.log(
-          `   (... ${result.newRecIds.length - 20} more rec_ids ...)`
-        );
-      }
-    } else {
-      console.log(`\n🆕 NEW REC_IDS INSERTED: None`);
-    }
-  }
-
   static _logErrorRecIds(result) {
     if (result.errorRecIds.length > 0) {
       console.log(`\n❌ ERROR REC_IDS (${result.errorRecIds.length}):`);
@@ -112,12 +93,6 @@ class FarmersLogger {
   }
 
   static logPageInfo(page, farmers) {
-    console.log(
-      `📄 Page ${page}: First 5 recId: [${farmers
-        .slice(0, 5)
-        .map((f) => f.recId)
-        .join(", ")}]`
-    );
     console.log(`📄 Page ${page}: Length: ${farmers.length}`);
   }
 

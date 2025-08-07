@@ -8,6 +8,12 @@ class OperationsService {
     const connection = connectionDB.promise();
 
     try {
+      console.log("==========================================");
+      console.log(
+        `🔄  Calling API Endpoint: {{LOCAL_HOST}}/api/fetchOperations`
+      );
+      console.log("==========================================\n");
+
       console.log("🧹 Resetting ONLY operations table...");
 
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
