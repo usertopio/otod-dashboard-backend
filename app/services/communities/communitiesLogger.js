@@ -1,5 +1,7 @@
+// ===================== Logger =====================
+// CommunitiesLogger provides structured logging for the communities fetch/process workflow.
 class CommunitiesLogger {
-  // 🔧 EXACT MATCH: Target start like farmers
+  // Log the start of the target/attempts
   static logTargetStart(targetCount, maxAttempts) {
     console.log(
       `🎯 Target: ${targetCount} communities, Max attempts: ${maxAttempts}`
@@ -7,32 +9,32 @@ class CommunitiesLogger {
     console.log("");
   }
 
-  // 🔧 EXACT MATCH: Attempt start like farmers
+  // Log the start of an attempt
   static logAttemptStart(attempt, maxAttempts) {
     console.log(`\n🔄 === ATTEMPT ${attempt}/${maxAttempts} ===`);
   }
 
-  // 🔧 EXACT MATCH: Current status like farmers
+  // Log the current status of the database
   static logCurrentStatus(currentCount, targetCount) {
     console.log(`📊 Current communities in DB: ${currentCount}/${targetCount}`);
   }
 
-  // 🔧 EXACT MATCH: Target reached but continuing like farmers
+  // Log when the target is reached but continuing
   static logTargetReachedButContinuing() {
     console.log(`🔄 Target reached but continuing API call for fresh data...`);
   }
 
-  // 🔧 EXACT MATCH: Page info like farmers
+  // Log info for each API page
   static logPageInfo(page, communities) {
     console.log(`📄 Page ${page}: Length: ${communities.length}`);
   }
 
-  // 🔧 EXACT MATCH: API summary like farmers
+  // Log API summary after deduplication
   static logApiSummary(totalFromAPI, uniqueFromAPI) {
     console.log(`📊 Total from API: ${totalFromAPI}, Unique: ${uniqueFromAPI}`);
   }
 
-  // 🔧 EXACT MATCH: Attempt results like farmers
+  // Log the results of a single attempt
   static logAttemptResults(attempt, result) {
     console.log(`📈 Attempt ${attempt} completed:`);
     console.log(`   ➕ Inserted: ${result.inserted}`);
@@ -49,14 +51,14 @@ class CommunitiesLogger {
     console.log("==========================================\n");
   }
 
-  // 🔧 EXACT MATCH: Target reached like farmers
+  // Log when the target is reached
   static logTargetReached(targetCount, attemptsUsed) {
     console.log(
       `🎯 Target of ${targetCount} reached after ${attemptsUsed} attempts ✅`
     );
   }
 
-  // 🔧 EXACT MATCH: Final result like farmers
+  // Log the final results of the fetch operation
   static logFinalResults(
     targetCount,
     finalCount,
@@ -72,4 +74,5 @@ class CommunitiesLogger {
   }
 }
 
+// ===================== Exports =====================
 module.exports = CommunitiesLogger;

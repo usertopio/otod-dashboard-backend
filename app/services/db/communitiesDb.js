@@ -1,7 +1,20 @@
+// ===================== Imports =====================
+// Import DB connection for executing SQL queries
 const { connectionDB } = require("../../config/db/db.conf.js");
 const { OPERATIONS } = require("../../utils/constants");
 
-// 🔧 ADD: Copy ensureRefCode function from farmersDb.js
+// ===================== DB Utilities =====================
+// Provides helper functions for reference code lookup and upserting communities
+
+/**
+ * Ensures a reference code exists in the table, inserts if not found.
+ * @param {string} table - Reference table name.
+ * @param {string} nameColumn - Column for the name.
+ * @param {string} codeColumn - Column for the code.
+ * @param {string} name - Name to look up or insert.
+ * @param {string} generatedCodePrefix - Prefix for generated codes.
+ * @returns {Promise<string>} - The code.
+ */
 async function ensureRefCode(
   table,
   nameColumn,
@@ -57,9 +70,15 @@ async function ensureRefCode(
   }
 }
 
+/**
+ * Inserts or updates a community record in the database.
+ * Maps reference codes, checks for existence, and upserts accordingly.
+ * @param {object} community - Community data object.
+ * @returns {Promise<object>} - Operation result.
+ */
 const insertOrUpdateCommunity = async (community) => {
   try {
-    // 🔧 REPLACE: Use ensureRefCode like farmers
+    // Map province, district, subdistrict to codes
     const provinceCode = await ensureRefCode(
       "ref_provinces",
       "province_name_th",
@@ -160,6 +179,7 @@ const insertOrUpdateCommunity = async (community) => {
   }
 };
 
+// ===================== Exports =====================
 module.exports = {
   insertOrUpdateCommunity,
 };
