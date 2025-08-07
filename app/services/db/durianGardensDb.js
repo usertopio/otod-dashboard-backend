@@ -60,7 +60,7 @@ async function ensureRefCode(
 // 🌿 Modern insertOrUpdate function with CORRECT column names
 async function insertOrUpdateDurianGarden(garden) {
   try {
-    // 🔧 Create ALL reference codes with CORRECT column names
+    // === Map province, district, subdistrict, land type to codes ===
     const provinceCode = await ensureRefCode(
       "ref_provinces",
       "province_name_th",
@@ -85,16 +85,15 @@ async function insertOrUpdateDurianGarden(garden) {
       "GSUBDIST"
     );
 
-    // 🔧 FIXED: Use correct column name from schema
     const landTypeId = await ensureRefCode(
       "ref_land_types",
-      "land_type", // 🔧 This is the correct column name!
+      "land_type",
       "land_type_id",
       garden.landType,
       "GLAND"
     );
 
-    // 🔧 Properly handle geojson field
+    // Handle geojson field
     let geoJsonValue = null;
     if (garden.geojson) {
       if (typeof garden.geojson === "string") {
@@ -118,9 +117,15 @@ async function insertOrUpdateDurianGarden(garden) {
       }
     }
 
-    // 🌿 Map fields with proper reference codes
+    // Generate rec_id if not provided - use land_id as fallback
+    const recId =
+      garden.recId ||
+      garden.landId ||
+      `DURIAN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Map fields with proper reference codes
     const values = {
-      rec_id: garden.recId || null,
+      rec_id: recId,
       farmer_id: garden.farmerId,
       land_id: garden.landId,
       garden_province_code: provinceCode || "UNKNOWN",
@@ -129,13 +134,9 @@ async function insertOrUpdateDurianGarden(garden) {
       land_type_id: landTypeId || "UNKNOWN",
       lat: garden.lat || null,
       lon: garden.lon || null,
-
-      // 🔧 FIX: Use nullish coalescing (??) instead of logical OR (||)
-      // This preserves 0 values instead of converting them to null
       no_of_rais: garden.noOfRais ?? 0,
       no_of_ngan: garden.noOfNgan ?? 0,
       no_of_wah: garden.noOfWah ?? 0,
-
       kml: garden.kml || null,
       geojson: geoJsonValue,
       created_at: garden.createdTime || null,
@@ -160,13 +161,7 @@ async function insertOrUpdateDurianGarden(garden) {
       }
     }
 
-    console.log("🔧 Processed values for land_id:", garden.landId);
-    console.log("🔧 Province code:", values.garden_province_code);
-    console.log("🔧 District code:", values.garden_district_code);
-    console.log("🔧 Subdistrict code:", values.garden_subdistrict_code);
-    console.log("🔧 Land type code:", values.land_type_id);
-
-    // 🌿 Check for existing land_id (unique key)
+    // Check for existing land_id (unique key)
     const [existing] = await connectionDB
       .promise()
       .query(`SELECT id FROM durian_gardens WHERE land_id = ? LIMIT 1`, [
@@ -174,7 +169,7 @@ async function insertOrUpdateDurianGarden(garden) {
       ]);
 
     if (existing.length > 0) {
-      // === Update ===
+      // Update existing record
       const updateFields = Object.keys(values)
         .filter((key) => key !== "land_id")
         .map((key) => `${key} = ?`)
@@ -193,7 +188,7 @@ async function insertOrUpdateDurianGarden(garden) {
 
       return { operation: OPERATIONS.UPDATE, landId: garden.landId };
     } else {
-      // === Insert ===
+      // Insert new record
       const insertFields = Object.keys(values);
       const insertPlaceholders = insertFields.map(() => "?");
       const insertValues = Object.values(values);
