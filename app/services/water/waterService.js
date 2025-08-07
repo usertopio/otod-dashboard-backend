@@ -4,20 +4,14 @@ const WaterProcessor = require("./waterProcessor");
 const WaterLogger = require("./waterLogger");
 
 class WaterService {
-  // 🔧 ADD: Reset only water table
   static async resetOnlyWaterTable() {
     const connection = connectionDB.promise();
 
     try {
       console.log("🧹 Resetting ONLY water table...");
 
-      // Disable foreign key checks
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
-
-      // Delete only water
       await connection.query("TRUNCATE TABLE water");
-
-      // Re-enable foreign key checks
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
 
       console.log("✅ Only water table reset - next ID will be 1");
@@ -29,8 +23,7 @@ class WaterService {
     }
   }
 
-  static async fetchWaterUntilTarget(targetCount, maxAttempts) {
-    // 🔧 ADD: Reset water table before fetching
+  static async fetchWater(targetCount, maxAttempts) {
     await this.resetOnlyWaterTable();
 
     let attempt = 1;
@@ -41,25 +34,20 @@ class WaterService {
       `🎯 Target: ${targetCount} water records, Max attempts: ${maxAttempts}`
     );
 
-    // Main processing loop
     while (attempt <= maxAttempts) {
       WaterLogger.logAttemptStart(attempt, maxAttempts);
 
-      // Get current count before this attempt
       currentCount = await this._getDatabaseCount();
       WaterLogger.logCurrentStatus(currentCount, targetCount);
 
-      // Always make API call
       attemptsUsed++;
       const result = await WaterProcessor.fetchAndProcessData();
 
-      // Log detailed metrics for this attempt
       WaterLogger.logAttemptResults(attempt, result);
 
       currentCount = result.totalAfter;
       attempt++;
 
-      // Stop when target is reached
       if (currentCount >= targetCount) {
         WaterLogger.logTargetReached(targetCount, attemptsUsed);
         break;

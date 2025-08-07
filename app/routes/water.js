@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const { fetchWaterUntilTarget } = require("../controllers/water");
+const { fetchWater } = require("../controllers/water");
 
 // Main water endpoints
-router.post("/fetchWaterUntilTarget", fetchWaterUntilTarget);
+router.post("/fetchWater", fetchWater);
 
 module.exports = router;
