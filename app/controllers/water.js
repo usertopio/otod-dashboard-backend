@@ -1,7 +1,16 @@
+// ===================== Imports =====================
+// Import the WaterService for business logic
 const WaterService = require("../services/water/waterService");
 const { WATER_CONFIG } = require("../utils/constants");
 
+// ===================== Controller =====================
+// Handles HTTP requests for water-related operations
 class WaterController {
+  /**
+   * Handle POST /fetchWater
+   * Fetches water usage summary from the API and stores it in the database.
+   * Accepts optional targetCount and maxAttempts in the request body.
+   */
   static async fetchWater(req, res) {
     try {
       const targetCount =
@@ -22,6 +31,7 @@ class WaterController {
   }
 }
 
+// ===================== Exports =====================
 module.exports = {
   fetchWater: WaterController.fetchWater,
 };

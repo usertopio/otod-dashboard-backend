@@ -1,10 +1,18 @@
+// ===================== Imports =====================
+// Import API client for fetching water usage summary
 const { getWaterUsageSummaryByMonth } = require("../api/water");
 const { insertOrUpdateWater } = require("../db/waterDb");
 const { connectionDB } = require("../../config/db/db.conf.js");
 const { WATER_CONFIG, OPERATIONS } = require("../../utils/constants");
 const WaterLogger = require("./waterLogger");
 
+// ===================== Processor =====================
+// WaterProcessor handles fetching, deduplication, and DB upserts for water usage summary.
 class WaterProcessor {
+  /**
+   * Fetches all water usage summary data from the API, deduplicates, and upserts into DB.
+   * Returns a result object with metrics and tracking info.
+   */
   static async fetchAndProcessData() {
     // Water API doesn't use pagination, so we just make one call
     const pages = 1;
@@ -43,6 +51,11 @@ class WaterProcessor {
     return this._buildResult(metrics, dbCountBefore, dbCountAfter);
   }
 
+  /**
+   * Fetches all pages of water usage summary from the API and logs each page.
+   * @param {number} pages - Number of pages to fetch (always 1).
+   * @param {object} metrics - Metrics object to accumulate results.
+   */
   static async _fetchAllPages(pages, metrics) {
     // Single API call for water data
     const requestBody = {
@@ -64,6 +77,11 @@ class WaterProcessor {
     WaterLogger.logPageInfo(1, allWaterCurPage);
   }
 
+  /**
+   * Deduplicates water records by cropYear, provinceName, and operMonth.
+   * @param {Array} allWater - Array of all water records from API.
+   * @returns {Array} - Array of unique water records.
+   */
   static _getUniqueWater(allWater) {
     return allWater.filter(
       (water, index, self) =>
@@ -77,6 +95,11 @@ class WaterProcessor {
     );
   }
 
+  /**
+   * Upserts each unique water record into the DB and updates metrics.
+   * @param {Array} uniqueWater - Array of unique water records.
+   * @param {object} metrics - Metrics object to update.
+   */
   static async _processUniqueWater(uniqueWater, metrics) {
     for (const water of uniqueWater) {
       const result = await insertOrUpdateWater(water);
@@ -103,6 +126,10 @@ class WaterProcessor {
     }
   }
 
+  /**
+   * Gets the current count of water records in the DB.
+   * @returns {Promise<number>} - Total number of water records.
+   */
   static async _getDatabaseCount() {
     const [result] = await connectionDB
       .promise()
@@ -110,6 +137,13 @@ class WaterProcessor {
     return result[0].total;
   }
 
+  /**
+   * Builds a detailed result object with metrics and insights.
+   * @param {object} metrics - Metrics object.
+   * @param {number} dbCountBefore - DB count before processing.
+   * @param {number} dbCountAfter - DB count after processing.
+   * @returns {object} - Result summary.
+   */
   static _buildResult(metrics, dbCountBefore, dbCountAfter) {
     return {
       // Database metrics
@@ -154,4 +188,5 @@ class WaterProcessor {
   }
 }
 
+// ===================== Exports =====================
 module.exports = WaterProcessor;

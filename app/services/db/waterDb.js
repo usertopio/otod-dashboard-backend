@@ -1,7 +1,14 @@
+// ===================== Imports =====================
+// Import DB connection for executing SQL queries
 const { connectionDB } = require("../../config/db/db.conf.js");
 const { OPERATIONS } = require("../../utils/constants");
 
-// 🔧 Reference lookup function for province codes
+// ===================== Reference Lookup =====================
+/**
+ * Looks up or generates a province code for a given province name.
+ * @param {string} provinceName - Province name in Thai.
+ * @returns {Promise<string|null>} - Province code.
+ */
 const convertProvinceNameToCode = async (provinceName) => {
   if (!provinceName) return null;
 
@@ -48,7 +55,13 @@ const convertProvinceNameToCode = async (provinceName) => {
   }
 };
 
-// 🎯 Advanced insert/update pattern for fetchWater
+// ===================== Insert/Update =====================
+/**
+ * Inserts or updates a water usage summary record in the database.
+ * Maps province name to code, checks for existence, and upserts accordingly.
+ * @param {object} water - Water usage summary data object.
+ * @returns {Promise<object>} - Operation result.
+ */
 const insertOrUpdateWater = async (water) => {
   try {
     // Convert province name to code
@@ -60,11 +73,11 @@ const insertOrUpdateWater = async (water) => {
          WHERE crop_year = ? AND water_province_code = ? 
          AND oper_month = STR_TO_DATE(CONCAT(?, '-01'), '%Y-%m-%d')
          LIMIT 1`,
-      [water.cropYear, provinceCode, water.operMonth] // "2025-07" becomes "2025-07-01"
+      [water.cropYear, provinceCode, water.operMonth]
     );
 
     if (existing.length > 0) {
-      // UPDATE existing water record - ADD STR_TO_DATE
+      // UPDATE existing water record
       await connectionDB.promise().query(
         `UPDATE water SET 
          total_litre = ?, 
@@ -79,12 +92,12 @@ const insertOrUpdateWater = async (water) => {
         water: `${water.provinceName}-${water.operMonth}`,
       };
     } else {
-      // INSERT new water record - ADD STR_TO_DATE
+      // INSERT new water record
       await connectionDB.promise().query(
         `INSERT INTO water 
          (crop_year, water_province_code, oper_month, total_litre, fetch_at) 
          VALUES (?, ?, STR_TO_DATE(CONCAT(?, '-01'), '%Y-%m-%d'), ?, NOW())`,
-        [water.cropYear, provinceCode, water.operMonth, water.totalLitre || 0] // "2025-07" becomes "2025-07-01"
+        [water.cropYear, provinceCode, water.operMonth, water.totalLitre || 0]
       );
 
       return {
@@ -102,6 +115,7 @@ const insertOrUpdateWater = async (water) => {
   }
 };
 
+// ===================== Exports =====================
 module.exports = {
   insertOrUpdateWater,
 };

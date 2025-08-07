@@ -1,3 +1,5 @@
+// ===================== Logger =====================
+// WaterLogger provides structured logging for the water fetch/process workflow.
 class WaterLogger {
   static logTargetStart(targetCount, maxAttempts) {
     console.log(
@@ -46,7 +48,6 @@ class WaterLogger {
     console.log(`📊 Achieved: ${achieved}`);
     console.log(`🔄 Attempts used: ${attemptsUsed}/${maxAttempts}`);
     console.log(`✅ Status: ${status}`);
-    
   }
 
   static logApiCall(waterData) {
@@ -114,10 +115,6 @@ class WaterLogger {
     console.log(`⏱️ Database growth: ${result.growth} records`);
   }
 
-  static _logNewRecIds(result) {
-    // Removed - no longer logging new water records
-  }
-
   static _logErrorRecIds(result) {
     if (result.errorRecIds.length > 0) {
       console.log(`\n❌ ERROR WATER RECORDS (${result.errorRecIds.length}):`);
@@ -130,4 +127,5 @@ class WaterLogger {
   }
 }
 
+// ===================== Exports =====================
 module.exports = WaterLogger;

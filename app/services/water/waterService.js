@@ -1,9 +1,20 @@
+// ===================== Imports =====================
+// Import DB connection for executing SQL queries
 const { connectionDB } = require("../../config/db/db.conf.js");
 const { WATER_CONFIG, STATUS } = require("../../utils/constants");
 const WaterProcessor = require("./waterProcessor");
 const WaterLogger = require("./waterLogger");
 
+// ===================== Service =====================
+// WaterService handles the business logic for fetching, resetting, and managing water records.
 class WaterService {
+  /**
+   * Resets only the water table in the database.
+   * - Disables foreign key checks to allow truncation.
+   * - Truncates the water table, leaving related tables untouched.
+   * - Re-enables foreign key checks after operation.
+   * - Logs the process and returns a status object.
+   */
   static async resetOnlyWaterTable() {
     const connection = connectionDB.promise();
 
@@ -29,6 +40,16 @@ class WaterService {
     }
   }
 
+  /**
+   * Main entry point for fetching water usage summary from the API and storing it in the database.
+   * - Resets the water table before starting.
+   * - Loops up to maxAttempts, fetching and processing data each time.
+   * - Logs progress and metrics for each attempt.
+   * - Stops early if the target number of records is reached.
+   * - Returns a summary result object.
+   * @param {number} targetCount - The number of records to fetch and store.
+   * @param {number} maxAttempts - The maximum number of fetch attempts.
+   */
   static async fetchWater(targetCount, maxAttempts) {
     await this.resetOnlyWaterTable();
 
@@ -63,6 +84,10 @@ class WaterService {
     return this._buildFinalResult(targetCount, attemptsUsed, maxAttempts);
   }
 
+  /**
+   * Returns the current count of water records in the database.
+   * @returns {Promise<number>} - The total number of water records in the DB.
+   */
   static async _getDatabaseCount() {
     const [result] = await connectionDB
       .promise()
@@ -70,6 +95,13 @@ class WaterService {
     return result[0].total;
   }
 
+  /**
+   * Builds and logs the final result summary after the fetch loop.
+   * @param {number} targetCount - The target number of records.
+   * @param {number} attemptsUsed - The number of attempts used.
+   * @param {number} maxAttempts - The maximum allowed attempts.
+   * @returns {object} - Summary of the fetch operation.
+   */
   static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
     const finalCount = await this._getDatabaseCount();
     const status =
@@ -95,4 +127,5 @@ class WaterService {
   }
 }
 
+// ===================== Exports =====================
 module.exports = WaterService;
