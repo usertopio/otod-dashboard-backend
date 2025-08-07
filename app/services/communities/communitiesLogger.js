@@ -9,7 +9,7 @@ class CommunitiesLogger {
 
   // 🔧 EXACT MATCH: Attempt start like farmers
   static logAttemptStart(attempt, maxAttempts) {
-    console.log(`🔄 === ATTEMPT ${attempt}/${maxAttempts} ===`);
+    console.log(`\n🔄 === ATTEMPT ${attempt}/${maxAttempts} ===`);
   }
 
   // 🔧 EXACT MATCH: Current status like farmers

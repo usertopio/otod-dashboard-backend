@@ -57,6 +57,7 @@ class CropsProcessor {
 
   // 🔧 Fetch from GetCrops API (paginated)
   static async _fetchGetCropsPages(metrics) {
+    console.log(``);
     console.log("📞 Calling GetCrops API (paginated)...");
 
     // Use totalRecords from actual API response (4 records in example)
@@ -115,6 +116,7 @@ class CropsProcessor {
 
   // 🔧 Merge records from both APIs by cropId
   static _mergeRecordsFromBothAPIs(getCropsData, getCropHarvestsData) {
+    console.log(``);
     console.log("🔗 Merging records from both APIs by cropId...");
 
     // Start with GetCrops data as base (has most fields)

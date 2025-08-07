@@ -12,10 +12,6 @@ class DurianGardensController {
         (req.body && req.body.maxAttempts) ||
         DURIAN_GARDENS_CONFIG.DEFAULT_MAX_ATTEMPTS;
 
-      console.log(
-        `🌿 Starting fetchDurianGardens - Target: ${targetCount}, Max attempts: ${maxAttempts}`
-      );
-
       const result = await DurianGardensService.fetchDurianGardens(
         targetCount,
         maxAttempts

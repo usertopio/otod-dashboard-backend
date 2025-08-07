@@ -37,7 +37,6 @@ class CropsLogger {
     console.log(`📊 Achieved: ${achieved}`);
     console.log(`🔄 Attempts used: ${attemptsUsed}/${maxAttempts}`);
     console.log(`✅ Status: ${status}`);
-    
   }
 
   static logAttemptResults(attempt, result) {
@@ -109,6 +108,7 @@ class CropsLogger {
     fromGetCrops,
     fromGetCropHarvests
   ) {
+    console.log(``);
     console.log(`📊 === API SUMMARY ===`);
     console.log(`📞 GetCrops (paginated): ${fromGetCrops} records`);
     console.log(`📞 GetCropHarvests (single): ${fromGetCropHarvests} records`);

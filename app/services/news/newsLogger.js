@@ -6,7 +6,7 @@ class NewsLogger {
   }
 
   static logAttemptStart(attempt, maxAttempts) {
-    console.log(`🔄 === ATTEMPT ${attempt}/${maxAttempts} ===`);
+    console.log(`\n🔄 === ATTEMPT ${attempt}/${maxAttempts} ===`);
   }
 
   static logCurrentStatus(currentCount, targetCount) {
@@ -54,12 +54,12 @@ class NewsLogger {
     maxAttempts,
     status
   ) {
+    console.log(``);
     console.log(`🏁 === FINAL RESULT ===`);
     console.log(`🎯 Target: ${targetCount}`);
     console.log(`📊 Achieved: ${finalCount}`);
     console.log(`🔄 Attempts used: ${attemptsUsed}/${maxAttempts}`);
     console.log(`✅ Status: ${status}`);
-    
   }
 }
 

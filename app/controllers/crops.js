@@ -16,10 +16,6 @@ class CropsController {
         (CROPS_CONFIG && CROPS_CONFIG.DEFAULT_MAX_ATTEMPTS) ||
         3; // Fallback value
 
-      console.log(
-        `🎯 Starting fetchCrops - Target: ${targetCount}, Max attempts: ${maxAttempts}`
-      );
-
       const result = await CropsService.fetchCrops(targetCount, maxAttempts);
 
       return res.status(200).json(result);

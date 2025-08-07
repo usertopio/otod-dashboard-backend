@@ -8,10 +8,6 @@ const fetchCommunities = async (req, res) => {
     const maxAttempts =
       req.body.maxAttempts || COMMUNITIES_CONFIG.DEFAULT_MAX_ATTEMPTS;
 
-    console.log(
-      `Starting fetchCommunities with target: ${targetCount}, max attempts: ${maxAttempts}`
-    );
-
     const result = await CommunitiesService.fetchCommunities(
       targetCount,
       maxAttempts

@@ -109,6 +109,7 @@ class DurianGardensLogger {
     fromGetLands,
     fromGetLandGeoJSON
   ) {
+    console.log(``);
     console.log(`📊 === API SUMMARY ===`);
     console.log(`📞 GetLands (paginated): ${fromGetLands} records`);
     console.log(`📞 GetLandGeoJSON (single): ${fromGetLandGeoJSON} records`);

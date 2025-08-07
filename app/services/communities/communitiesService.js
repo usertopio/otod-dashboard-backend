@@ -8,6 +8,12 @@ class CommunitiesService {
     const connection = connectionDB.promise();
 
     try {
+      console.log("==========================================");
+      console.log(
+        `🔄  Calling API Endpoint: {{LOCAL_HOST}}/api/fetchCommunities`
+      );
+      console.log("==========================================\n");
+
       console.log("🧹 Resetting ONLY communities table...");
 
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");

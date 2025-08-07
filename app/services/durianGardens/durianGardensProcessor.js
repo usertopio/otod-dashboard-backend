@@ -58,6 +58,7 @@ class DurianGardensProcessor {
 
   // 🌿 Fetch from GetLands API (paginated)
   static async _fetchGetLandsPages(metrics) {
+    console.log(``);
     console.log("📞 Calling GetLands API (paginated)...");
 
     const pages = Math.ceil(
@@ -133,7 +134,8 @@ class DurianGardensProcessor {
 
   // 🌿 Merge records from both APIs by landId
   static _mergeRecordsFromBothAPIs(getLandsData, getLandGeoJSONData) {
-    console.log("🔗 Merging records from both APIs by landId...");
+    console.log(``);
+    console.log("🔗 Merging records from both APIs...");
 
     // Start with GetLands data as base (has most fields)
     const mergedMap = new Map();

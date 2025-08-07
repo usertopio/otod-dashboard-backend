@@ -7,7 +7,7 @@ class OperationsLogger {
   }
 
   static logAttemptStart(attempt, maxAttempts) {
-    console.log(`🔄 === ATTEMPT ${attempt}/${maxAttempts} ===`);
+    console.log(`\n🔄 === ATTEMPT ${attempt}/${maxAttempts} ===`);
   }
 
   static logCurrentStatus(currentCount, targetCount) {
@@ -55,12 +55,12 @@ class OperationsLogger {
     maxAttempts,
     status
   ) {
+    console.log(``);
     console.log(`🏁 === FINAL RESULT ===`);
     console.log(`🎯 Target: ${targetCount}`);
     console.log(`📊 Achieved: ${finalCount}`);
     console.log(`🔄 Attempts used: ${attemptsUsed}/${maxAttempts}`);
     console.log(`✅ Status: ${status}`);
-    
   }
 }
 
