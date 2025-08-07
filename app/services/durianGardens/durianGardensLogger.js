@@ -1,3 +1,5 @@
+// ===================== Logger =====================
+// DurianGardensLogger provides structured logging for the durian gardens fetch/process workflow.
 class DurianGardensLogger {
   static logAttemptStart(attempt, maxAttempts) {
     console.log(`\n🔄 === ATTEMPT ${attempt}/${maxAttempts} ===`);
@@ -37,7 +39,6 @@ class DurianGardensLogger {
     console.log(`📊 Achieved: ${achieved}`);
     console.log(`🔄 Attempts used: ${attemptsUsed}/${maxAttempts}`);
     console.log(`✅ Status: ${status}`);
-    
   }
 
   static logAttemptResults(attempt, result) {
@@ -54,49 +55,6 @@ class DurianGardensLogger {
     }
 
     console.log("==========================================\n");
-  }
-
-  static _logApiMetrics(result) {
-    console.log("\n📊 === API METRICS ===");
-    console.log(`📥 Total unique gardens after merge: ${result.totalFromAPI}`);
-    console.log(
-      `📥 Records from GetLands (paginated): ${result.totalFromGetLands || 0}`
-    );
-    console.log(
-      `📥 Records from GetLandGeoJSON (single): ${
-        result.totalFromGetLandGeoJSON || 0
-      }`
-    );
-    console.log(`🔍 Unique records after merge: ${result.uniqueFromAPI}`);
-    console.log(`🆕 New records amount: ${result.inserted}`);
-    console.log(`🔄 Duplicated data amount: ${result.duplicatedDataAmount}`);
-  }
-
-  static _logDatabaseMetrics(result) {
-    console.log("\n📊 === DATABASE METRICS ===");
-    console.log(`📊 Previous amount records in table: ${result.totalBefore}`);
-    console.log(`📈 Current amount records in table: ${result.totalAfter}`);
-    console.log(`➕ Records INSERTED: ${result.inserted}`);
-    console.log(`🔄 Records UPDATED: ${result.updated}`);
-    console.log(`❌ Records with ERRORS: ${result.errors}`);
-  }
-
-  static _logInsights(result) {
-    console.log("\n📊 === ADDITIONAL INSIGHTS ===");
-    console.log(
-      `📋 Total processing operations: ${result.totalProcessingOperations}`
-    );
-    console.log(
-      `📍 Records in DB but not in current API: ${result.recordsInDbNotInAPI}`
-    );
-    console.log(`⏱️ Database growth: ${result.growth} records`);
-  }
-
-  static _logErrorRecIds(result) {
-    if (result.errorRecIds.length > 0) {
-      console.log(`\n❌ ERROR LAND_IDS (${result.errorRecIds.length}):`);
-      console.log(`   [${result.errorRecIds.slice(0, 10).join(", ")}]`);
-    }
   }
 
   static logPageInfo(page, records, apiType) {
@@ -117,4 +75,5 @@ class DurianGardensLogger {
   }
 }
 
+// ===================== Exports =====================
 module.exports = DurianGardensLogger;

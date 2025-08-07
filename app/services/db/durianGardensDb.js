@@ -1,7 +1,20 @@
+// ===================== Imports =====================
+// Import DB connection for executing SQL queries
 const { connectionDB } = require("../../config/db/db.conf.js");
 const { OPERATIONS } = require("../../utils/constants");
 
-// 🔧 Copy ensureRefCode function from farmersDb.js pattern
+// ===================== DB Utilities =====================
+// Provides helper functions for reference code lookup and upserting durian gardens
+
+/**
+ * Ensures a reference code exists in the table, inserts if not found.
+ * @param {string} table - Reference table name.
+ * @param {string} nameColumn - Column for the name.
+ * @param {string} codeColumn - Column for the code.
+ * @param {string} name - Name to look up or insert.
+ * @param {string} generatedCodePrefix - Prefix for generated codes.
+ * @returns {Promise<string>} - The code.
+ */
 async function ensureRefCode(
   table,
   nameColumn,
@@ -57,7 +70,12 @@ async function ensureRefCode(
   }
 }
 
-// 🌿 Modern insertOrUpdate function with CORRECT column names
+/**
+ * Inserts or updates a durian garden record in the database.
+ * Maps reference codes, checks for existence, and upserts accordingly.
+ * @param {object} garden - Durian garden data object.
+ * @returns {Promise<object>} - Operation result.
+ */
 async function insertOrUpdateDurianGarden(garden) {
   try {
     // === Map province, district, subdistrict, land type to codes ===
@@ -223,6 +241,7 @@ async function insertOrUpdateDurianGarden(garden) {
   }
 }
 
+// ===================== Exports =====================
 module.exports = {
   insertOrUpdateDurianGarden,
 };
