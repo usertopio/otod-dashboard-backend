@@ -1,7 +1,20 @@
+// ===================== Imports =====================
+// Import DB connection for executing SQL queries
 const { connectionDB } = require("../../config/db/db.conf.js");
 const { OPERATIONS } = require("../../utils/constants");
 
-// 🔧 ADD: Copy ensureRefCode function from farmersDb.js
+// ===================== DB Utilities =====================
+// Provides helper functions for reference code lookup and upserting merchants
+
+/**
+ * Ensures a reference code exists in the table, inserts if not found.
+ * @param {string} table - Reference table name.
+ * @param {string} nameColumn - Column for the name.
+ * @param {string} codeColumn - Column for the code.
+ * @param {string} name - Name to look up or insert.
+ * @param {string} generatedCodePrefix - Prefix for generated codes.
+ * @returns {Promise<string>} - The code.
+ */
 async function ensureRefCode(
   table,
   nameColumn,
@@ -12,6 +25,7 @@ async function ensureRefCode(
   if (!name) return null;
 
   try {
+    // Check if name exists in reference table
     const [existing] = await connectionDB
       .promise()
       .query(
@@ -22,6 +36,7 @@ async function ensureRefCode(
     if (existing.length > 0) {
       return existing[0][codeColumn];
     } else {
+      // Generate new code if not found
       const [maxResult] = await connectionDB
         .promise()
         .query(
@@ -55,9 +70,15 @@ async function ensureRefCode(
   }
 }
 
+/**
+ * Inserts or updates a merchant record in the database.
+ * Maps reference codes, checks for existence, and upserts accordingly.
+ * @param {object} merchant - Merchant data object.
+ * @returns {Promise<object>} - Operation result.
+ */
 const insertOrUpdateMerchant = async (merchant) => {
   try {
-    // 🔧 REPLACE: Use ensureRefCode like farmers
+    // Map province, district, subdistrict to codes
     const provinceCode = await ensureRefCode(
       "ref_provinces",
       "province_name_th",
@@ -123,7 +144,7 @@ const insertOrUpdateMerchant = async (merchant) => {
          (rec_id, merchant_province_code, merchant_district_code, 
           merchant_subdistrict_code, post_code, merchant_id, merchant_name, 
           address, created_at, updated_at, fetch_at) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())`,
         [
           merchant.recId,
           provinceCode,
@@ -148,6 +169,7 @@ const insertOrUpdateMerchant = async (merchant) => {
   }
 };
 
+// ===================== Exports =====================
 module.exports = {
   insertOrUpdateMerchant,
 };

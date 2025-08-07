@@ -1,3 +1,5 @@
+// ===================== Logger =====================
+// MerchantsLogger provides structured logging for the merchants fetch/process workflow.
 class MerchantsLogger {
   static logTargetStart(targetCount, maxAttempts) {
     console.log(
@@ -60,8 +62,8 @@ class MerchantsLogger {
     console.log(`📊 Achieved: ${finalCount}`);
     console.log(`🔄 Attempts used: ${attemptsUsed}/${maxAttempts}`);
     console.log(`✅ Status: ${status}`);
-    
   }
 }
 
+// ===================== Exports =====================
 module.exports = MerchantsLogger;

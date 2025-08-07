@@ -1,68 +1,24 @@
-const { getMerchants } = require("../services/api/merchants.js");
-const { insertMerchants } = require("../services/db/merchantsDb.js");
+// ===================== Imports =====================
+// Import the MerchantsService for business logic
 const MerchantsService = require("../services/merchants/merchantsService");
 const { MERCHANTS_CONFIG } = require("../utils/constants");
 
-exports.fetchMerchants = async (req, res) => {
-  try {
-    let totalRecords = 0;
-    let pageSize = 500;
-    let pages = Math.ceil(totalRecords / pageSize);
-
-    let allMerchantsAllPage = [];
-    let allMerchantsCurPage = [];
-
-    for (let page = 0; page < pages; page++) {
-      let requestBody = {
-        provinceName: "",
-        pageIndex: page,
-        pageSize: pageSize,
-      };
-
-      let customHeaders = {
-        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-      };
-
-      let merchants = await getMerchants(requestBody, customHeaders);
-
-      allMerchantsCurPage = merchants.data;
-
-      allMerchantsAllPage = allMerchantsAllPage.concat(allMerchantsCurPage);
-
-      allMerchantsCurPage.forEach(insertMerchants);
-
-      console.log(
-        `First 5 recId for page ${page + 1}:`,
-        allMerchantsCurPage.slice(0, 5).map((f) => f.recId)
-      );
-
-      console.log(
-        `Fetched data for page ${page + 1}: Length: ${
-          allMerchantsCurPage.length
-        }, Type: ${typeof allMerchantsCurPage}`
-      );
-    }
-
-    res.json({
-      allMerchantsAllPage: allMerchantsAllPage,
-    });
-  } catch (error) {
-    console.error("Error fetching Merchants:", error);
-    res.status(500).json({ error: "Failed to fetch Merchants" });
-  }
-};
-
+// ===================== Controller =====================
+// Handles HTTP requests for merchant-related operations
 const fetchMerchants = async (req, res) => {
   try {
+    // Get targetCount and maxAttempts from request body or use defaults
     const targetCount =
       req.body.targetCount || MERCHANTS_CONFIG.DEFAULT_TARGET_COUNT;
     const maxAttempts =
       req.body.maxAttempts || MERCHANTS_CONFIG.DEFAULT_MAX_ATTEMPTS;
 
+    // Log the start of the fetch operation
     console.log(
       `Starting fetchMerchants with target: ${targetCount}, max attempts: ${maxAttempts}`
     );
 
+    // Call the service to fetch merchants with the specified parameters
     const result = await MerchantsService.fetchMerchants(
       targetCount,
       maxAttempts
@@ -70,6 +26,7 @@ const fetchMerchants = async (req, res) => {
 
     res.status(200).json(result);
   } catch (error) {
+    // Log and respond with error if something goes wrong
     console.error("Error in fetchMerchants:", error);
     res.status(500).json({
       error: "Failed to fetch merchants data",
@@ -78,6 +35,8 @@ const fetchMerchants = async (req, res) => {
   }
 };
 
+// ===================== Exports =====================
+// Export the fetchMerchants controller method
 module.exports = {
   fetchMerchants,
 };

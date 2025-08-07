@@ -1,17 +1,29 @@
+// ===================== Imports =====================
+// Import API client for fetching merchants data
 const { getMerchants } = require("../api/merchants");
+// Import DB helper for upserting merchant records
 const { insertOrUpdateMerchant } = require("../db/merchantsDb");
+// Import DB connection for direct queries
 const { connectionDB } = require("../../config/db/db.conf.js");
+// Import config constants and operation enums
 const { MERCHANTS_CONFIG, OPERATIONS } = require("../../utils/constants");
+// Import logger for structured process logging
 const MerchantsLogger = require("./merchantsLogger");
 
+// ===================== Processor =====================
+// MerchantsProcessor handles fetching, deduplication, and DB upserts for merchants.
 class MerchantsProcessor {
+  /**
+   * Fetches all merchant data from the API, deduplicates, and upserts into DB.
+   * Returns a result object with metrics and tracking info.
+   */
   static async fetchAndProcessData() {
     const pages = Math.ceil(
       MERCHANTS_CONFIG.DEFAULT_TOTAL_RECORDS /
         MERCHANTS_CONFIG.DEFAULT_PAGE_SIZE
     );
 
-    // Initialize counters
+    // Initialize metrics for tracking processing
     const metrics = {
       allMerchantsAllPages: [],
       insertCount: 0,
@@ -23,13 +35,13 @@ class MerchantsProcessor {
       errorRecIds: [],
     };
 
-    // Get database count before processing
+    // Get DB count before processing
     const dbCountBefore = await this._getDatabaseCount();
 
-    // Fetch data from all pages
+    // Fetch all pages from the API and accumulate results
     await this._fetchAllPages(pages, metrics);
 
-    // Process unique merchants
+    // Deduplicate merchants by recId
     const uniqueMerchants = this._getUniqueMerchants(
       metrics.allMerchantsAllPages
     );
@@ -38,15 +50,21 @@ class MerchantsProcessor {
       uniqueMerchants.length
     );
 
-    // Process each unique merchant
+    // Upsert each unique merchant into the DB and update metrics
     await this._processUniqueMerchants(uniqueMerchants, metrics);
 
-    // Get database count after processing
+    // Get DB count after processing
     const dbCountAfter = await this._getDatabaseCount();
 
+    // Build and return a detailed result object
     return this._buildResult(metrics, dbCountBefore, dbCountAfter);
   }
 
+  /**
+   * Fetches all pages of merchants from the API and logs each page.
+   * @param {number} pages - Number of pages to fetch.
+   * @param {object} metrics - Metrics object to accumulate results.
+   */
   static async _fetchAllPages(pages, metrics) {
     for (let page = 1; page <= pages; page++) {
       const requestBody = {
@@ -59,15 +77,22 @@ class MerchantsProcessor {
         Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
       };
 
+      // Fetch a page of merchants from the API
       const merchants = await getMerchants(requestBody, customHeaders);
       const allMerchantsCurPage = merchants.data;
       metrics.allMerchantsAllPages =
         metrics.allMerchantsAllPages.concat(allMerchantsCurPage);
 
+      // Log info for this page
       MerchantsLogger.logPageInfo(page, allMerchantsCurPage);
     }
   }
 
+  /**
+   * Deduplicates merchants by recId.
+   * @param {Array} allMerchants - Array of all merchants from API.
+   * @returns {Array} - Array of unique merchants.
+   */
   static _getUniqueMerchants(allMerchants) {
     return allMerchants.filter(
       (merchant, index, self) =>
@@ -75,6 +100,11 @@ class MerchantsProcessor {
     );
   }
 
+  /**
+   * Upserts each unique merchant into the DB and updates metrics.
+   * @param {Array} uniqueMerchants - Array of unique merchants.
+   * @param {object} metrics - Metrics object to update.
+   */
   static async _processUniqueMerchants(uniqueMerchants, metrics) {
     for (const merchant of uniqueMerchants) {
       const result = await insertOrUpdateMerchant(merchant);
@@ -98,6 +128,10 @@ class MerchantsProcessor {
     }
   }
 
+  /**
+   * Gets the current count of merchants in the DB.
+   * @returns {Promise<number>} - Total number of merchants.
+   */
   static async _getDatabaseCount() {
     const [result] = await connectionDB
       .promise()
@@ -105,6 +139,13 @@ class MerchantsProcessor {
     return result[0].total;
   }
 
+  /**
+   * Builds a detailed result object with metrics and insights.
+   * @param {object} metrics - Metrics object.
+   * @param {number} dbCountBefore - DB count before processing.
+   * @param {number} dbCountAfter - DB count after processing.
+   * @returns {object} - Result summary.
+   */
   static _buildResult(metrics, dbCountBefore, dbCountAfter) {
     return {
       // Database metrics
@@ -143,4 +184,5 @@ class MerchantsProcessor {
   }
 }
 
+// ===================== Exports =====================
 module.exports = MerchantsProcessor;
