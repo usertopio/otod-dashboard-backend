@@ -1,6 +1,10 @@
+// ===================== Imports =====================
+// Import the NewsService for business logic
 const NewsService = require("../services/news/newsService");
 const { NEWS_CONFIG } = require("../utils/constants");
 
+// ===================== Controller =====================
+// Handles HTTP requests for news-related operations
 const fetchNews = async (req, res) => {
   try {
     const targetCount =
@@ -24,6 +28,7 @@ const fetchNews = async (req, res) => {
   }
 };
 
+// ===================== Exports =====================
 module.exports = {
   fetchNews,
 };

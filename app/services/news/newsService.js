@@ -1,9 +1,19 @@
+// ===================== Imports =====================
 const { connectionDB } = require("../../config/db/db.conf.js");
 const { NEWS_CONFIG, STATUS } = require("../../utils/constants");
 const NewsProcessor = require("./newsProcessor");
 const NewsLogger = require("./newsLogger");
 
+// ===================== Service =====================
+// NewsService handles the business logic for fetching, resetting, and managing news records.
 class NewsService {
+  /**
+   * Resets only the news table in the database.
+   * - Disables foreign key checks to allow truncation.
+   * - Truncates the news table, leaving related tables untouched.
+   * - Re-enables foreign key checks after operation.
+   * - Logs the process and returns a status object.
+   */
   static async resetOnlyNewsTable() {
     const connection = connectionDB.promise();
 
@@ -17,9 +27,7 @@ class NewsService {
       console.log("🧹 Resetting ONLY news table...");
 
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
-
       await connection.query("TRUNCATE TABLE news");
-
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
 
       console.log("✅ Only news table reset - next ID will be 1");
@@ -31,6 +39,16 @@ class NewsService {
     }
   }
 
+  /**
+   * Main entry point for fetching news from APIs and storing them in the database.
+   * - Resets the news table before starting.
+   * - Loops up to maxAttempts, fetching and processing data each time.
+   * - Logs progress and metrics for each attempt.
+   * - Stops early if the target number of news is reached.
+   * - Returns a summary result object.
+   * @param {number} targetCount - The number of news to fetch and store.
+   * @param {number} maxAttempts - The maximum number of fetch attempts.
+   */
   static async fetchNews(targetCount, maxAttempts) {
     await this.resetOnlyNewsTable();
 
@@ -63,6 +81,10 @@ class NewsService {
     return this._buildFinalResult(targetCount, attemptsUsed, maxAttempts);
   }
 
+  /**
+   * Returns the current count of news records in the database.
+   * @returns {Promise<number>} - The total number of news in the DB.
+   */
   static async _getDatabaseCount() {
     const [result] = await connectionDB
       .promise()
@@ -70,6 +92,13 @@ class NewsService {
     return result[0].total;
   }
 
+  /**
+   * Builds and logs the final result summary after the fetch loop.
+   * @param {number} targetCount - The target number of news.
+   * @param {number} attemptsUsed - The number of attempts used.
+   * @param {number} maxAttempts - The maximum allowed attempts.
+   * @returns {object} - Summary of the fetch operation.
+   */
   static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
     const finalCount = await this._getDatabaseCount();
     const status =
@@ -95,4 +124,5 @@ class NewsService {
   }
 }
 
+// ===================== Exports =====================
 module.exports = NewsService;

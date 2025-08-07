@@ -1,10 +1,17 @@
+// ===================== Imports =====================
 const { getNews } = require("../api/news");
 const { insertOrUpdateNews } = require("../db/newsDb");
 const { connectionDB } = require("../../config/db/db.conf.js");
 const { NEWS_CONFIG, OPERATIONS } = require("../../utils/constants");
 const NewsLogger = require("./newsLogger");
 
+// ===================== Processor =====================
+// NewsProcessor handles fetching, deduplication, and DB upserts for news.
 class NewsProcessor {
+  /**
+   * Fetches all news data from the API, deduplicates, and upserts into DB.
+   * Returns a result object with metrics and tracking info.
+   */
   static async fetchAndProcessData() {
     const pages = Math.ceil(
       NEWS_CONFIG.DEFAULT_TOTAL_RECORDS / NEWS_CONFIG.DEFAULT_PAGE_SIZE
@@ -41,15 +48,19 @@ class NewsProcessor {
     return this._buildResult(metrics, dbCountBefore, dbCountAfter);
   }
 
+  /**
+   * Fetches all pages of news from the API and logs each page.
+   * @param {number} pages - Number of pages to fetch.
+   * @param {object} metrics - Metrics object to accumulate results.
+   */
   static async _fetchAllPages(pages, metrics) {
     for (let page = 1; page <= pages; page++) {
       const requestBody = {
         provinceName: "",
         pageIndex: page,
         pageSize: NEWS_CONFIG.DEFAULT_PAGE_SIZE,
-        // 🔧 ADD: Required date parameters
-        fromDate: "2024-01-01", // or use dynamic date
-        toDate: "2024-12-31",   // or use current date
+        fromDate: "2024-01-01",
+        toDate: "2024-12-31",
       };
 
       const customHeaders = {
@@ -64,6 +75,11 @@ class NewsProcessor {
     }
   }
 
+  /**
+   * Deduplicates news by recId.
+   * @param {Array} allNews - Array of all news from API.
+   * @returns {Array} - Array of unique news.
+   */
   static _getUniqueNews(allNews) {
     return allNews.filter(
       (news, index, self) =>
@@ -71,6 +87,11 @@ class NewsProcessor {
     );
   }
 
+  /**
+   * Upserts each unique news record into the DB and updates metrics.
+   * @param {Array} uniqueNews - Array of unique news.
+   * @param {object} metrics - Metrics object to update.
+   */
   static async _processUniqueNews(uniqueNews, metrics) {
     for (const news of uniqueNews) {
       const result = await insertOrUpdateNews(news);
@@ -94,6 +115,10 @@ class NewsProcessor {
     }
   }
 
+  /**
+   * Gets the current count of news in the DB.
+   * @returns {Promise<number>} - Total number of news.
+   */
   static async _getDatabaseCount() {
     const [result] = await connectionDB
       .promise()
@@ -101,6 +126,13 @@ class NewsProcessor {
     return result[0].total;
   }
 
+  /**
+   * Builds a detailed result object with metrics and insights.
+   * @param {object} metrics - Metrics object.
+   * @param {number} dbCountBefore - DB count before processing.
+   * @param {number} dbCountAfter - DB count after processing.
+   * @returns {object} - Result summary.
+   */
   static _buildResult(metrics, dbCountBefore, dbCountAfter) {
     return {
       // Database metrics
@@ -139,4 +171,5 @@ class NewsProcessor {
   }
 }
 
+// ===================== Exports =====================
 module.exports = NewsProcessor;

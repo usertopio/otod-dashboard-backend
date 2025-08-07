@@ -1,3 +1,5 @@
+// ===================== Logger =====================
+// NewsLogger provides structured logging for the news fetch/process workflow.
 class NewsLogger {
   // EXACT MATCH to communities/farmers logging pattern
   static logTargetStart(targetCount, maxAttempts) {
@@ -63,4 +65,5 @@ class NewsLogger {
   }
 }
 
+// ===================== Exports =====================
 module.exports = NewsLogger;

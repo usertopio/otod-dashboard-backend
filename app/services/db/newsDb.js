@@ -1,7 +1,17 @@
+// ===================== Imports =====================
 const { connectionDB } = require("../../config/db/news.conf.js");
 const { OPERATIONS } = require("../../utils/constants");
 
-// 🔧 ADD: Copy ensureRefCode function from farmersDb.js
+// ===================== Reference Lookup =====================
+/**
+ * Ensures a reference code exists in the table, inserts if not found.
+ * @param {string} table - Reference table name.
+ * @param {string} nameColumn - Column for the name.
+ * @param {string} codeColumn - Column for the code.
+ * @param {string} name - Name to look up or insert.
+ * @param {string} generatedCodePrefix - Prefix for generated codes.
+ * @returns {Promise<string>} - The code.
+ */
 async function ensureRefCode(
   table,
   nameColumn,
@@ -55,18 +65,24 @@ async function ensureRefCode(
   }
 }
 
+// ===================== Insert/Update =====================
+/**
+ * Inserts or updates a news record in the database.
+ * Maps province and news group to codes, checks for existence, and upserts accordingly.
+ * @param {object} news - News data object.
+ * @returns {Promise<object>} - Operation result.
+ */
 const insertOrUpdateNews = async (news) => {
   try {
-    // 🔧 FIX: Add province conversion like farmers
+    // Convert province and news group to codes
     const provinceCode = await ensureRefCode(
       "ref_provinces",
       "province_name_th",
       "province_code",
-      news.province, // 🔧 Use actual province from API
+      news.province,
       "GPROV"
     );
 
-    // 🔧 REPLACE: Use ensureRefCode for news groups
     const newsGroupCode = await ensureRefCode(
       "ref_news_groups",
       "news_group_name",
@@ -96,7 +112,7 @@ const insertOrUpdateNews = async (news) => {
          fetch_at = NOW()
          WHERE rec_id = ?`,
         [
-          provinceCode, // 🔧 FIX: Use actual province code
+          provinceCode,
           news.newsId,
           news.announceDate || null,
           newsGroupCode,
@@ -119,7 +135,7 @@ const insertOrUpdateNews = async (news) => {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW(), ?)`,
         [
           news.recId,
-          provinceCode, // 🔧 FIX: Use actual province code
+          provinceCode,
           news.newsId,
           news.announceDate || null,
           newsGroupCode,
@@ -143,6 +159,7 @@ const insertOrUpdateNews = async (news) => {
   }
 };
 
+// ===================== Exports =====================
 module.exports = {
   insertOrUpdateNews,
 };
