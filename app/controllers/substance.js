@@ -1,44 +1,16 @@
+// ===================== Imports =====================
+// Import the SubstanceService for business logic
 const SubstanceService = require("../services/substance/substanceService");
 const { SUBSTANCE_CONFIG } = require("../utils/constants");
 
-const {
-  getSubstanceUsageSummaryByMonth,
-} = require("../services/api/substance.js");
-const {
-  insertSubstanceUsageSummaryByMonth,
-} = require("../services/db/substanceDb.js");
-
-exports.fetchSubstanceUsageSummaryByMonth = async (req, res) => {
-  try {
-    let requestBody = {
-      cropYear: 2024,
-      provinceName: "",
-    };
-    let customHeaders = {
-      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-    };
-
-    let substanceUsageSummaryByMonth = await getSubstanceUsageSummaryByMonth(
-      requestBody,
-      customHeaders
-    );
-
-    substanceUsageSummaryByMonth.data.forEach(
-      insertSubstanceUsageSummaryByMonth
-    );
-
-    res.json({
-      substanceUsageSummaryByMonth: substanceUsageSummaryByMonth.data,
-    });
-  } catch (error) {
-    console.error("Error fetching SubstanceUsageSummaryByMonth:", error);
-    res
-      .status(500)
-      .json({ error: "Failed to fetch SubstanceUsageSummaryByMonth" });
-  }
-};
-
+// ===================== Controller =====================
+// Handles HTTP requests for substance-related operations
 class SubstanceController {
+  /**
+   * Handle POST /fetchSubstance
+   * Fetches substance usage summary from the API and stores it in the database.
+   * Accepts optional targetCount and maxAttempts in the request body.
+   */
   static async fetchSubstance(req, res) {
     try {
       const targetCount =
@@ -64,6 +36,7 @@ class SubstanceController {
   }
 }
 
+// ===================== Exports =====================
 module.exports = {
   fetchSubstance: SubstanceController.fetchSubstance,
 };

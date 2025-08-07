@@ -1,10 +1,18 @@
+// ===================== Imports =====================
+// Import API client for fetching substance usage summary
 const { getSubstanceUsageSummaryByMonth } = require("../api/substance");
 const { insertOrUpdateSubstance } = require("../db/substanceDb");
 const { connectionDB } = require("../../config/db/db.conf.js");
 const { SUBSTANCE_CONFIG, OPERATIONS } = require("../../utils/constants");
 const SubstanceLogger = require("./substanceLogger");
 
+// ===================== Processor =====================
+// SubstanceProcessor handles fetching, deduplication, and DB upserts for substance usage summary.
 class SubstanceProcessor {
+  /**
+   * Fetches all substance usage summary data from the API, deduplicates, and upserts into DB.
+   * Returns a result object with metrics and tracking info.
+   */
   static async fetchAndProcessData() {
     // Substance API doesn't use pagination, so we just make one call
     const pages = 1;
@@ -45,6 +53,11 @@ class SubstanceProcessor {
     return this._buildResult(metrics, dbCountBefore, dbCountAfter);
   }
 
+  /**
+   * Fetches all pages of substance usage summary from the API and logs each page.
+   * @param {number} pages - Number of pages to fetch (always 1).
+   * @param {object} metrics - Metrics object to accumulate results.
+   */
   static async _fetchAllPages(pages, metrics) {
     // Single API call for substance data
     const requestBody = {
@@ -67,6 +80,11 @@ class SubstanceProcessor {
     SubstanceLogger.logPageInfo(1, allSubstanceCurPage);
   }
 
+  /**
+   * Deduplicates substance records by cropYear, provinceName, operMonth, and substance.
+   * @param {Array} allSubstance - Array of all substance records from API.
+   * @returns {Array} - Array of unique substance records.
+   */
   static _getUniqueSubstance(allSubstance) {
     return allSubstance.filter(
       (substance, index, self) =>
@@ -81,6 +99,11 @@ class SubstanceProcessor {
     );
   }
 
+  /**
+   * Upserts each unique substance record into the DB and updates metrics.
+   * @param {Array} uniqueSubstance - Array of unique substance records.
+   * @param {object} metrics - Metrics object to update.
+   */
   static async _processUniqueSubstance(uniqueSubstance, metrics) {
     for (const substance of uniqueSubstance) {
       const result = await insertOrUpdateSubstance(substance);
@@ -107,6 +130,10 @@ class SubstanceProcessor {
     }
   }
 
+  /**
+   * Gets the current count of substance records in the DB.
+   * @returns {Promise<number>} - Total number of substance records.
+   */
   static async _getDatabaseCount() {
     const [result] = await connectionDB
       .promise()
@@ -114,6 +141,13 @@ class SubstanceProcessor {
     return result[0].total;
   }
 
+  /**
+   * Builds a detailed result object with metrics and insights.
+   * @param {object} metrics - Metrics object.
+   * @param {number} dbCountBefore - DB count before processing.
+   * @param {number} dbCountAfter - DB count after processing.
+   * @returns {object} - Result summary.
+   */
   static _buildResult(metrics, dbCountBefore, dbCountAfter) {
     return {
       // Database metrics
@@ -159,4 +193,5 @@ class SubstanceProcessor {
   }
 }
 
+// ===================== Exports =====================
 module.exports = SubstanceProcessor;

@@ -1,3 +1,5 @@
+// ===================== Logger =====================
+// SubstanceLogger provides structured logging for the substance fetch/process workflow.
 class SubstanceLogger {
   static logTargetStart(targetCount, maxAttempts) {
     console.log(
@@ -47,7 +49,6 @@ class SubstanceLogger {
     console.log(`📊 Achieved: ${achieved}`);
     console.log(`🔄 Attempts used: ${attemptsUsed}/${maxAttempts}`);
     console.log(`✅ Status: ${status}`);
-    
   }
 
   static logAttemptResults(attempt, result) {
@@ -116,4 +117,5 @@ class SubstanceLogger {
   }
 }
 
+// ===================== Exports =====================
 module.exports = SubstanceLogger;

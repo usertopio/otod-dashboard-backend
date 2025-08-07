@@ -1,7 +1,14 @@
+// ===================== Imports =====================
+// Import DB connection for executing SQL queries
 const { connectionDB } = require("../../config/db/db.conf.js");
 const { OPERATIONS } = require("../../utils/constants");
 
-// 🔧 Reference lookup function for province codes
+// ===================== Reference Lookup =====================
+/**
+ * Looks up or generates a province code for a given province name.
+ * @param {string} provinceName - Province name in Thai.
+ * @returns {Promise<string|null>} - Province code.
+ */
 const convertProvinceNameToCode = async (provinceName) => {
   if (!provinceName) return null;
 
@@ -48,7 +55,13 @@ const convertProvinceNameToCode = async (provinceName) => {
   }
 };
 
-// 🎯 ONLY: Advanced insert/update pattern for fetchSubstance
+// ===================== Insert/Update =====================
+/**
+ * Inserts or updates a substance usage summary record in the database.
+ * Maps province name to code, checks for existence, and upserts accordingly.
+ * @param {object} substance - Substance usage summary data object.
+ * @returns {Promise<object>} - Operation result.
+ */
 const insertOrUpdateSubstance = async (substance) => {
   try {
     // Convert province name to code
@@ -71,7 +84,7 @@ const insertOrUpdateSubstance = async (substance) => {
     );
 
     if (existing.length > 0) {
-      // UPDATE existing substance record - ADD STR_TO_DATE HERE TOO!
+      // UPDATE existing substance record
       await connectionDB.promise().query(
         `UPDATE substance SET 
          total_records = ?, 
@@ -83,13 +96,13 @@ const insertOrUpdateSubstance = async (substance) => {
           substance.cropYear,
           provinceCode,
           substance.substance,
-          substance.operMonth, // Now this will be converted properly
+          substance.operMonth,
         ]
       );
 
       return { operation: OPERATIONS.UPDATE, substance: substance.substance };
     } else {
-      // INSERT new substance record (this one is already correct)
+      // INSERT new substance record
       await connectionDB.promise().query(
         `INSERT INTO substance 
          (crop_year, province_code, substance, oper_month, total_records, fetch_at) 
@@ -98,7 +111,7 @@ const insertOrUpdateSubstance = async (substance) => {
           substance.cropYear,
           provinceCode,
           substance.substance,
-          substance.operMonth, // "2025-07" becomes "2025-07-01"
+          substance.operMonth,
           substance.totalRecords || 0,
         ]
       );
@@ -115,6 +128,7 @@ const insertOrUpdateSubstance = async (substance) => {
   }
 };
 
+// ===================== Exports =====================
 module.exports = {
   insertOrUpdateSubstance,
 };
