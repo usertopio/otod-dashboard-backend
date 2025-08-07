@@ -4,7 +4,6 @@ const DurianGardensProcessor = require("./durianGardensProcessor");
 const DurianGardensLogger = require("./durianGardensLogger");
 
 class DurianGardensService {
-  // 🌿 Reset only durian_gardens table (gets data from BOTH APIs) - like farmers
   static async resetOnlyDurianGardensTable() {
     const connection = connectionDB.promise();
 
@@ -24,9 +23,7 @@ class DurianGardensService {
     }
   }
 
-  // 🌿 Single endpoint for BOTH GetLands AND GetLandGeoJSON APIs → durian_gardens table
-  static async fetchDurianGardensUntilTarget(targetCount, maxAttempts) {
-    // Reset durian_gardens table before fetching
+  static async fetchDurianGardens(targetCount, maxAttempts) {
     await this.resetOnlyDurianGardensTable();
 
     let attempt = 1;
@@ -37,11 +34,9 @@ class DurianGardensService {
       `🌿 Target: ${targetCount} durian gardens (GetLands + GetLandGeoJSON), Max attempts: ${maxAttempts}`
     );
 
-    // Main processing loop
     while (attempt <= maxAttempts) {
       DurianGardensLogger.logAttemptStart(attempt, maxAttempts);
 
-      // Get current count before this attempt
       currentCount = await this._getDatabaseCount();
       DurianGardensLogger.logCurrentStatus(
         currentCount,
@@ -49,17 +44,14 @@ class DurianGardensService {
         "durian gardens (from both APIs)"
       );
 
-      // Always make API call
       attemptsUsed++;
       const result = await DurianGardensProcessor.fetchAndProcessData();
 
-      // Log detailed metrics for this attempt
       DurianGardensLogger.logAttemptResults(attempt, result);
 
       currentCount = result.totalAfter;
       attempt++;
 
-      // Stop when target is reached
       if (currentCount >= targetCount) {
         DurianGardensLogger.logTargetReached(targetCount, attemptsUsed);
         break;
@@ -70,7 +62,6 @@ class DurianGardensService {
   }
 
   static async _getDatabaseCount() {
-    // Count ALL records in durian_gardens table (from both APIs)
     const [result] = await connectionDB
       .promise()
       .query("SELECT COUNT(*) as total FROM durian_gardens");

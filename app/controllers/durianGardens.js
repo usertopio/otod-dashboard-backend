@@ -3,7 +3,7 @@ const { DURIAN_GARDENS_CONFIG } = require("../utils/constants");
 
 // 🌿 Modern controller following farmers template
 class DurianGardensController {
-  static async fetchDurianGardensUntilTarget(req, res) {
+  static async fetchDurianGardens(req, res) {
     try {
       const targetCount =
         (req.body && req.body.targetCount) ||
@@ -13,19 +13,19 @@ class DurianGardensController {
         DURIAN_GARDENS_CONFIG.DEFAULT_MAX_ATTEMPTS;
 
       console.log(
-        `🌿 Starting fetchDurianGardensUntilTarget - Target: ${targetCount}, Max attempts: ${maxAttempts}`
+        `🌿 Starting fetchDurianGardens - Target: ${targetCount}, Max attempts: ${maxAttempts}`
       );
 
-      const result = await DurianGardensService.fetchDurianGardensUntilTarget(
+      const result = await DurianGardensService.fetchDurianGardens(
         targetCount,
         maxAttempts
       );
 
       return res.status(200).json(result);
     } catch (err) {
-      console.error("Error in fetchDurianGardensUntilTarget:", err);
+      console.error("Error in fetchDurianGardens:", err);
       return res.status(500).json({
-        message: "Failed to fetch durian gardens until target",
+        message: "Failed to fetch durian gardens",
         error: err.message,
       });
     }
@@ -34,6 +34,5 @@ class DurianGardensController {
 
 // 🌿 Export only the modern function
 module.exports = {
-  fetchDurianGardensUntilTarget:
-    DurianGardensController.fetchDurianGardensUntilTarget,
+  fetchDurianGardens: DurianGardensController.fetchDurianGardens,
 };
