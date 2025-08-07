@@ -1,8 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const { fetchFarmersUntilTarget } = require("../controllers/farmers");
+const { fetchFarmers } = require("../controllers/farmers");
 
-// Main farmers endpoints
-router.post("/fetchFarmersUntilTarget", fetchFarmersUntilTarget);
+router.post("/fetchFarmers", fetchFarmers);
 
 module.exports = router;

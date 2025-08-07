@@ -4,7 +4,6 @@ const FarmersProcessor = require("./farmersProcessor");
 const FarmersLogger = require("./farmersLogger");
 
 class FarmersService {
-  // 🔧 ADD: Reset only farmers table
   static async resetOnlyFarmersTable() {
     const connection = connectionDB.promise();
 
@@ -31,8 +30,7 @@ class FarmersService {
     }
   }
 
-  static async fetchFarmersUntilTarget(targetCount, maxAttempts) {
-    // 🔧 ADD: Reset farmers table before fetching
+  static async fetchFarmers(targetCount, maxAttempts) {
     await this.resetOnlyFarmersTable();
 
     let attempt = 1;
