@@ -1,8 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const { fetchGapUntilTarget } = require("../controllers/gap.js");
+const { fetchGap } = require("../controllers/gap.js");
 
-// 🎯 Only advanced "UntilTarget" endpoint
-router.post("/fetchGapUntilTarget", fetchGapUntilTarget);
+router.post("/fetchGap", fetchGap);
 
 module.exports = router;

@@ -4,20 +4,16 @@ const GapProcessor = require("./gapProcessor");
 const GapLogger = require("./gapLogger");
 
 class GapService {
-  // 🔧 ADD: Reset only gap table
   static async resetOnlyGapTable() {
     const connection = connectionDB.promise();
 
     try {
       console.log("🧹 Resetting ONLY gap table...");
 
-      // Disable foreign key checks
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
 
-      // Delete only gap
       await connection.query("TRUNCATE TABLE gap");
 
-      // Re-enable foreign key checks
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
 
       console.log("✅ Only gap table reset - next ID will be 1");
@@ -29,8 +25,7 @@ class GapService {
     }
   }
 
-  static async fetchGapUntilTarget(targetCount, maxAttempts) {
-    // 🔧 ADD: Reset gap table before fetching
+  static async fetchGap(targetCount, maxAttempts) {
     await this.resetOnlyGapTable();
 
     let attempt = 1;
@@ -41,25 +36,20 @@ class GapService {
       `🎯 Target: ${targetCount} gap certificates, Max attempts: ${maxAttempts}`
     );
 
-    // Main processing loop
     while (attempt <= maxAttempts) {
       GapLogger.logAttemptStart(attempt, maxAttempts);
 
-      // Get current count before this attempt
       currentCount = await this._getDatabaseCount();
       GapLogger.logCurrentStatus(currentCount, targetCount);
 
-      // Always make API call
       attemptsUsed++;
       const result = await GapProcessor.fetchAndProcessData();
 
-      // Log detailed metrics for this attempt
       GapLogger.logAttemptResults(attempt, result);
 
       currentCount = result.totalAfter;
       attempt++;
 
-      // Stop when target is reached
       if (currentCount >= targetCount) {
         GapLogger.logTargetReached(targetCount, attemptsUsed);
         break;
