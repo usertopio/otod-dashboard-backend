@@ -1,8 +1,8 @@
 const express = require("express");
 const router = express.Router();
-const { fetchSubstanceUntilTarget } = require("../controllers/substance");
+const { fetchSubstance } = require("../controllers/substance");
 
 // Main substance endpoints
-router.post("/fetchSubstanceUntilTarget", fetchSubstanceUntilTarget);
+router.post("/fetchSubstance", fetchSubstance);
 
 module.exports = router;

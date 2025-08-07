@@ -1,7 +1,6 @@
 const SubstanceService = require("../services/substance/substanceService");
 const { SUBSTANCE_CONFIG } = require("../utils/constants");
 
-// 🔧 KEEP: Legacy method for backward compatibility
 const {
   getSubstanceUsageSummaryByMonth,
 } = require("../services/api/substance.js");
@@ -11,7 +10,6 @@ const {
 
 exports.fetchSubstanceUsageSummaryByMonth = async (req, res) => {
   try {
-    // Prepare request body and headers as needed
     let requestBody = {
       cropYear: 2024,
       provinceName: "",
@@ -40,9 +38,8 @@ exports.fetchSubstanceUsageSummaryByMonth = async (req, res) => {
   }
 };
 
-// 🔧 NEW: Modern class-based controller (same as water)
 class SubstanceController {
-  static async fetchSubstanceUntilTarget(req, res) {
+  static async fetchSubstance(req, res) {
     try {
       const targetCount =
         (req.body && req.body.targetCount) ||
@@ -51,16 +48,16 @@ class SubstanceController {
         (req.body && req.body.maxAttempts) ||
         SUBSTANCE_CONFIG.DEFAULT_MAX_ATTEMPTS;
 
-      const result = await SubstanceService.fetchSubstanceUntilTarget(
+      const result = await SubstanceService.fetchSubstance(
         targetCount,
         maxAttempts
       );
 
       return res.status(200).json(result);
     } catch (err) {
-      console.error("Error in fetchSubstanceUntilTarget:", err);
+      console.error("Error in fetchSubstance:", err);
       return res.status(500).json({
-        message: "Failed to fetch substance until target",
+        message: "Failed to fetch substance",
         error: err.message,
       });
     }
@@ -68,5 +65,5 @@ class SubstanceController {
 }
 
 module.exports = {
-  fetchSubstanceUntilTarget: SubstanceController.fetchSubstanceUntilTarget,
+  fetchSubstance: SubstanceController.fetchSubstance,
 };
