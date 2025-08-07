@@ -3,7 +3,7 @@ const { CROPS_CONFIG } = require("../utils/constants");
 
 // 🔧 Modern controller following farmers template
 class CropsController {
-  static async fetchCropsUntilTarget(req, res) {
+  static async fetchCrops(req, res) {
     try {
       // 🔧 Add fallback values in case CROPS_CONFIG is undefined
       const targetCount =
@@ -17,19 +17,16 @@ class CropsController {
         3; // Fallback value
 
       console.log(
-        `🎯 Starting fetchCropsUntilTarget - Target: ${targetCount}, Max attempts: ${maxAttempts}`
+        `🎯 Starting fetchCrops - Target: ${targetCount}, Max attempts: ${maxAttempts}`
       );
 
-      const result = await CropsService.fetchCropsUntilTarget(
-        targetCount,
-        maxAttempts
-      );
+      const result = await CropsService.fetchCrops(targetCount, maxAttempts);
 
       return res.status(200).json(result);
     } catch (err) {
-      console.error("Error in fetchCropsUntilTarget:", err);
+      console.error("Error in fetchCrops:", err);
       return res.status(500).json({
-        message: "Failed to fetch crops until target",
+        message: "Failed to fetch crops",
         error: err.message,
       });
     }
@@ -38,5 +35,5 @@ class CropsController {
 
 // 🔧 Export only the modern function
 module.exports = {
-  fetchCropsUntilTarget: CropsController.fetchCropsUntilTarget,
+  fetchCrops: CropsController.fetchCrops,
 };

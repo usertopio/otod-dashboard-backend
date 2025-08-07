@@ -4,7 +4,6 @@ const CropsProcessor = require("./cropsProcessor");
 const CropsLogger = require("./cropsLogger");
 
 class CropsService {
-  // 🔧 Reset only crops table (gets data from BOTH APIs) - like #farmersService.resetOnlyFarmersTable
   static async resetOnlyCropsTable() {
     const connection = connectionDB.promise();
 
@@ -24,9 +23,7 @@ class CropsService {
     }
   }
 
-  // 🔧 Single endpoint for BOTH GetCrops AND GetCropHarvests APIs → crops table (like #farmersService.fetchFarmersUntilTarget)
-  static async fetchCropsUntilTarget(targetCount, maxAttempts) {
-    // Reset crops table before fetching (like #farmersService)
+  static async fetchCrops(targetCount, maxAttempts) {
     await this.resetOnlyCropsTable();
 
     let attempt = 1;
@@ -37,11 +34,9 @@ class CropsService {
       `🎯 Target: ${targetCount} crops (GetCrops + GetCropHarvests), Max attempts: ${maxAttempts}`
     );
 
-    // Main processing loop (like #farmersService)
     while (attempt <= maxAttempts) {
       CropsLogger.logAttemptStart(attempt, maxAttempts);
 
-      // Get current count before this attempt (like #farmersService)
       currentCount = await this._getDatabaseCount();
       CropsLogger.logCurrentStatus(
         currentCount,
@@ -49,17 +44,14 @@ class CropsService {
         "crops (from both APIs)"
       );
 
-      // Always make API call (like #farmersService)
       attemptsUsed++;
       const result = await CropsProcessor.fetchAndProcessData();
 
-      // Log detailed metrics for this attempt (like #farmersService)
       CropsLogger.logAttemptResults(attempt, result);
 
       currentCount = result.totalAfter;
       attempt++;
 
-      // Stop when target is reached (like #farmersService)
       if (currentCount >= targetCount) {
         CropsLogger.logTargetReached(targetCount, attemptsUsed);
         break;
@@ -70,7 +62,6 @@ class CropsService {
   }
 
   static async _getDatabaseCount() {
-    // Count ALL records in crops table (from both APIs) - like #farmersService._getDatabaseCount
     const [result] = await connectionDB
       .promise()
       .query("SELECT COUNT(*) as total FROM crops");
@@ -78,7 +69,6 @@ class CropsService {
   }
 
   static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
-    // Like #farmersService._buildFinalResult
     const finalCount = await this._getDatabaseCount();
     const status =
       finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
