@@ -1,10 +1,20 @@
+// ===================== Imports =====================
+// Import DB connection for executing SQL queries
 const { connectionDB } = require("../../config/db/db.conf.js");
 const { OPERATIONS } = require("../../utils/constants");
 
-// 🔧 Modern insertOrUpdate function with correct field mappings
+// ===================== DB Utilities =====================
+// Provides helper functions for upserting crops
+
+/**
+ * Inserts or updates a crop record in the database.
+ * Maps reference codes, checks for existence, and upserts accordingly.
+ * @param {object} crop - Crop data object.
+ * @returns {Promise<object>} - Operation result.
+ */
 async function insertOrUpdateCrop(crop) {
   try {
-    // 🔧 Convert breed_id to string to match ref_breeds VARCHAR(10)
+    // Prepare values for DB insert/update
     const values = {
       rec_id: crop.recId || null,
       farmer_id: crop.farmerId,
@@ -12,10 +22,7 @@ async function insertOrUpdateCrop(crop) {
       crop_id: crop.cropId,
       crop_year: crop.cropYear,
       crop_name: crop.cropName || null,
-
-      // 🌾 FIX: Convert numeric breed_id to string
       breed_id: crop.breedId ? String(crop.breedId) : null,
-
       crop_start_date: crop.cropStartDate || null,
       crop_end_date: crop.cropEndDate || null,
       total_trees: crop.totalTrees || null,
@@ -42,13 +49,13 @@ async function insertOrUpdateCrop(crop) {
       values.updated_at = new Date(values.updated_at);
     }
 
-    // 🔧 Check for existing crop_id (unique key)
+    // Check for existing crop_id (unique key)
     const [existing] = await connectionDB
       .promise()
       .query(`SELECT id FROM crops WHERE crop_id = ? LIMIT 1`, [crop.cropId]);
 
     if (existing.length > 0) {
-      // === Update ===
+      // Update existing record
       const updateFields = Object.keys(values)
         .filter((key) => key !== "crop_id")
         .map((key) => `${key} = ?`)
@@ -65,7 +72,7 @@ async function insertOrUpdateCrop(crop) {
 
       return { operation: OPERATIONS.UPDATE, cropId: crop.cropId };
     } else {
-      // === Insert ===
+      // Insert new record
       await connectionDB.promise().query(
         `INSERT INTO crops (${Object.keys(values).join(
           ", "
@@ -87,7 +94,7 @@ async function insertOrUpdateCrop(crop) {
   }
 }
 
-// 🔧 Export only the modern function
+// ===================== Exports =====================
 module.exports = {
   insertOrUpdateCrop,
 };

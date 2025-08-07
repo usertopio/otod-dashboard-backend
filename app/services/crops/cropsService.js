@@ -1,13 +1,28 @@
+// ===================== Imports =====================
+// Import DB connection for executing SQL queries
 const { connectionDB } = require("../../config/db/db.conf.js");
+// Import configuration constants and status enums
 const { CROPS_CONFIG, STATUS } = require("../../utils/constants");
+// Import the processor for handling API data and DB upserts
 const CropsProcessor = require("./cropsProcessor");
+// Import the logger for structured logging of the fetch process
 const CropsLogger = require("./cropsLogger");
 
+// ===================== Service =====================
+// CropsService handles the business logic for fetching, resetting, and managing crop records.
 class CropsService {
+  /**
+   * Resets only the crops table in the database.
+   * - Disables foreign key checks to allow truncation.
+   * - Truncates the crops table, leaving related tables untouched.
+   * - Re-enables foreign key checks after operation.
+   * - Logs the process and returns a status object.
+   */
   static async resetOnlyCropsTable() {
     const connection = connectionDB.promise();
 
     try {
+      // Log the start of the reset operation
       console.log("==========================================");
       console.log(
         `📩 Sending request to API Endpoint: {{LOCAL_HOST}}/api/fetchCrops`
@@ -16,19 +31,35 @@ class CropsService {
 
       console.log("🧹 Resetting ONLY crops table...");
 
+      // Disable foreign key checks to allow truncation
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
+      // Truncate the crops table (delete all records, reset auto-increment)
       await connection.query("TRUNCATE TABLE crops");
+      // Re-enable foreign key checks after truncation
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
 
+      // Log completion
       console.log("✅ Only crops table reset - next ID will be 1");
       return { success: true, message: "Only crops table reset" };
     } catch (error) {
+      // Always re-enable foreign key checks even if error occurs
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+      // Log the error
       console.error("❌ Error resetting crops table:", error);
       throw error;
     }
   }
 
+  /**
+   * Main entry point for fetching crops from APIs and storing them in the database.
+   * - Resets the crops table before starting.
+   * - Loops up to maxAttempts, fetching and processing data each time.
+   * - Logs progress and metrics for each attempt.
+   * - Stops early if the target number of crops is reached.
+   * - Returns a summary result object.
+   * @param {number} targetCount - The number of crops to fetch and store.
+   * @param {number} maxAttempts - The maximum number of fetch attempts.
+   */
   static async fetchCrops(targetCount, maxAttempts) {
     await this.resetOnlyCropsTable();
 
@@ -36,6 +67,7 @@ class CropsService {
     let currentCount = 0;
     let attemptsUsed = 0;
 
+    // Log the fetch target and attempt limit
     console.log(
       `🎯 Target: ${targetCount} crops (GetCrops + GetCropHarvests), Max attempts: ${maxAttempts}`
     );
@@ -67,6 +99,10 @@ class CropsService {
     return this._buildFinalResult(targetCount, attemptsUsed, maxAttempts);
   }
 
+  /**
+   * Returns the current count of crop records in the database.
+   * @returns {Promise<number>} - The total number of crops in the DB.
+   */
   static async _getDatabaseCount() {
     const [result] = await connectionDB
       .promise()
@@ -74,6 +110,13 @@ class CropsService {
     return result[0].total;
   }
 
+  /**
+   * Builds and logs the final result summary after the fetch loop.
+   * @param {number} targetCount - The target number of crops.
+   * @param {number} attemptsUsed - The number of attempts used.
+   * @param {number} maxAttempts - The maximum allowed attempts.
+   * @returns {object} - Summary of the fetch operation.
+   */
   static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
     const finalCount = await this._getDatabaseCount();
     const status =
@@ -101,4 +144,6 @@ class CropsService {
   }
 }
 
+// ===================== Exports =====================
+// Export the CropsService class for use in controllers and routes
 module.exports = CropsService;

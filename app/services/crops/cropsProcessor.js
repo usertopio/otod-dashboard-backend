@@ -1,10 +1,22 @@
+// ===================== Imports =====================
+// Import API clients for fetching crop data
 const { getCrops, getCropHarvests } = require("../api/crops");
+// Import DB helper for upserting crop records
 const { insertOrUpdateCrop } = require("../db/cropsDb");
+// Import DB connection for direct queries
 const { connectionDB } = require("../../config/db/db.conf.js");
+// Import config constants and operation enums
 const { CROPS_CONFIG, OPERATIONS } = require("../../utils/constants");
+// Import logger for structured process logging
 const CropsLogger = require("./cropsLogger");
 
+// ===================== Processor =====================
+// CropsProcessor handles fetching, merging, deduplication, and DB upserts for crops.
 class CropsProcessor {
+  /**
+   * Fetches all crop data from both APIs, merges, deduplicates, and upserts into DB.
+   * Returns a result object with metrics and tracking info.
+   */
   static async fetchAndProcessData() {
     // Initialize counters for BOTH APIs
     const metrics = {
@@ -52,13 +64,14 @@ class CropsProcessor {
     // Get database count after processing
     const dbCountAfter = await this._getDatabaseCount();
 
+    // Build and return a detailed result object
     return this._buildResult(metrics, dbCountBefore, dbCountAfter);
   }
 
   // 🔧 Fetch from GetCrops API (paginated)
   static async _fetchGetCropsPages(metrics) {
     console.log(``);
-    console.log("📞 Calling GetCrops API (paginated)...");
+    console.log("📞 Sending request to GetCrops API (paginated)...");
 
     // Use totalRecords from actual API response (4 records in example)
     // But we'll use config for flexibility
@@ -92,7 +105,7 @@ class CropsProcessor {
 
   // 🔧 Fetch from GetCropHarvests API (single call, no pagination)
   static async _fetchGetCropHarvests(metrics) {
-    console.log("📞 Calling GetCropHarvests API (single call)...");
+    console.log("📞 Sending request to GetCropHarvests API (single call)...");
 
     const requestBody = {
       cropYear: CROPS_CONFIG.DEFAULT_CROP_YEAR || 2024,
@@ -284,4 +297,5 @@ class CropsProcessor {
   }
 }
 
+// ===================== Exports =====================
 module.exports = CropsProcessor;

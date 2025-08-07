@@ -1,3 +1,5 @@
+// ===================== Logger =====================
+// CropsLogger provides structured logging for the crops fetch/process workflow.
 class CropsLogger {
   static logAttemptStart(attempt, maxAttempts) {
     console.log(`\n🔄 === ATTEMPT ${attempt}/${maxAttempts} ===`);
@@ -116,4 +118,5 @@ class CropsLogger {
   }
 }
 
+// ===================== Exports =====================
 module.exports = CropsLogger;
