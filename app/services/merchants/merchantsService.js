@@ -10,7 +10,7 @@ class MerchantsService {
     try {
       console.log("==========================================");
       console.log(
-        `🔄  Calling API Endpoint: {{LOCAL_HOST}}/api/fetchMerchants`
+        `📩 Sending request to API Endpoint: {{LOCAL_HOST}}/api/fetchMerchants`
       );
       console.log("==========================================\n");
 

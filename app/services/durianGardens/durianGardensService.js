@@ -10,7 +10,7 @@ class DurianGardensService {
     try {
       console.log("==========================================");
       console.log(
-        `🔄  Calling API Endpoint: {{LOCAL_HOST}}/api/fetchDurianGardens`
+        `📩 Sending request to API Endpoint: {{LOCAL_HOST}}/api/fetchDurianGardens`
       );
       console.log("==========================================\n");
 

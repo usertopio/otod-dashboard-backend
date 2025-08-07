@@ -9,7 +9,9 @@ class WaterService {
 
     try {
       console.log("==========================================");
-      console.log(`🔄  Calling API Endpoint: {{LOCAL_HOST}}/api/fetchWater`);
+      console.log(
+        `📩 Sending request to API Endpoint: {{LOCAL_HOST}}/api/fetchWater`
+      );
       console.log("==========================================\n");
 
       console.log("🧹 Resetting ONLY water table...");

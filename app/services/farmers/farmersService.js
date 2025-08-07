@@ -24,7 +24,7 @@ class FarmersService {
     try {
       // Log the start of the reset operation
       console.log("==========================================");
-      console.log(`🔄  Calling API Endpoint: {{LOCAL_HOST}}/api/fetchFarmers`);
+      console.log(`📩 Sending request to API Endpoint: {{LOCAL_HOST}}/api/fetchFarmers`);
       console.log("==========================================\n");
 
       console.log("🧹 Resetting ONLY farmers table...");

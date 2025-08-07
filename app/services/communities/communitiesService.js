@@ -10,7 +10,7 @@ class CommunitiesService {
     try {
       console.log("==========================================");
       console.log(
-        `🔄  Calling API Endpoint: {{LOCAL_HOST}}/api/fetchCommunities`
+        `📩 Sending request to API Endpoint: {{LOCAL_HOST}}/api/fetchCommunities`
       );
       console.log("==========================================\n");
 

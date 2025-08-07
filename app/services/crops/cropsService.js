@@ -9,7 +9,9 @@ class CropsService {
 
     try {
       console.log("==========================================");
-      console.log(`🔄  Calling API Endpoint: {{LOCAL_HOST}}/api/fetchCrops`);
+      console.log(
+        `📩 Sending request to API Endpoint: {{LOCAL_HOST}}/api/fetchCrops`
+      );
       console.log("==========================================\n");
 
       console.log("🧹 Resetting ONLY crops table...");
