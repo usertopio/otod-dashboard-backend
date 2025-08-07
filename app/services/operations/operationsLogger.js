@@ -1,3 +1,5 @@
+// ===================== Logger =====================
+// OperationsLogger provides structured logging for the operations fetch/process workflow.
 class OperationsLogger {
   static logTargetStart(targetCount, maxAttempts) {
     console.log(

@@ -1,7 +1,17 @@
+// ===================== Imports =====================
+// Import DB connection for executing SQL queries
 const { connectionDB } = require("../../config/db/operations.conf.js");
 const { OPERATIONS } = require("../../utils/constants");
 
-// 🎯 ONLY: Advanced insert/update pattern for fetchOperationsUntilTarget
+// ===================== DB Utilities =====================
+// Provides helper functions for upserting operations
+
+/**
+ * Inserts or updates an operation record in the database.
+ * Checks for existence, and upserts accordingly.
+ * @param {object} operation - Operation data object.
+ * @returns {Promise<object>} - Operation result.
+ */
 const insertOrUpdateOperation = async (operation) => {
   try {
     // Check if operation already exists

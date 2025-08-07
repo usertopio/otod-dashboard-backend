@@ -1,10 +1,18 @@
+// ===================== Imports =====================
+// Import API client for fetching operations data
 const { getOperations } = require("../api/operations");
 const { insertOrUpdateOperation } = require("../db/operationsDb");
 const { connectionDB } = require("../../config/db/db.conf.js");
 const { OPERATIONS_CONFIG, OPERATIONS } = require("../../utils/constants");
 const OperationsLogger = require("./operationsLogger");
 
+// ===================== Processor =====================
+// OperationsProcessor handles fetching, deduplication, and DB upserts for operations.
 class OperationsProcessor {
+  /**
+   * Fetches all operation data from the API, deduplicates, and upserts into DB.
+   * Returns a result object with metrics and tracking info.
+   */
   static async fetchAndProcessData() {
     const pages = Math.ceil(
       OPERATIONS_CONFIG.DEFAULT_TOTAL_RECORDS /
@@ -47,6 +55,11 @@ class OperationsProcessor {
     return this._buildResult(metrics, dbCountBefore, dbCountAfter);
   }
 
+  /**
+   * Fetches all pages of operations from the API and logs each page.
+   * @param {number} pages - Number of pages to fetch.
+   * @param {object} metrics - Metrics object to accumulate results.
+   */
   static async _fetchAllPages(pages, metrics) {
     for (let page = 1; page <= pages; page++) {
       const requestBody = {
@@ -71,6 +84,11 @@ class OperationsProcessor {
     }
   }
 
+  /**
+   * Deduplicates operations by recId.
+   * @param {Array} allOperations - Array of all operations from API.
+   * @returns {Array} - Array of unique operations.
+   */
   static _getUniqueOperations(allOperations) {
     return allOperations.filter(
       (operation, index, self) =>
@@ -78,6 +96,11 @@ class OperationsProcessor {
     );
   }
 
+  /**
+   * Upserts each unique operation into the DB and updates metrics.
+   * @param {Array} uniqueOperations - Array of unique operations.
+   * @param {object} metrics - Metrics object to update.
+   */
   static async _processUniqueOperations(uniqueOperations, metrics) {
     for (const operation of uniqueOperations) {
       const result = await insertOrUpdateOperation(operation);
@@ -101,6 +124,10 @@ class OperationsProcessor {
     }
   }
 
+  /**
+   * Gets the current count of operations in the DB.
+   * @returns {Promise<number>} - Total number of operations.
+   */
   static async _getDatabaseCount() {
     const [result] = await connectionDB
       .promise()
@@ -108,6 +135,13 @@ class OperationsProcessor {
     return result[0].total;
   }
 
+  /**
+   * Builds a detailed result object with metrics and insights.
+   * @param {object} metrics - Metrics object.
+   * @param {number} dbCountBefore - DB count before processing.
+   * @param {number} dbCountAfter - DB count after processing.
+   * @returns {object} - Result summary.
+   */
   static _buildResult(metrics, dbCountBefore, dbCountAfter) {
     return {
       // Database metrics
@@ -146,4 +180,5 @@ class OperationsProcessor {
   }
 }
 
+// ===================== Exports =====================
 module.exports = OperationsProcessor;
