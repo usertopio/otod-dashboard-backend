@@ -72,7 +72,7 @@ class DurianGardensProcessor {
   // 🌿 Fetch from GetLands API (paginated)
   static async _fetchGetLandsPages(metrics) {
     console.log(``);
-    console.log("📞 sending request to GetLands API (paginated)...");
+    console.log("📞 Sending request to GetLands API (paginated)...");
 
     const pages = Math.ceil(
       DURIAN_GARDENS_CONFIG.DEFAULT_TOTAL_RECORDS /
@@ -104,7 +104,7 @@ class DurianGardensProcessor {
 
   // 🌿 Fetch from GetLandGeoJSON API (single call, no pagination)
   static async _fetchGetLandGeoJSON(metrics) {
-    console.log("📞 sending request to GetLandGeoJSON API (single call)...");
+    console.log("📞 Sending request to GetLandGeoJSON API (single call)...");
 
     const requestBody = {
       province: "",
