@@ -1,6 +1,6 @@
 const { login } = require("../services/api/login.js");
 
-exports.toLogin = async (req, res) => {
+exports.getToken = async (req, res) => {
   try {
     let requestBody = {
       username: process.env.OUTSOURCE_USERNAME,
