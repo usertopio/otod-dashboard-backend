@@ -1,5 +1,5 @@
 // ===================== Imports =====================
-const { connectionDB } = require("../../config/db/news.conf.js");
+const { connectionDB } = require("../../config/db/db.conf.js");
 const { OPERATIONS } = require("../../utils/constants");
 
 // ===================== Reference Lookup =====================
