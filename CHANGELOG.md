@@ -2,6 +2,71 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0](https://github.com/usertopio/otod-durian-lab1/compare/v1.0.1...v2.0.0) (2025-08-09)
+
+
+### Features
+
+* **api:** ✅enable crops endpoint for fetching crops data ([47d14b1](https://github.com/usertopio/otod-durian-lab1/commit/47d14b1f208d50e874ff6824571c0dc7ba919db1))
+* **api:** ✨add DurianGardensLogger for enhanced logging of garden data processing ([0debdd2](https://github.com/usertopio/otod-durian-lab1/commit/0debdd2aed29df2753c220cd424f42d689b1e15a))
+* **api:** ✨add DurianGardensProcessor for fetching and processing garden data ([0fcdaed](https://github.com/usertopio/otod-durian-lab1/commit/0fcdaed8a533efdf048470415e986fa577f08b65))
+* **api:** ✨add DurianGardensService with fetching and resetting functionality ([4fcc842](https://github.com/usertopio/otod-durian-lab1/commit/4fcc842113514cb7cdd38c3a0c32d878ae17d0c2))
+* **api:** ✨add fetchDurianGardensUntilTarget controller ([849df5e](https://github.com/usertopio/otod-durian-lab1/commit/849df5e252cc09b2e07ccc4fc533a94cf38d03b3))
+* **api:** ✨add fetchDurianGardensUntilTarget endpoint ([024d898](https://github.com/usertopio/otod-durian-lab1/commit/024d898ecbe807b78b15617543876173f1ee8a80))
+* **api:** ✨add fetchGapUntilTarget endpoint ([84204a0](https://github.com/usertopio/otod-durian-lab1/commit/84204a08023ed332f103bd57ec798731e6ebf399))
+* **api:** ✨add fetchGapUntilTarget endpoint for gap retrieval ([81ffea5](https://github.com/usertopio/otod-durian-lab1/commit/81ffea5ece51507f9955d2f7e32ba7ffc5aa83bd))
+* **api:** ✨refactor communities endpoint to use fetchCommunitiesUntilTarget ([68d3df3](https://github.com/usertopio/otod-durian-lab1/commit/68d3df33ea667658153a60d7245e34a925380da4))
+* **api:** ✨refactor communities fetching logic to use CommunitiesService ([2344c8e](https://github.com/usertopio/otod-durian-lab1/commit/2344c8eeb48cd3ca0120faece619a816865ff2e9))
+* **api:** ✨refactor fetchWater endpoint to improve clarity and usage ([94acada](https://github.com/usertopio/otod-durian-lab1/commit/94acada0383c441af9f2b6607f7a7fda3e51003c))
+* **api:** ✨update fetchOperations endpoint to fetchOperationsUntilTarget ([43bfd96](https://github.com/usertopio/otod-durian-lab1/commit/43bfd96ef4f36c1320fd3a0e2231e25c310857cd))
+* **config:** 🌿add Crops and Durian Gardens configuration updates ([4480831](https://github.com/usertopio/otod-durian-lab1/commit/4480831dbe59ef6c9fe6418eb05517cf8dc5aa95))
+* **config:** 🌿add Durian Gardens configuration following farmers template ([34dc520](https://github.com/usertopio/otod-durian-lab1/commit/34dc520fb1c777dc7fe909857fe6dc8035a7dfd2))
+* **constants:** ✨add communities configuration constants ([0f0e514](https://github.com/usertopio/otod-durian-lab1/commit/0f0e51462edc11ee4acc685910073d5af53ad13b))
+* **constants:** ✨add Crops configuration with updated default values ([3025b27](https://github.com/usertopio/otod-durian-lab1/commit/3025b2759e51e3b9f66c61856d68b64fac49184b))
+* **constants:** ✨add DEFAULT_TOTAL_RECORDS and DEFAULT_PAGE_SIZE to MERCHANTS_CONFIG ([ae825c6](https://github.com/usertopio/otod-durian-lab1/commit/ae825c6c3b182d1d2fc29499b1ca6bb89cf14c9d))
+* **constants:** ✨add GAP configuration constants ([5665110](https://github.com/usertopio/otod-durian-lab1/commit/5665110674e8921e79fbc919f3ba3a8ff5bb4ae1))
+* **constants:** ✨add MERCHANTS_CONFIG for merchant settings ([57512e7](https://github.com/usertopio/otod-durian-lab1/commit/57512e7d103ac1c38317d1e07c6a5e9e5fbe9942))
+* **constants:** ✨add OPERATIONS_CONFIG for operations handling ([da5ef80](https://github.com/usertopio/otod-durian-lab1/commit/da5ef80e67dec0bfb87fd31207e8386825e2de8f))
+* **constants:** ✨add STATUS constant and update FARMERS_CONFIG ([9d2d654](https://github.com/usertopio/otod-durian-lab1/commit/9d2d65463c91ffff17513d92099bb3b3f20d354b))
+* **constants:** ✨add WATER_CONFIG for water data management ([62574aa](https://github.com/usertopio/otod-durian-lab1/commit/62574aa3f439ecb08b7c3e05594454fa5bc383ac))
+* **db:** ✨add insertOrUpdateCommunity function for community management ([bc6a296](https://github.com/usertopio/otod-durian-lab1/commit/bc6a296c22f63fc8d2261eb18ebe65cf02202d18))
+* **db:** ✨add insertOrUpdateDurianGarden function for managing garden data ([f201980](https://github.com/usertopio/otod-durian-lab1/commit/f2019804680a6c687e635b277b6b4ff7cae1ff12))
+* **db:** ✨add insertOrUpdateGap function for GAP certificate management ([bc419e9](https://github.com/usertopio/otod-durian-lab1/commit/bc419e9ddf80df286f082c015b5275792c01b582))
+* **db:** ✨add insertOrUpdateOperation for advanced operation handling ([6d37563](https://github.com/usertopio/otod-durian-lab1/commit/6d3756347cfd003d6ebff3482d998c18591d5ba1))
+* **db:** ✨add insertOrUpdateWater functionality for water records ([821ac11](https://github.com/usertopio/otod-durian-lab1/commit/821ac1190bc2a56c59928726a3f714f1dfe43ab7))
+* **db:** ✨implement insertOrUpdateMerchant functionality with location code generation ([33f4db6](https://github.com/usertopio/otod-durian-lab1/commit/33f4db69bd32c63ad23e679b5a86533302e6dea5))
+* **db:** 🔧refactor ensureRefCode function for improved reference code handling ([23c3b1c](https://github.com/usertopio/otod-durian-lab1/commit/23c3b1c365d4dc7bef793f86c1941a19fb3e7f32))
+* **gap:** ✨add GapLogger for logging gap processing metrics ([0460f83](https://github.com/usertopio/otod-durian-lab1/commit/0460f8342665b9a0670331efd13ccecbc8a60ab7))
+* **gap:** ✨add GapProcessor for fetching and processing GAP certificates ([017f8ee](https://github.com/usertopio/otod-durian-lab1/commit/017f8ee395d03fdfb60829da48dfc443a6e17ed4))
+* **gap:** ✨add GapService for gap processing until target count ([e60bc43](https://github.com/usertopio/otod-durian-lab1/commit/e60bc439e5d1c11fb577d1d5239eeda121ddb6e2))
+* **merchants:** ✨add fetchMerchantsUntilTarget functionality ([77a57a1](https://github.com/usertopio/otod-durian-lab1/commit/77a57a1758c4ed02288b0764134f052eeeeca245))
+* **merchants:** ✨add MerchantsLogger class for enhanced logging ([d6bfb73](https://github.com/usertopio/otod-durian-lab1/commit/d6bfb73fecc1c4204aabebfecd17231c14a41be6))
+* **merchants:** ✨add MerchantsProcessor class for fetching and processing merchant data ([fe9c633](https://github.com/usertopio/otod-durian-lab1/commit/fe9c633876608d77f464105a90ad2db6018cd85f))
+* **merchants:** ✨add MerchantsService class for fetching merchants until target count ([0ade938](https://github.com/usertopio/otod-durian-lab1/commit/0ade938af7a602c81ee3c032993eab0a31231ee9))
+* **news:** ✨implement fetchNewsUntilTarget functionality with logging ([f2a4f9e](https://github.com/usertopio/otod-durian-lab1/commit/f2a4f9e5113bec7e4319931d7b2ef6485efc9b55))
+* **operations:** ✨add fetchOperationsUntilTarget method for targeted data retrieval ([6c68cd4](https://github.com/usertopio/otod-durian-lab1/commit/6c68cd40c4f3afb8ea1e939cec240651fed0a44f))
+* **operations:** ✨add OperationsLogger for detailed logging of operations processing ([bca5e7a](https://github.com/usertopio/otod-durian-lab1/commit/bca5e7a1010f4c24e61c1a09024cc4b0617d9433))
+* **operations:** ✨add OperationsProcessor for fetching and processing operations data ([5cfab99](https://github.com/usertopio/otod-durian-lab1/commit/5cfab9906314671b39b0c3f7d624f7efb49e9948))
+* **operations:** ✨add OperationsService for targeted operations fetching ([62c0b9c](https://github.com/usertopio/otod-durian-lab1/commit/62c0b9cf3298d7335c972356a7f4fa25112e4f70))
+* **services:** ✨add CommunitiesLogger for detailed logging of community operations ([d2ce6bd](https://github.com/usertopio/otod-durian-lab1/commit/d2ce6bdab1dd30cee2f4a3e01c238a374a22dff5))
+* **services:** ✨add CommunitiesProcessor for community data handling ([2855f06](https://github.com/usertopio/otod-durian-lab1/commit/2855f069214250c6688be4586c3a8a865f47add7))
+* **services:** ✨add CommunitiesService for community data fetching and processing ([348a0f5](https://github.com/usertopio/otod-durian-lab1/commit/348a0f5da295cec88d1ec0455bf0483de0d3d0a2))
+* **services:** ✨add CropsService for managing crop data ([f291aa1](https://github.com/usertopio/otod-durian-lab1/commit/f291aa15bb9fe0b3b613c49bce2b94868a9eaf68))
+* **substance:** ✨add substance processing and logging functionality ([220a500](https://github.com/usertopio/otod-durian-lab1/commit/220a5002e249d44ed6b163796e3567ab09a8cdfe))
+* **water:** ✨add WaterLogger class for logging water data processing ([971f14d](https://github.com/usertopio/otod-durian-lab1/commit/971f14d95dd3ebea0613899ba4488bd7ea059d6e))
+* **water:** ✨add WaterProcessor class for fetching and processing water data ([2fe7a14](https://github.com/usertopio/otod-durian-lab1/commit/2fe7a14e86fc5c031296ea15c0dc83d1e4b7a809))
+* **water:** ✨add WaterService class for managing water data fetching ([a6803f2](https://github.com/usertopio/otod-durian-lab1/commit/a6803f2fc51c393844bd963aaac88b229672baaa))
+* **water:** ✨refactor WaterController to implement fetchWater method ([f981cfb](https://github.com/usertopio/otod-durian-lab1/commit/f981cfb65d3ccd32d4346149ea1752de5290f515))
+
+
+### Bug Fixes
+
+* **config:** 🔧correct database configuration path in gapProcessor.js ([c7400f7](https://github.com/usertopio/otod-durian-lab1/commit/c7400f7175abe365389ba286add0f246af2c4d6c))
+* **config:** 🔧update max attempts for various configurations ([94caa88](https://github.com/usertopio/otod-durian-lab1/commit/94caa88a761ea375038ed350a47168b7d256c03a))
+* **db:** 🔧correct database configuration path for community operations ([5fa80d8](https://github.com/usertopio/otod-durian-lab1/commit/5fa80d8e80d08e609faa58497b2cde2ca02f6dbb))
+* **db:** 🔧correct database configuration path in gapDb.js ([70ad29c](https://github.com/usertopio/otod-durian-lab1/commit/70ad29c93d6e922b856e5e4688d491eac51e11e9))
+* **db:** 🔧use nullish coalescing for garden area fields ([363ed58](https://github.com/usertopio/otod-durian-lab1/commit/363ed5823b2326f991f51cf8d3c82f41e61a7c94))
+
 ### [1.0.1](https://github.com/usertopio/otod-durian-lab1/compare/v1.0.0...v1.0.1) (2025-07-31)
 
 ## 1.0.0 (2025-07-31)
