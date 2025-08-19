@@ -6,3 +6,6 @@ node_modules/
 
 # Database
 sql/
+
+# Results
+result-from-database/
