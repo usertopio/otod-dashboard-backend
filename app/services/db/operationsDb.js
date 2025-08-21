@@ -2,6 +2,8 @@
 // Import DB connection for executing SQL queries
 const { connectionDB } = require("../../config/db/db.conf.js");
 const { OPERATIONS } = require("../../utils/constants");
+// Add this import:
+const { getOrInsertProvince } = require("./locationHelper");
 
 // ===================== DB Utilities =====================
 // Provides helper functions for upserting operations
@@ -14,6 +16,13 @@ const { OPERATIONS } = require("../../utils/constants");
  */
 const insertOrUpdateOperation = async (operation) => {
   try {
+    // === Map province name to code ===
+    let provinceCode = null;
+    if (operation.province) {
+      const province = await getOrInsertProvince(operation.province);
+      provinceCode = province ? province.province_code : null;
+    }
+
     // Check if operation already exists
     const [existing] = await connectionDB
       .promise()
@@ -25,6 +34,7 @@ const insertOrUpdateOperation = async (operation) => {
       // UPDATE existing operation
       await connectionDB.promise().query(
         `UPDATE operations SET 
+         operation_province_code = ?,
          crop_year = ?, 
          oper_id = ?, 
          crop_id = ?, 
@@ -39,6 +49,7 @@ const insertOrUpdateOperation = async (operation) => {
          company_id = ?
          WHERE rec_id = ?`,
         [
+          provinceCode,
           operation.cropYear || null,
           operation.operId,
           operation.cropId,
@@ -58,12 +69,13 @@ const insertOrUpdateOperation = async (operation) => {
       // INSERT new operation
       await connectionDB.promise().query(
         `INSERT INTO operations 
-         (rec_id, crop_year, oper_id, crop_id, oper_type, oper_date, 
+         (rec_id, operation_province_code, crop_year, oper_id, crop_id, oper_type, oper_date, 
           no_of_workers, worker_cost, fertilizer_cost, equipment_cost, 
           created_at, updated_at, fetch_at, company_id) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW(), ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW(), ?)`,
         [
           operation.recId,
+          provinceCode,
           operation.cropYear || null,
           operation.operId,
           operation.cropId,
