@@ -9,3 +9,6 @@ sql/
 
 # Results
 result-from-database/
+
+# automation
+scripts/
