@@ -12,3 +12,4 @@ result-from-database/
 
 # automation
 scripts/
+venv/
