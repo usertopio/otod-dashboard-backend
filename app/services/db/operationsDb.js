@@ -14,6 +14,34 @@ const { getOrInsertProvince } = require("./locationHelper");
  * @param {object} operation - Operation data object.
  * @returns {Promise<object>} - Operation result.
  */
+async function ensureOperationTypeId(operationTypeName) {
+  if (!operationTypeName) return null;
+  try {
+    // Try to find existing
+    const [existing] = await connectionDB
+      .promise()
+      .query(
+        `SELECT operation_type_id FROM ref_operation_types WHERE operation_type_name = ? LIMIT 1`,
+        [operationTypeName]
+      );
+    if (existing.length > 0) {
+      return existing[0].operation_type_id;
+    }
+    // Insert new if not found
+    const generatedId = `OTYPE${Date.now()}`;
+    await connectionDB
+      .promise()
+      .query(
+        `INSERT INTO ref_operation_types (operation_type_id, operation_type_name, source) VALUES (?, ?, 'generated')`,
+        [generatedId, operationTypeName]
+      );
+    return generatedId;
+  } catch (err) {
+    console.error("ref_operation_types lookup error:", err.message);
+    return null;
+  }
+}
+
 const insertOrUpdateOperation = async (operation) => {
   try {
     // === Map province name to code ===
@@ -23,6 +51,9 @@ const insertOrUpdateOperation = async (operation) => {
       provinceCode = province ? province.province_code : null;
     }
 
+    // === Map operation type to operation_type_id ===
+    const operationTypeId = await ensureOperationTypeId(operation.operType);
+
     // === Prepare values ===
     const values = {
       rec_id: operation.recId,
@@ -30,14 +61,14 @@ const insertOrUpdateOperation = async (operation) => {
       crop_year: operation.cropYear || null,
       oper_id: operation.operId,
       crop_id: operation.cropId,
-      oper_type: operation.operType || null,
+      operation_type_id: operationTypeId,
       oper_date: operation.operDate || null,
       no_of_workers: operation.noOfWorkers || null,
       worker_cost: operation.workerCost || null,
       fertilizer_cost: operation.fertilizerCost || null,
       equipment_cost: operation.equipmentCost || null,
-      created_at: operation.createdTime || null,
-      updated_at: operation.updatedTime || null,
+      created_at: operation.createdAt || null,
+      updated_at: operation.updatedAt || null,
       fetch_at: new Date(),
       company_id: operation.companyId || null,
     };
@@ -57,7 +88,7 @@ const insertOrUpdateOperation = async (operation) => {
          crop_year = ?, 
          oper_id = ?, 
          crop_id = ?, 
-         oper_type = ?, 
+         operation_type_id = ?, 
          oper_date = ?, 
          no_of_workers = ?, 
          worker_cost = ?, 
@@ -72,7 +103,7 @@ const insertOrUpdateOperation = async (operation) => {
           values.crop_year,
           values.oper_id,
           values.crop_id,
-          values.oper_type,
+          values.operation_type_id,
           values.oper_date,
           values.no_of_workers,
           values.worker_cost,
@@ -90,7 +121,7 @@ const insertOrUpdateOperation = async (operation) => {
       // INSERT new operation
       await connectionDB.promise().query(
         `INSERT INTO operations 
-         (rec_id, operation_province_code, crop_year, oper_id, crop_id, oper_type, oper_date, 
+         (rec_id, operation_province_code, crop_year, oper_id, crop_id, operation_type_id, oper_date, 
           no_of_workers, worker_cost, fertilizer_cost, equipment_cost, 
           created_at, updated_at, fetch_at, company_id) 
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -100,7 +131,7 @@ const insertOrUpdateOperation = async (operation) => {
           values.crop_year,
           values.oper_id,
           values.crop_id,
-          values.oper_type,
+          values.operation_type_id,
           values.oper_date,
           values.no_of_workers,
           values.worker_cost,
