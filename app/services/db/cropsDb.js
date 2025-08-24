@@ -14,15 +14,15 @@ const { OPERATIONS } = require("../../utils/constants");
  */
 async function insertOrUpdateCrop(crop) {
   try {
-    // Prepare values for DB insert/update
+    // Prepare values
     const values = {
-      rec_id: crop.recId || null,
+      rec_id: crop.recId,
       farmer_id: crop.farmerId,
       land_id: crop.landId,
       crop_id: crop.cropId,
-      crop_year: crop.cropYear,
+      crop_year: crop.cropYear || null,
       crop_name: crop.cropName || null,
-      breed_id: crop.breedId ? String(crop.breedId) : null,
+      breed_id: crop.breedId || null,
       crop_start_date: crop.cropStartDate || null,
       crop_end_date: crop.cropEndDate || null,
       total_trees: crop.totalTrees || null,
@@ -55,40 +55,77 @@ async function insertOrUpdateCrop(crop) {
       .query(`SELECT id FROM crops WHERE crop_id = ? LIMIT 1`, [crop.cropId]);
 
     if (existing.length > 0) {
-      // Update existing record
-      const updateFields = Object.keys(values)
-        .filter((key) => key !== "crop_id")
-        .map((key) => `${key} = ?`)
-        .join(", ");
-
-      await connectionDB
-        .promise()
-        .query(`UPDATE crops SET ${updateFields} WHERE crop_id = ?`, [
-          ...Object.values(values).filter(
-            (_, i) => Object.keys(values)[i] !== "crop_id"
-          ),
-          crop.cropId,
-        ]);
-
-      return { operation: OPERATIONS.UPDATE, cropId: crop.cropId };
-    } else {
-      // Insert new record
+      // Direct SQL UPDATE
       await connectionDB.promise().query(
-        `INSERT INTO crops (${Object.keys(values).join(
-          ", "
-        )}) VALUES (${Object.keys(values)
-          .map(() => "?")
-          .join(", ")})`,
-        Object.values(values)
+        `UPDATE crops SET 
+          rec_id = ?, farmer_id = ?, land_id = ?, crop_year = ?, crop_name = ?, breed_id = ?, 
+          crop_start_date = ?, crop_end_date = ?, total_trees = ?, forecast_kg = ?, forecast_baht = ?, 
+          forecast_worker_cost = ?, forecast_fertilizer_cost = ?, forecast_equipment_cost = ?, 
+          forecast_petrol_cost = ?, durian_stage_id = ?, lot_number = ?, updated_at = ?, fetch_at = ?
+         WHERE crop_id = ?`,
+        [
+          values.rec_id,
+          values.farmer_id,
+          values.land_id,
+          values.crop_year,
+          values.crop_name,
+          values.breed_id,
+          values.crop_start_date,
+          values.crop_end_date,
+          values.total_trees,
+          values.forecast_kg,
+          values.forecast_baht,
+          values.forecast_worker_cost,
+          values.forecast_fertilizer_cost,
+          values.forecast_equipment_cost,
+          values.forecast_petrol_cost,
+          values.durian_stage_id,
+          values.lot_number,
+          values.updated_at,
+          values.fetch_at,
+          crop.cropId,
+        ]
       );
-
-      return { operation: OPERATIONS.INSERT, cropId: crop.cropId };
+      return { operation: OPERATIONS.UPDATE, recId: crop.cropId };
+    } else {
+      // Direct SQL INSERT
+      await connectionDB.promise().query(
+        `INSERT INTO crops 
+          (rec_id, farmer_id, land_id, crop_id, crop_year, crop_name, breed_id, crop_start_date, crop_end_date, 
+           total_trees, forecast_kg, forecast_baht, forecast_worker_cost, forecast_fertilizer_cost, 
+           forecast_equipment_cost, forecast_petrol_cost, durian_stage_id, lot_number, created_at, updated_at, fetch_at) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          values.rec_id,
+          values.farmer_id,
+          values.land_id,
+          values.crop_id,
+          values.crop_year,
+          values.crop_name,
+          values.breed_id,
+          values.crop_start_date,
+          values.crop_end_date,
+          values.total_trees,
+          values.forecast_kg,
+          values.forecast_baht,
+          values.forecast_worker_cost,
+          values.forecast_fertilizer_cost,
+          values.forecast_equipment_cost,
+          values.forecast_petrol_cost,
+          values.durian_stage_id,
+          values.lot_number,
+          values.created_at,
+          values.updated_at,
+          values.fetch_at,
+        ]
+      );
+      return { operation: OPERATIONS.INSERT, recId: crop.cropId };
     }
   } catch (err) {
     console.error("Crop insert/update error:", err);
     return {
       operation: OPERATIONS.ERROR,
-      cropId: crop.cropId,
+      recId: crop.cropId,
       error: err.message,
     };
   }
