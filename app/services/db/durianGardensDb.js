@@ -141,7 +141,7 @@ async function insertOrUpdateDurianGarden(garden) {
       garden.landId ||
       `DURIAN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
-    // Map fields with proper reference codes
+    // Prepare values in fixed order
     const values = {
       rec_id: recId,
       farmer_id: garden.farmerId,
@@ -187,39 +187,62 @@ async function insertOrUpdateDurianGarden(garden) {
       ]);
 
     if (existing.length > 0) {
-      // Update existing record
-      const updateFields = Object.keys(values)
-        .filter((key) => key !== "land_id")
-        .map((key) => `${key} = ?`)
-        .join(", ");
-
-      const updateValues = Object.values(values).filter(
-        (_, i) => Object.keys(values)[i] !== "land_id"
-      );
-
-      await connectionDB
-        .promise()
-        .query(`UPDATE durian_gardens SET ${updateFields} WHERE land_id = ?`, [
-          ...updateValues,
+      // Direct SQL UPDATE
+      await connectionDB.promise().query(
+        `UPDATE durian_gardens SET 
+          rec_id = ?, farmer_id = ?, garden_province_code = ?, garden_district_code = ?, 
+          garden_subdistrict_code = ?, land_type_id = ?, lat = ?, lon = ?, no_of_rais = ?, 
+          no_of_ngan = ?, no_of_wah = ?, kml = ?, geojson = ?, updated_at = ?, company_id = ?, fetch_at = ?
+         WHERE land_id = ?`,
+        [
+          values.rec_id,
+          values.farmer_id,
+          values.garden_province_code,
+          values.garden_district_code,
+          values.garden_subdistrict_code,
+          values.land_type_id,
+          values.lat,
+          values.lon,
+          values.no_of_rais,
+          values.no_of_ngan,
+          values.no_of_wah,
+          values.kml,
+          values.geojson,
+          values.updated_at,
+          values.company_id,
+          values.fetch_at,
           garden.landId,
-        ]);
-
+        ]
+      );
       return { operation: OPERATIONS.UPDATE, landId: garden.landId };
     } else {
-      // Insert new record
-      const insertFields = Object.keys(values);
-      const insertPlaceholders = insertFields.map(() => "?");
-      const insertValues = Object.values(values);
-
-      await connectionDB
-        .promise()
-        .query(
-          `INSERT INTO durian_gardens (${insertFields.join(
-            ", "
-          )}) VALUES (${insertPlaceholders.join(", ")})`,
-          insertValues
-        );
-
+      // Direct SQL INSERT
+      await connectionDB.promise().query(
+        `INSERT INTO durian_gardens 
+          (rec_id, farmer_id, land_id, garden_province_code, garden_district_code, garden_subdistrict_code, 
+           land_type_id, lat, lon, no_of_rais, no_of_ngan, no_of_wah, kml, geojson, created_at, updated_at, company_id, fetch_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          values.rec_id,
+          values.farmer_id,
+          values.land_id,
+          values.garden_province_code,
+          values.garden_district_code,
+          values.garden_subdistrict_code,
+          values.land_type_id,
+          values.lat,
+          values.lon,
+          values.no_of_rais,
+          values.no_of_ngan,
+          values.no_of_wah,
+          values.kml,
+          values.geojson,
+          values.created_at,
+          values.updated_at,
+          values.company_id,
+          values.fetch_at,
+        ]
+      );
       return { operation: OPERATIONS.INSERT, landId: garden.landId };
     }
   } catch (err) {

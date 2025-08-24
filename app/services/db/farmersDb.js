@@ -121,30 +121,74 @@ async function insertOrUpdateFarmer(farmer) {
 
     if (existing.length > 0) {
       // === Update existing record ===
-      const updateFields = Object.keys(values)
-        .filter((key) => key !== "rec_id")
-        .map((key) => `${key} = ?`)
-        .join(", ");
-
-      await connectionDB
-        .promise()
-        .query(`UPDATE farmers SET ${updateFields} WHERE rec_id = ?`, [
-          ...Object.values(values).filter(
-            (_, i) => Object.keys(values)[i] !== "rec_id"
-          ),
+      await connectionDB.promise().query(
+        `UPDATE farmers SET 
+          farmer_province_code = ?, farmer_district_code = ?, farmer_subdistrict_code = ?, 
+          farmer_id = ?, title = ?, first_name = ?, last_name = ?, gender = ?, date_of_birth = ?, 
+          id_card = ?, id_card_expiry_date = ?, address = ?, post_code = ?, email = ?, mobile_no = ?, 
+          line_id = ?, farmer_regist_number = ?, farmer_regist_type = ?, company_id = ?, 
+          updated_at = ?, fetch_at = ?
+         WHERE rec_id = ?`,
+        [
+          values.farmer_province_code,
+          values.farmer_district_code,
+          values.farmer_subdistrict_code,
+          values.farmer_id,
+          values.title,
+          values.first_name,
+          values.last_name,
+          values.gender,
+          values.date_of_birth,
+          values.id_card,
+          values.id_card_expiry_date,
+          values.address,
+          values.post_code,
+          values.email,
+          values.mobile_no,
+          values.line_id,
+          values.farmer_regist_number,
+          values.farmer_regist_type,
+          values.company_id,
+          values.updated_at,
+          values.fetch_at,
           values.rec_id,
-        ]);
+        ]
+      );
 
       return { operation: "UPDATE", recId: farmer.recId };
     } else {
       // === Insert new record ===
       await connectionDB.promise().query(
-        `INSERT INTO farmers (${Object.keys(values).join(
-          ", "
-        )}) VALUES (${Object.keys(values)
-          .map(() => "?")
-          .join(", ")})`,
-        Object.values(values)
+        `INSERT INTO farmers (
+          rec_id, farmer_province_code, farmer_district_code, farmer_subdistrict_code, farmer_id, title, 
+          first_name, last_name, gender, date_of_birth, id_card, id_card_expiry_date, address, post_code, 
+          email, mobile_no, line_id, farmer_regist_number, farmer_regist_type, company_id, created_at, updated_at, fetch_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          values.rec_id,
+          values.farmer_province_code,
+          values.farmer_district_code,
+          values.farmer_subdistrict_code,
+          values.farmer_id,
+          values.title,
+          values.first_name,
+          values.last_name,
+          values.gender,
+          values.date_of_birth,
+          values.id_card,
+          values.id_card_expiry_date,
+          values.address,
+          values.post_code,
+          values.email,
+          values.mobile_no,
+          values.line_id,
+          values.farmer_regist_number,
+          values.farmer_regist_type,
+          values.company_id,
+          values.created_at,
+          values.updated_at,
+          values.fetch_at,
+        ]
       );
 
       return { operation: "INSERT", recId: farmer.recId };
