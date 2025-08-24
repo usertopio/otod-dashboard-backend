@@ -103,11 +103,26 @@ const insertOrUpdateMerchant = async (merchant) => {
       "GSUBDIST"
     );
 
+    // === Prepare values ===
+    const values = {
+      rec_id: merchant.recId,
+      merchant_province_code: provinceCode,
+      merchant_district_code: districtCode,
+      merchant_subdistrict_code: subdistrictCode,
+      post_code: merchant.postCode || null,
+      merchant_id: merchant.merchantId,
+      merchant_name: merchant.merchantName || null,
+      address: merchant.addr || null,
+      created_at: merchant.createdTime || null,
+      updated_at: merchant.updatedTime || null,
+      fetch_at: new Date(),
+    };
+
     // Check if merchant already exists
     const [existing] = await connectionDB
       .promise()
       .query(`SELECT id FROM merchants WHERE rec_id = ? LIMIT 1`, [
-        merchant.recId,
+        values.rec_id,
       ]);
 
     if (existing.length > 0) {
@@ -121,22 +136,24 @@ const insertOrUpdateMerchant = async (merchant) => {
          merchant_id = ?, 
          merchant_name = ?, 
          address = ?, 
-         updated_at = NOW(),
-         fetch_at = NOW()
+         updated_at = ?, 
+         fetch_at = ?
          WHERE rec_id = ?`,
         [
-          provinceCode,
-          districtCode,
-          subdistrictCode,
-          merchant.postCode || null,
-          merchant.merchantId,
-          merchant.merchantName || null,
-          merchant.addr || null,
-          merchant.recId,
+          values.merchant_province_code,
+          values.merchant_district_code,
+          values.merchant_subdistrict_code,
+          values.post_code,
+          values.merchant_id,
+          values.merchant_name,
+          values.address,
+          values.updated_at,
+          values.fetch_at,
+          values.rec_id,
         ]
       );
 
-      return { operation: OPERATIONS.UPDATE, recId: merchant.recId };
+      return { operation: OPERATIONS.UPDATE, recId: values.rec_id };
     } else {
       // INSERT new merchant
       await connectionDB.promise().query(
@@ -144,20 +161,23 @@ const insertOrUpdateMerchant = async (merchant) => {
          (rec_id, merchant_province_code, merchant_district_code, 
           merchant_subdistrict_code, post_code, merchant_id, merchant_name, 
           address, created_at, updated_at, fetch_at) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          merchant.recId,
-          provinceCode,
-          districtCode,
-          subdistrictCode,
-          merchant.postCode || null,
-          merchant.merchantId,
-          merchant.merchantName || null,
-          merchant.addr || null,
+          values.rec_id,
+          values.merchant_province_code,
+          values.merchant_district_code,
+          values.merchant_subdistrict_code,
+          values.post_code,
+          values.merchant_id,
+          values.merchant_name,
+          values.address,
+          values.created_at,
+          values.updated_at,
+          values.fetch_at,
         ]
       );
 
-      return { operation: OPERATIONS.INSERT, recId: merchant.recId };
+      return { operation: OPERATIONS.INSERT, recId: values.rec_id };
     }
   } catch (err) {
     console.error("Merchant insert/update error:", err);

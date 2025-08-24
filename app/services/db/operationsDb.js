@@ -23,11 +23,30 @@ const insertOrUpdateOperation = async (operation) => {
       provinceCode = province ? province.province_code : null;
     }
 
+    // === Prepare values ===
+    const values = {
+      rec_id: operation.recId,
+      operation_province_code: provinceCode,
+      crop_year: operation.cropYear || null,
+      oper_id: operation.operId,
+      crop_id: operation.cropId,
+      oper_type: operation.operType || null,
+      oper_date: operation.operDate || null,
+      no_of_workers: operation.noOfWorkers || null,
+      worker_cost: operation.workerCost || null,
+      fertilizer_cost: operation.fertilizerCost || null,
+      equipment_cost: operation.equipmentCost || null,
+      created_at: operation.createdTime || null,
+      updated_at: operation.updatedTime || null,
+      fetch_at: new Date(),
+      company_id: operation.companyId || null,
+    };
+
     // Check if operation already exists
     const [existing] = await connectionDB
       .promise()
       .query(`SELECT id FROM operations WHERE rec_id = ? LIMIT 1`, [
-        operation.recId,
+        values.rec_id,
       ]);
 
     if (existing.length > 0) {
@@ -44,27 +63,29 @@ const insertOrUpdateOperation = async (operation) => {
          worker_cost = ?, 
          fertilizer_cost = ?, 
          equipment_cost = ?, 
-         updated_at = NOW(),
-         fetch_at = NOW(),
+         updated_at = ?, 
+         fetch_at = ?,
          company_id = ?
          WHERE rec_id = ?`,
         [
-          provinceCode,
-          operation.cropYear || null,
-          operation.operId,
-          operation.cropId,
-          operation.operType || null,
-          operation.operDate || null,
-          operation.noOfWorkers || null,
-          operation.workerCost || null,
-          operation.fertilizerCost || null,
-          operation.equipmentCost || null,
-          operation.companyId || null,
-          operation.recId,
+          values.operation_province_code,
+          values.crop_year,
+          values.oper_id,
+          values.crop_id,
+          values.oper_type,
+          values.oper_date,
+          values.no_of_workers,
+          values.worker_cost,
+          values.fertilizer_cost,
+          values.equipment_cost,
+          values.updated_at,
+          values.fetch_at,
+          values.company_id,
+          values.rec_id,
         ]
       );
 
-      return { operation: OPERATIONS.UPDATE, recId: operation.recId };
+      return { operation: OPERATIONS.UPDATE, recId: values.rec_id };
     } else {
       // INSERT new operation
       await connectionDB.promise().query(
@@ -72,24 +93,27 @@ const insertOrUpdateOperation = async (operation) => {
          (rec_id, operation_province_code, crop_year, oper_id, crop_id, oper_type, oper_date, 
           no_of_workers, worker_cost, fertilizer_cost, equipment_cost, 
           created_at, updated_at, fetch_at, company_id) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW(), ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          operation.recId,
-          provinceCode,
-          operation.cropYear || null,
-          operation.operId,
-          operation.cropId,
-          operation.operType || null,
-          operation.operDate || null,
-          operation.noOfWorkers || null,
-          operation.workerCost || null,
-          operation.fertilizerCost || null,
-          operation.equipmentCost || null,
-          operation.companyId || null,
+          values.rec_id,
+          values.operation_province_code,
+          values.crop_year,
+          values.oper_id,
+          values.crop_id,
+          values.oper_type,
+          values.oper_date,
+          values.no_of_workers,
+          values.worker_cost,
+          values.fertilizer_cost,
+          values.equipment_cost,
+          values.created_at,
+          values.updated_at,
+          values.fetch_at,
+          values.company_id,
         ]
       );
 
-      return { operation: OPERATIONS.INSERT, recId: operation.recId };
+      return { operation: OPERATIONS.INSERT, recId: values.rec_id };
     }
   } catch (err) {
     console.error("Operation insert/update error:", err);

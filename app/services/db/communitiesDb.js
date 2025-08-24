@@ -86,7 +86,6 @@ const insertOrUpdateCommunity = async (community) => {
       community.province,
       "GPROV"
     );
-
     const districtCode = await ensureRefCode(
       "ref_districts",
       "district_name_th",
@@ -94,7 +93,6 @@ const insertOrUpdateCommunity = async (community) => {
       community.amphur,
       "GDIST"
     );
-
     const subdistrictCode = await ensureRefCode(
       "ref_subdistricts",
       "subdistrict_name_th",
@@ -103,11 +101,29 @@ const insertOrUpdateCommunity = async (community) => {
       "GSUBDIST"
     );
 
+    // === Prepare values ===
+    const values = {
+      rec_id: community.recId,
+      community_province_code: provinceCode,
+      community_district_code: districtCode,
+      community_subdistrict_code: subdistrictCode,
+      post_code: community.postCode || null,
+      comm_id: community.commId,
+      comm_name: community.commName || null,
+      total_members: community.totalMembers || null,
+      no_of_rais: community.noOfRais || null,
+      no_of_trees: community.noOfTrees || null,
+      forecast_yield: community.forecastYield || null,
+      created_at: community.createdTime || null,
+      updated_at: community.updatedTime || null,
+      fetch_at: new Date(),
+    };
+
     // Check if community already exists
     const [existing] = await connectionDB
       .promise()
       .query(`SELECT id FROM communities WHERE rec_id = ? LIMIT 1`, [
-        community.recId,
+        values.rec_id,
       ]);
 
     if (existing.length > 0) {
@@ -124,25 +140,27 @@ const insertOrUpdateCommunity = async (community) => {
          no_of_rais = ?, 
          no_of_trees = ?, 
          forecast_yield = ?, 
-         updated_at = NOW(),
-         fetch_at = NOW()
+         updated_at = ?, 
+         fetch_at = ?
          WHERE rec_id = ?`,
         [
-          provinceCode,
-          districtCode,
-          subdistrictCode,
-          community.postCode || null,
-          community.commId,
-          community.commName || null,
-          community.totalMembers || null,
-          community.noOfRais || null,
-          community.noOfTrees || null,
-          community.forecastYield || null,
-          community.recId,
+          values.community_province_code,
+          values.community_district_code,
+          values.community_subdistrict_code,
+          values.post_code,
+          values.comm_id,
+          values.comm_name,
+          values.total_members,
+          values.no_of_rais,
+          values.no_of_trees,
+          values.forecast_yield,
+          values.updated_at,
+          values.fetch_at,
+          values.rec_id,
         ]
       );
 
-      return { operation: OPERATIONS.UPDATE, recId: community.recId };
+      return { operation: OPERATIONS.UPDATE, recId: values.rec_id };
     } else {
       // INSERT new community
       await connectionDB.promise().query(
@@ -151,23 +169,26 @@ const insertOrUpdateCommunity = async (community) => {
           community_subdistrict_code, post_code, comm_id, comm_name, 
           total_members, no_of_rais, no_of_trees, forecast_yield, 
           created_at, updated_at, fetch_at) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW())`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          community.recId,
-          provinceCode,
-          districtCode,
-          subdistrictCode,
-          community.postCode || null,
-          community.commId,
-          community.commName || null,
-          community.totalMembers || null,
-          community.noOfRais || null,
-          community.noOfTrees || null,
-          community.forecastYield || null,
+          values.rec_id,
+          values.community_province_code,
+          values.community_district_code,
+          values.community_subdistrict_code,
+          values.post_code,
+          values.comm_id,
+          values.comm_name,
+          values.total_members,
+          values.no_of_rais,
+          values.no_of_trees,
+          values.forecast_yield,
+          values.created_at,
+          values.updated_at,
+          values.fetch_at,
         ]
       );
 
-      return { operation: OPERATIONS.INSERT, recId: community.recId };
+      return { operation: OPERATIONS.INSERT, recId: values.rec_id };
     }
   } catch (err) {
     console.error("Community insert/update error:", err);

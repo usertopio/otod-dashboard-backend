@@ -91,10 +91,27 @@ const insertOrUpdateNews = async (news) => {
       "NG"
     );
 
+    // === Prepare values ===
+    const values = {
+      rec_id: news.recId,
+      news_province_code: provinceCode,
+      news_id: news.newsId,
+      announce_date: news.announceDate || null,
+      news_group_id: newsGroupCode,
+      news_topic: news.newsTopic || null,
+      news_detail: news.newsDetail || null,
+      no_of_like: news.noOfLike || null,
+      no_of_comments: news.noOfComments || null,
+      created_at: news.createdTime || null,
+      updated_at: news.updatedTime || null,
+      fetch_at: new Date(),
+      company_id: news.companyId || null,
+    };
+
     // Check if news already exists
     const [existing] = await connectionDB
       .promise()
-      .query(`SELECT id FROM news WHERE rec_id = ? LIMIT 1`, [news.recId]);
+      .query(`SELECT id FROM news WHERE rec_id = ? LIMIT 1`, [values.rec_id]);
 
     if (existing.length > 0) {
       // UPDATE existing news
@@ -108,23 +125,27 @@ const insertOrUpdateNews = async (news) => {
          news_detail = ?, 
          no_of_like = ?, 
          no_of_comments = ?, 
-         updated_at = NOW(),
-         fetch_at = NOW()
+         updated_at = ?, 
+         fetch_at = ?,
+         company_id = ?
          WHERE rec_id = ?`,
         [
-          provinceCode,
-          news.newsId,
-          news.announceDate || null,
-          newsGroupCode,
-          news.newsTopic || null,
-          news.newsDetail || null,
-          news.noOfLike || null,
-          news.noOfComments || null,
-          news.recId,
+          values.news_province_code,
+          values.news_id,
+          values.announce_date,
+          values.news_group_id,
+          values.news_topic,
+          values.news_detail,
+          values.no_of_like,
+          values.no_of_comments,
+          values.updated_at,
+          values.fetch_at,
+          values.company_id,
+          values.rec_id,
         ]
       );
 
-      return { operation: OPERATIONS.UPDATE, recId: news.recId };
+      return { operation: OPERATIONS.UPDATE, recId: values.rec_id };
     } else {
       // INSERT new news
       await connectionDB.promise().query(
@@ -132,22 +153,25 @@ const insertOrUpdateNews = async (news) => {
          (rec_id, news_province_code, news_id, announce_date, 
           news_group_id, news_topic, news_detail, no_of_like, 
           no_of_comments, created_at, updated_at, fetch_at, company_id) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW(), NOW(), ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
-          news.recId,
-          provinceCode,
-          news.newsId,
-          news.announceDate || null,
-          newsGroupCode,
-          news.newsTopic || null,
-          news.newsDetail || null,
-          news.noOfLike || null,
-          news.noOfComments || null,
-          news.companyId || null,
+          values.rec_id,
+          values.news_province_code,
+          values.news_id,
+          values.announce_date,
+          values.news_group_id,
+          values.news_topic,
+          values.news_detail,
+          values.no_of_like,
+          values.no_of_comments,
+          values.created_at,
+          values.updated_at,
+          values.fetch_at,
+          values.company_id,
         ]
       );
 
-      return { operation: OPERATIONS.INSERT, recId: news.recId };
+      return { operation: OPERATIONS.INSERT, recId: values.rec_id };
     }
   } catch (err) {
     console.error("News insert/update error:", err);
