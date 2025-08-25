@@ -51,48 +51,64 @@ class CommunitiesService {
   }
 
   /**
-   * Main entry point for fetching communities from APIs and storing them in the database.
+   * Main entry point for fetching ALL communities from APIs and storing them in the database.
    * - Resets the communities table before starting.
    * - Loops up to maxAttempts, fetching and processing data each time.
    * - Logs progress and metrics for each attempt.
-   * - Stops early if the target number of communities is reached.
+   * - Stops early if no new records are inserted.
    * - Returns a summary result object.
-   * @param {number} targetCount - The number of communities to fetch and store.
    * @param {number} maxAttempts - The maximum number of fetch attempts.
    */
-  static async fetchCommunities(targetCount, maxAttempts) {
+  static async fetchAllCommunities(
+    maxAttempts = COMMUNITIES_CONFIG.DEFAULT_MAX_ATTEMPTS
+  ) {
     await this.resetOnlyCommunitiesTable();
 
     let attempt = 1;
-    let currentCount = 0;
-    let attemptsUsed = 0;
+    let totalInserted = 0;
+    let totalUpdated = 0;
+    let totalErrors = 0;
+    let hasMoreData = true;
 
-    // Log the fetch target and attempt limit
-    console.log(
-      `🎯 Target: ${targetCount} communities, Max attempts: ${maxAttempts}`
-    );
+    console.log(`🏘️ Fetching ALL communities, Max attempts: ${maxAttempts}`);
 
-    while (attempt <= maxAttempts) {
+    while (attempt <= maxAttempts && hasMoreData) {
       CommunitiesLogger.logAttemptStart(attempt, maxAttempts);
 
-      currentCount = await this._getDatabaseCount();
-      CommunitiesLogger.logCurrentStatus(currentCount, targetCount);
-
-      attemptsUsed++;
       const result = await CommunitiesProcessor.fetchAndProcessData();
 
       CommunitiesLogger.logAttemptResults(attempt, result);
 
-      currentCount = result.totalAfter;
-      attempt++;
+      totalInserted += result.inserted || 0;
+      totalUpdated += result.updated || 0;
+      totalErrors += result.errors || 0;
 
-      if (currentCount >= targetCount) {
-        CommunitiesLogger.logTargetReached(targetCount, attemptsUsed);
-        break;
-      }
+      // Only continue if new records were inserted in this attempt
+      hasMoreData = (result.inserted || 0) > 0;
+      attempt++;
     }
 
-    return this._buildFinalResult(targetCount, attemptsUsed, maxAttempts);
+    const finalCount = await this._getDatabaseCount();
+
+    CommunitiesLogger.logFinalResults(
+      "ALL",
+      finalCount,
+      attempt - 1,
+      maxAttempts,
+      STATUS.SUCCESS
+    );
+
+    return {
+      message: `Fetch loop completed - ALL records fetched`,
+      achieved: finalCount,
+      attemptsUsed: attempt - 1,
+      maxAttempts: maxAttempts,
+      inserted: totalInserted,
+      updated: totalUpdated,
+      errors: totalErrors,
+      status: STATUS.SUCCESS,
+      reachedTarget: true,
+    };
   }
 
   /**
