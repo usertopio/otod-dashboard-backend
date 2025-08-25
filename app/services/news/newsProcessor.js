@@ -13,10 +13,6 @@ class NewsProcessor {
    * Returns a result object with metrics and tracking info.
    */
   static async fetchAndProcessData() {
-    const pages = Math.ceil(
-      NEWS_CONFIG.DEFAULT_TOTAL_RECORDS / NEWS_CONFIG.DEFAULT_PAGE_SIZE
-    );
-
     // Initialize counters
     const metrics = {
       allNewsAllPages: [],
@@ -53,7 +49,11 @@ class NewsProcessor {
    * @param {number} pages - Number of pages to fetch.
    * @param {object} metrics - Metrics object to accumulate results.
    */
-  static async _fetchNewsPages(pages, metrics) {
+  static async _fetchNewsPages(metrics) {
+    const pages = Math.ceil(
+      NEWS_CONFIG.DEFAULT_TOTAL_RECORDS / NEWS_CONFIG.DEFAULT_PAGE_SIZE
+    );
+
     for (let page = 1; page <= pages; page++) {
       const requestBody = {
         provinceName: "",
