@@ -59,8 +59,8 @@ class NewsProcessor {
         provinceName: "",
         pageIndex: page,
         pageSize: NEWS_CONFIG.DEFAULT_PAGE_SIZE,
-        fromDate: "2024-01-01",
-        toDate: "2024-12-31",
+        fromDate: NEWS_CONFIG.FROM_DATE,
+        toDate: NEWS_CONFIG.TO_DATE,
       };
 
       const customHeaders = {

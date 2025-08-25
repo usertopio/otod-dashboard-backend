@@ -50,29 +50,35 @@ class GapProcessor {
    * @param {object} metrics - Metrics object to accumulate results.
    */
   static async _fetchGapPages(metrics) {
-    const pages = Math.ceil(
-      GAP_CONFIG.DEFAULT_TOTAL_RECORDS / GAP_CONFIG.DEFAULT_PAGE_SIZE
-    );
-    for (let page = 1; page <= pages; page++) {
-      const requestBody = {
-        cropYear: GAP_CONFIG.DEFAULT_CROP_YEAR || 2024,
-        provinceName: "",
-        pageIndex: page,
-        pageSize: GAP_CONFIG.DEFAULT_PAGE_SIZE,
-      };
+    for (
+      let year = GAP_CONFIG.START_YEAR;
+      year <= GAP_CONFIG.END_YEAR;
+      year++
+    ) {
+      const pages = Math.ceil(
+        GAP_CONFIG.DEFAULT_TOTAL_RECORDS / GAP_CONFIG.DEFAULT_PAGE_SIZE
+      );
+      for (let page = 1; page <= pages; page++) {
+        const requestBody = {
+          cropYear: year,
+          provinceName: "",
+          pageIndex: page,
+          pageSize: GAP_CONFIG.DEFAULT_PAGE_SIZE,
+        };
 
-      const customHeaders = {
-        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-      };
+        const customHeaders = {
+          Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+        };
 
-      const crops = await getCrops(requestBody, customHeaders);
-      const allCropsCurPage = crops.data;
+        const crops = await getCrops(requestBody, customHeaders);
+        const allCropsCurPage = crops.data;
 
-      // Extract gap certificates from crops
-      const gapCertificates = this._extractGapCertificates(allCropsCurPage);
-      metrics.allGapAllPages = metrics.allGapAllPages.concat(gapCertificates);
+        // Extract gap certificates from crops
+        const gapCertificates = this._extractGapCertificates(allCropsCurPage);
+        metrics.allGapAllPages = metrics.allGapAllPages.concat(gapCertificates);
 
-      GapLogger.logPageInfo(page, gapCertificates);
+        GapLogger.logPageInfo(page, gapCertificates);
+      }
     }
   }
 
