@@ -7,23 +7,15 @@ const { MERCHANTS_CONFIG } = require("../utils/constants");
 // Handles HTTP requests for merchant-related operations
 const fetchMerchants = async (req, res) => {
   try {
-    // Get targetCount and maxAttempts from request body or use defaults
-    const targetCount =
-      req.body.targetCount || MERCHANTS_CONFIG.DEFAULT_TARGET_COUNT;
+    // Get maxAttempts from request body or use default
     const maxAttempts =
-      req.body.maxAttempts || MERCHANTS_CONFIG.DEFAULT_MAX_ATTEMPTS;
+      (req.body && req.body.maxAttempts) ||
+      MERCHANTS_CONFIG.DEFAULT_MAX_ATTEMPTS;
 
-    // Log the start of the fetch operation
-    console.log(
-      `Starting fetchMerchants with target: ${targetCount}, max attempts: ${maxAttempts}`
-    );
+    // Call the service to fetch all merchants
+    const result = await MerchantsService.fetchAllMerchants(maxAttempts);
 
-    // Call the service to fetch merchants with the specified parameters
-    const result = await MerchantsService.fetchMerchants(
-      targetCount,
-      maxAttempts
-    );
-
+    // Respond with the result as JSON
     res.status(200).json(result);
   } catch (error) {
     // Log and respond with error if something goes wrong
