@@ -45,43 +45,63 @@ class SubstanceService {
    * - Resets the substance table before starting.
    * - Loops up to maxAttempts, fetching and processing data each time.
    * - Logs progress and metrics for each attempt.
-   * - Stops early if the target number of records is reached.
+   * - Stops early if no new records are inserted.
    * - Returns a summary result object.
-   * @param {number} targetCount - The number of records to fetch and store.
    * @param {number} maxAttempts - The maximum number of fetch attempts.
    */
-  static async fetchSubstance(targetCount, maxAttempts) {
+  static async fetchAllSubstance(
+    maxAttempts = SUBSTANCE_CONFIG.DEFAULT_MAX_ATTEMPTS
+  ) {
     await this.resetOnlySubstanceTable();
 
     let attempt = 1;
-    let currentCount = 0;
-    let attemptsUsed = 0;
+    let totalInserted = 0;
+    let totalUpdated = 0;
+    let totalErrors = 0;
+    let hasMoreData = true;
 
     console.log(
-      `🎯 Target: ${targetCount} substance records, Max attempts: ${maxAttempts}`
+      `🧪 Fetching ALL substance records, Max attempts: ${maxAttempts}`
     );
 
-    while (attempt <= maxAttempts) {
+    while (attempt <= maxAttempts && hasMoreData) {
       SubstanceLogger.logAttemptStart(attempt, maxAttempts);
 
-      currentCount = await this._getDatabaseCount();
-      SubstanceLogger.logCurrentStatus(currentCount, targetCount);
-
-      attemptsUsed++;
       const result = await SubstanceProcessor.fetchAndProcessData();
 
       SubstanceLogger.logAttemptResults(attempt, result);
 
-      currentCount = result.totalAfter;
-      attempt++;
+      totalInserted += result.inserted || 0;
+      totalUpdated += result.updated || 0;
+      totalErrors += result.errors || 0;
 
-      if (currentCount >= targetCount) {
-        SubstanceLogger.logTargetReached(targetCount, attemptsUsed);
-        break;
-      }
+      // Only continue if new records were inserted in this attempt
+      hasMoreData = (result.inserted || 0) > 0;
+      attempt++;
     }
 
-    return this._buildFinalResult(targetCount, attemptsUsed, maxAttempts);
+    const finalCount = await this._getDatabaseCount();
+
+    SubstanceLogger.logFinalResults(
+      "ALL",
+      finalCount,
+      attempt - 1,
+      maxAttempts,
+      STATUS.SUCCESS
+    );
+
+    return {
+      message: `Fetch loop completed - ALL records fetched`,
+      achieved: finalCount,
+      attemptsUsed: attempt - 1,
+      maxAttempts: maxAttempts,
+      inserted: totalInserted,
+      updated: totalUpdated,
+      errors: totalErrors,
+      status: STATUS.SUCCESS,
+      reachedTarget: true,
+      table: "substance",
+    };
   }
 
   /**
