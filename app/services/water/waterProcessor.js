@@ -33,7 +33,7 @@ class WaterProcessor {
     const dbCountBefore = await this._getDatabaseCount();
 
     // Fetch data from API (single call)
-    await this._fetchAllPages(pages, metrics);
+    await this._fetchWaterSummaryByMonthPages(pages, metrics);
 
     // Process unique water records
     const uniqueWater = this._getUniqueWater(metrics.allWaterAllPages);
@@ -56,25 +56,31 @@ class WaterProcessor {
    * @param {number} pages - Number of pages to fetch (always 1).
    * @param {object} metrics - Metrics object to accumulate results.
    */
-  static async _fetchAllPages(pages, metrics) {
-    // Single API call for water data
-    const requestBody = {
-      cropYear: WATER_CONFIG.DEFAULT_CROP_YEAR || 2024,
-      provinceName: "",
-    };
+  static async _fetchWaterSummaryByMonthPages(pages, metrics) {
+    for (
+      let year = WATER_CONFIG.START_YEAR;
+      year <= WATER_CONFIG.END_YEAR;
+      year++
+    ) {
+      const requestBody = {
+        cropYear: year,
+        provinceName: "",
+      };
 
-    const customHeaders = {
-      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-    };
+      const customHeaders = {
+        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      };
 
-    const waterResponse = await getWaterUsageSummaryByMonth(
-      requestBody,
-      customHeaders
-    );
-    const allWaterCurPage = waterResponse.data || [];
-    metrics.allWaterAllPages = metrics.allWaterAllPages.concat(allWaterCurPage);
+      const waterResponse = await getWaterUsageSummaryByMonth(
+        requestBody,
+        customHeaders
+      );
+      const allWaterCurPage = waterResponse.data || [];
+      metrics.allWaterAllPages =
+        metrics.allWaterAllPages.concat(allWaterCurPage);
 
-    WaterLogger.logPageInfo(1, allWaterCurPage);
+      WaterLogger.logPageInfo(`Y${year}`, allWaterCurPage);
+    }
   }
 
   /**
