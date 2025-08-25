@@ -75,10 +75,10 @@ class OperationsProcessor {
         const requestBody = {
           cropYear: year,
           provinceName: "",
-          pageIndex: page,
-          pageSize: OPERATIONS_CONFIG.DEFAULT_PAGE_SIZE,
           fromDate: `${year}-01-01`,
           toDate: `${year}-12-31`,
+          pageIndex: page,
+          pageSize: OPERATIONS_CONFIG.DEFAULT_PAGE_SIZE,
         };
 
         const customHeaders = {

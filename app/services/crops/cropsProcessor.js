@@ -38,7 +38,7 @@ class CropsProcessor {
     // 🔧 Fetch data from GetCrops API (with pagination)
     await this._fetchGetCropsPages(metrics);
 
-    // 🔧 Fetch data from GetCropHarvests API (loop by year, no pagination)
+    // 🔧 Fetch data from GetCropHarvests API (loop by year and page)
     await this._fetchGetCropHarvests(metrics);
 
     // 🔧 Combine and merge records from both APIs by cropId
@@ -109,10 +109,10 @@ class CropsProcessor {
     }
   }
 
-  // 🔧 Fetch from GetCropHarvests API (loop by year, no pagination)
+  // 🔧 Fetch from GetCropHarvests API (loop by year and page)
   static async _fetchGetCropHarvests(metrics) {
     console.log(
-      `📞 Sending request to GetCropHarvests API (by year ${CROPS_CONFIG.START_YEAR}-${CROPS_CONFIG.END_YEAR})...`
+      `📞 Sending request to GetCropHarvests API (paginated, by year ${CROPS_CONFIG.START_YEAR}-${CROPS_CONFIG.END_YEAR})...`
     );
 
     let allHarvests = [];
@@ -121,24 +121,37 @@ class CropsProcessor {
       year <= CROPS_CONFIG.END_YEAR;
       year++
     ) {
-      const requestBody = {
-        cropYear: year,
-        provinceName: "",
-        fromDate: `${year}-01-01`,
-        toDate: `${year}-12-31`,
-        pageIndex: 1, // Based on API response example
-        pageSize: 500,
-      };
+      const pages = Math.ceil(
+        CROPS_CONFIG.DEFAULT_TOTAL_RECORDS / CROPS_CONFIG.DEFAULT_PAGE_SIZE
+      );
 
-      const customHeaders = {
-        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-      };
+      for (let page = 1; page <= pages; page++) {
+        const requestBody = {
+          cropYear: year,
+          provinceName: "",
+          fromDate: `${year}-01-01`,
+          toDate: `${year}-12-31`,
+          pageIndex: page,
+          pageSize: CROPS_CONFIG.DEFAULT_PAGE_SIZE,
+        };
 
-      const cropHarvests = await getCropHarvests(requestBody, customHeaders);
-      const harvestsCurPage = cropHarvests.data || [];
-      allHarvests = allHarvests.concat(harvestsCurPage);
+        const customHeaders = {
+          Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+        };
 
-      CropsLogger.logPageInfo(`Y${year}`, harvestsCurPage, "GetCropHarvests");
+        const cropHarvests = await getCropHarvests(requestBody, customHeaders);
+        const harvestsCurPage = cropHarvests.data || [];
+        allHarvests = allHarvests.concat(harvestsCurPage);
+
+        CropsLogger.logPageInfo(
+          `Y${year}-P${page}`,
+          harvestsCurPage,
+          "GetCropHarvests"
+        );
+
+        // Stop if no more data
+        if (harvestsCurPage.length === 0) break;
+      }
     }
 
     metrics.allCropsFromGetCropHarvests = allHarvests;
