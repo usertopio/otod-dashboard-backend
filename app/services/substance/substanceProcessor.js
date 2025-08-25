@@ -33,7 +33,7 @@ class SubstanceProcessor {
     const dbCountBefore = await this._getDatabaseCount();
 
     // Fetch data from API (single call)
-    await this._fetchAllPages(pages, metrics);
+    await this._fetchSubstancePages(pages, metrics);
 
     // Process unique substance records
     const uniqueSubstance = this._getUniqueSubstance(
@@ -58,7 +58,7 @@ class SubstanceProcessor {
    * @param {number} pages - Number of pages to fetch (always 1).
    * @param {object} metrics - Metrics object to accumulate results.
    */
-  static async _fetchAllPages(pages, metrics) {
+  static async _fetchSubstancePages(pages, metrics) {
     for (
       let year = SUBSTANCE_CONFIG.START_YEAR;
       year <= SUBSTANCE_CONFIG.END_YEAR;
