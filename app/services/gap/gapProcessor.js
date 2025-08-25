@@ -13,10 +13,6 @@ class GapProcessor {
    * Returns a result object with metrics and tracking info.
    */
   static async fetchAndProcessData() {
-    const pages = Math.ceil(
-      GAP_CONFIG.DEFAULT_TOTAL_RECORDS / GAP_CONFIG.DEFAULT_PAGE_SIZE
-    );
-
     // Initialize counters
     const metrics = {
       allGapAllPages: [],
@@ -33,7 +29,7 @@ class GapProcessor {
     const dbCountBefore = await this._getDatabaseCount();
 
     // Fetch data from all pages
-    await this._fetchGapPages(pages, metrics);
+    await this._fetchGapPages(metrics);
 
     // Process unique gap certificates
     const uniqueGap = this._getUniqueGap(metrics.allGapAllPages);
@@ -53,7 +49,10 @@ class GapProcessor {
    * @param {number} pages - Number of pages to fetch.
    * @param {object} metrics - Metrics object to accumulate results.
    */
-  static async _fetchGapPages(pages, metrics) {
+  static async _fetchGapPages(metrics) {
+    const pages = Math.ceil(
+      GAP_CONFIG.DEFAULT_TOTAL_RECORDS / GAP_CONFIG.DEFAULT_PAGE_SIZE
+    );
     for (let page = 1; page <= pages; page++) {
       const requestBody = {
         cropYear: GAP_CONFIG.DEFAULT_CROP_YEAR || 2024,
