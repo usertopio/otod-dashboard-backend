@@ -84,6 +84,65 @@ class GapService {
   }
 
   /**
+   * Fetches ALL GAP certificates from the API and stores them in the database.
+   * Loops up to maxAttempts, stops early if no new records are inserted.
+   * Returns a summary result object.
+   * @param {number} maxAttempts - The maximum number of fetch attempts.
+   */
+  static async fetchAllGap(maxAttempts = GAP_CONFIG.DEFAULT_MAX_ATTEMPTS) {
+    await this.resetOnlyGapTable();
+
+    let attempt = 1;
+    let totalInserted = 0;
+    let totalUpdated = 0;
+    let totalErrors = 0;
+    let hasMoreData = true;
+
+    console.log(
+      `📜 Fetching ALL GAP certificates, Max attempts: ${maxAttempts}`
+    );
+
+    while (attempt <= maxAttempts && hasMoreData) {
+      GapLogger.logAttemptStart(attempt, maxAttempts);
+
+      const result = await GapProcessor.fetchAndProcessData();
+
+      GapLogger.logAttemptResults(attempt, result);
+
+      totalInserted += result.inserted || 0;
+      totalUpdated += result.updated || 0;
+      totalErrors += result.errors || 0;
+
+      // Only continue if new records were inserted in this attempt
+      hasMoreData = (result.inserted || 0) > 0;
+      attempt++;
+    }
+
+    const finalCount = await this._getDatabaseCount();
+
+    GapLogger.logFinalResults(
+      "ALL",
+      finalCount,
+      attempt - 1,
+      maxAttempts,
+      STATUS.SUCCESS
+    );
+
+    return {
+      message: `Fetch loop completed - ALL records fetched`,
+      achieved: finalCount,
+      attemptsUsed: attempt - 1,
+      maxAttempts: maxAttempts,
+      inserted: totalInserted,
+      updated: totalUpdated,
+      errors: totalErrors,
+      status: STATUS.SUCCESS,
+      reachedTarget: true,
+      table: "gap",
+    };
+  }
+
+  /**
    * Returns the current count of gap records in the database.
    * @returns {Promise<number>} - The total number of gap certificates in the DB.
    */
