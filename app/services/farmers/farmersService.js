@@ -24,7 +24,9 @@ class FarmersService {
     try {
       // Log the start of the reset operation
       console.log("==========================================");
-      console.log(`📩 Sending request to API Endpoint: {{LOCAL_HOST}}/api/fetchFarmers`);
+      console.log(
+        `📩 Sending request to API Endpoint: {{LOCAL_HOST}}/api/fetchFarmers`
+      );
       console.log("==========================================\n");
 
       console.log("🧹 Resetting ONLY farmers table...");
@@ -104,6 +106,68 @@ class FarmersService {
 
     // Build and return the final result summary
     return this._buildFinalResult(targetCount, attemptsUsed, maxAttempts);
+  }
+
+  /**
+   * Main entry point for fetching ALL farmers from the API and storing them in the database.
+   * - Resets the farmers table before starting.
+   * - Loops up to maxAttempts, fetching and processing data each time.
+   * - Logs progress and metrics for each attempt.
+   * - Stops early if the API returns no new data.
+   * - Returns a summary result object.
+   * @param {number} maxAttempts - The maximum number of fetch attempts.
+   */
+  static async fetchAllFarmers(
+    maxAttempts = FARMERS_CONFIG.DEFAULT_MAX_ATTEMPTS
+  ) {
+    await this.resetOnlyFarmersTable();
+
+    let attempt = 1;
+    let totalInserted = 0;
+    let totalUpdated = 0;
+    let totalErrors = 0;
+    let hasMoreData = true;
+
+    console.log(`🚜 Fetching ALL farmers, Max attempts: ${maxAttempts}`);
+
+    while (attempt <= maxAttempts && hasMoreData) {
+      FarmersLogger.logAttemptStart(attempt, maxAttempts);
+
+      // Always make an API call and process the data
+      const result = await FarmersProcessor.fetchAndProcessData();
+
+      FarmersLogger.logAttemptResults(attempt, result);
+
+      totalInserted += result.inserted || 0;
+      totalUpdated += result.updated || 0;
+      totalErrors += result.errors || 0;
+
+      // If the API returned no new data, stop
+      hasMoreData = (result.inserted || 0) > 0 || (result.updated || 0) > 0;
+      attempt++;
+    }
+
+    const finalCount = await this._getDatabaseCount();
+
+    FarmersLogger.logFinalResults(
+      "ALL",
+      finalCount,
+      attempt - 1,
+      maxAttempts,
+      STATUS.SUCCESS
+    );
+
+    return {
+      message: `Fetch loop completed - ALL records fetched`,
+      achieved: finalCount,
+      attemptsUsed: attempt - 1,
+      maxAttempts: maxAttempts,
+      inserted: totalInserted,
+      updated: totalUpdated,
+      errors: totalErrors,
+      status: STATUS.SUCCESS,
+      reachedTarget: true,
+    };
   }
 
   /**

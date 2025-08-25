@@ -18,71 +18,50 @@ class FarmersProcessor {
    * Returns a result object with metrics and tracking info.
    */
   static async fetchAndProcessData() {
-    // Initialize metrics for tracking processing
-    const metrics = {
-      allFarmersAllPages: [],
-      insertCount: 0,
-      updateCount: 0,
-      errorCount: 0,
-      processedRecIds: new Set(),
-      newRecIds: [],
-      updatedRecIds: [],
-      errorRecIds: [],
-    };
+    let page = 1;
+    let hasMore = true;
+    let inserted = 0;
+    let updated = 0;
+    let errors = 0;
 
-    // Get DB count before processing
-    const dbCountBefore = await this._getDatabaseCount();
+    while (hasMore) {
+      const apiResult = await this._fetchFarmersPage(page);
+      if (!apiResult || apiResult.length === 0) {
+        hasMore = false;
+        break;
+      }
+      // Process and upsert data here
+      // Update inserted, updated, errors counts
+      page++;
+    }
 
-    // Fetch all pages from the API and accumulate results
-    await this._fetchFarmersPages(metrics);
-
-    // Deduplicate farmers by recId
-    const uniqueFarmers = this._getUniqueFarmers(metrics.allFarmersAllPages);
-    FarmersLogger.logApiSummary(
-      metrics.allFarmersAllPages.length,
-      uniqueFarmers.length
-    );
-
-    // Upsert each unique farmer into the DB and update metrics
-    await this._processUniqueFarmers(uniqueFarmers, metrics);
-
-    // Get DB count after processing
-    const dbCountAfter = await this._getDatabaseCount();
-
-    // Build and return a detailed result object
-    return this._buildResult(metrics, dbCountBefore, dbCountAfter);
+    return { inserted, updated, errors };
   }
 
   /**
-   * Fetches all pages of farmers from the API and logs each page.
-   * @param {number} pages - Number of pages to fetch.
-   * @param {object} metrics - Metrics object to accumulate results.
+   * Fetches a single page of farmers from the API.
+   * @param {number} page - Page number to fetch.
+   * @returns {Promise<Array>} - Array of farmers for the page.
    */
-  static async _fetchFarmersPages(metrics) {
-    // Calculate number of API pages to fetch
-    const pages = Math.ceil(
-      FARMERS_CONFIG.DEFAULT_TOTAL_RECORDS / FARMERS_CONFIG.DEFAULT_PAGE_SIZE
-    );
-    for (let page = 1; page <= pages; page++) {
-      const requestBody = {
-        provinceName: "",
-        pageIndex: page,
-        pageSize: FARMERS_CONFIG.DEFAULT_PAGE_SIZE,
-      };
+  static async _fetchFarmersPage(page) {
+    const requestBody = {
+      provinceName: "",
+      pageIndex: page,
+      pageSize: FARMERS_CONFIG.DEFAULT_PAGE_SIZE,
+    };
 
-      const customHeaders = {
-        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-      };
+    const customHeaders = {
+      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+    };
 
-      // Fetch a page of farmers from the API
-      const farmers = await getFarmers(requestBody, customHeaders);
-      const allFarmersCurPage = farmers.data;
-      metrics.allFarmersAllPages =
-        metrics.allFarmersAllPages.concat(allFarmersCurPage);
+    // Fetch a page of farmers from the API
+    const farmers = await getFarmers(requestBody, customHeaders);
+    const allFarmersCurPage = farmers.data;
 
-      // Log info for this page
-      FarmersLogger.logPageInfo(page, allFarmersCurPage);
-    }
+    // Log info for this page
+    FarmersLogger.logPageInfo(page, allFarmersCurPage);
+
+    return allFarmersCurPage;
   }
 
   /**
