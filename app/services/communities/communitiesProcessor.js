@@ -18,12 +18,6 @@ class CommunitiesProcessor {
    * Returns a result object with metrics and tracking info.
    */
   static async fetchAndProcessData() {
-    // Calculate number of API pages to fetch
-    const pages = Math.ceil(
-      COMMUNITIES_CONFIG.DEFAULT_TOTAL_RECORDS /
-        COMMUNITIES_CONFIG.DEFAULT_PAGE_SIZE
-    );
-
     // Initialize metrics for tracking processing
     const metrics = {
       allCommunitiesAllPages: [],
@@ -40,7 +34,7 @@ class CommunitiesProcessor {
     const dbCountBefore = await this._getDatabaseCount();
 
     // Fetch all pages from the API and accumulate results
-    await this._fetchCommunitiesPages(pages, metrics);
+    await this._fetchCommunitiesPages(metrics);
 
     // Deduplicate communities by recId
     const uniqueCommunities = this._getUniqueCommunities(
@@ -66,7 +60,13 @@ class CommunitiesProcessor {
    * @param {number} pages - Number of pages to fetch.
    * @param {object} metrics - Metrics object to accumulate results.
    */
-  static async _fetchCommunitiesPages(pages, metrics) {
+  static async _fetchCommunitiesPages(metrics) {
+    // Calculate number of API pages to fetch
+    const pages = Math.ceil(
+      COMMUNITIES_CONFIG.DEFAULT_TOTAL_RECORDS /
+        COMMUNITIES_CONFIG.DEFAULT_PAGE_SIZE
+    );
+
     for (let page = 1; page <= pages; page++) {
       const requestBody = {
         provinceName: "",
