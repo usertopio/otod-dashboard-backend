@@ -29,7 +29,7 @@ class NewsProcessor {
     const dbCountBefore = await this._getDatabaseCount();
 
     // Fetch data from all pages
-    await this._fetchNewsPages(pages, metrics);
+    await this._fetchNewsPages(metrics);
 
     // Process unique news
     const uniqueNews = this._getUniqueNews(metrics.allNewsAllPages);
