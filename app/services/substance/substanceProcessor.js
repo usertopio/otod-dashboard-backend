@@ -14,9 +14,6 @@ class SubstanceProcessor {
    * Returns a result object with metrics and tracking info.
    */
   static async fetchAndProcessData() {
-    // Substance API doesn't use pagination, so we just make one call
-    const pages = 1;
-
     // Initialize counters
     const metrics = {
       allSubstanceAllPages: [],
@@ -33,7 +30,7 @@ class SubstanceProcessor {
     const dbCountBefore = await this._getDatabaseCount();
 
     // Fetch data from API (single call)
-    await this._fetchSubstanceByMonthPages(pages, metrics);
+    await this._fetchSubstanceByMonthPages(metrics);
 
     // Process unique substance records
     const uniqueSubstance = this._getUniqueSubstance(
@@ -58,7 +55,7 @@ class SubstanceProcessor {
    * @param {number} pages - Number of pages to fetch (always 1).
    * @param {object} metrics - Metrics object to accumulate results.
    */
-  static async _fetchSubstanceByMonthPages(pages, metrics) {
+  static async _fetchSubstanceByMonthPages(metrics) {
     for (
       let year = SUBSTANCE_CONFIG.START_YEAR;
       year <= SUBSTANCE_CONFIG.END_YEAR;
