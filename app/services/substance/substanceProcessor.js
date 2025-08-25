@@ -59,25 +59,30 @@ class SubstanceProcessor {
    * @param {object} metrics - Metrics object to accumulate results.
    */
   static async _fetchAllPages(pages, metrics) {
-    // Single API call for substance data
-    const requestBody = {
-      cropYear: SUBSTANCE_CONFIG.DEFAULT_CROP_YEAR || 2024,
-      provinceName: "",
-    };
+    for (
+      let year = SUBSTANCE_CONFIG.START_YEAR;
+      year <= SUBSTANCE_CONFIG.END_YEAR;
+      year++
+    ) {
+      const requestBody = {
+        cropYear: year,
+        provinceName: "",
+      };
 
-    const customHeaders = {
-      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-    };
+      const customHeaders = {
+        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      };
 
-    const substanceResponse = await getSubstanceUsageSummaryByMonth(
-      requestBody,
-      customHeaders
-    );
-    const allSubstanceCurPage = substanceResponse.data || [];
-    metrics.allSubstanceAllPages =
-      metrics.allSubstanceAllPages.concat(allSubstanceCurPage);
+      const substanceResponse = await getSubstanceUsageSummaryByMonth(
+        requestBody,
+        customHeaders
+      );
+      const allSubstanceCurPage = substanceResponse.data || [];
+      metrics.allSubstanceAllPages =
+        metrics.allSubstanceAllPages.concat(allSubstanceCurPage);
 
-    SubstanceLogger.logPageInfo(1, allSubstanceCurPage);
+      SubstanceLogger.logPageInfo(`Y${year}`, allSubstanceCurPage);
+    }
   }
 
   /**
