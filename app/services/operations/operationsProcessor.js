@@ -35,7 +35,7 @@ class OperationsProcessor {
     const dbCountBefore = await this._getDatabaseCount();
 
     // Fetch data from all pages
-    await this._fetchAllPages(pages, metrics);
+    await this._fetchOperationsPages(metrics);
 
     // Process unique operations
     const uniqueOperations = this._getUniqueOperations(
@@ -60,27 +60,39 @@ class OperationsProcessor {
    * @param {number} pages - Number of pages to fetch.
    * @param {object} metrics - Metrics object to accumulate results.
    */
-  static async _fetchAllPages(pages, metrics) {
-    for (let page = 1; page <= pages; page++) {
-      const requestBody = {
-        cropYear: OPERATIONS_CONFIG.DEFAULT_CROP_YEAR || 2024,
-        provinceName: "",
-        pageIndex: page,
-        pageSize: OPERATIONS_CONFIG.DEFAULT_PAGE_SIZE,
-        fromDate: OPERATIONS_CONFIG.DEFAULT_FROM_DATE || "2024-01-01",
-        toDate: OPERATIONS_CONFIG.DEFAULT_TO_DATE || "2024-12-31",
-      };
+  static async _fetchOperationsPages(metrics) {
+    for (
+      let year = OPERATIONS_CONFIG.START_YEAR;
+      year <= OPERATIONS_CONFIG.END_YEAR;
+      year++
+    ) {
+      const pages = Math.ceil(
+        OPERATIONS_CONFIG.DEFAULT_TOTAL_RECORDS /
+          OPERATIONS_CONFIG.DEFAULT_PAGE_SIZE
+      );
 
-      const customHeaders = {
-        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-      };
+      for (let page = 1; page <= pages; page++) {
+        const requestBody = {
+          cropYear: year,
+          provinceName: "",
+          pageIndex: page,
+          pageSize: OPERATIONS_CONFIG.DEFAULT_PAGE_SIZE,
+          fromDate: `${year}-01-01`,
+          toDate: `${year}-12-31`,
+        };
 
-      const operations = await getOperations(requestBody, customHeaders);
-      const allOperationsCurPage = operations.data;
-      metrics.allOperationsAllPages =
-        metrics.allOperationsAllPages.concat(allOperationsCurPage);
+        const customHeaders = {
+          Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+        };
 
-      OperationsLogger.logPageInfo(page, allOperationsCurPage);
+        const operations = await getOperations(requestBody, customHeaders);
+        const allOperationsCurPage = operations.data;
+        metrics.allOperationsAllPages =
+          metrics.allOperationsAllPages.concat(allOperationsCurPage);
+
+        OperationsLogger.logPageInfo(`Y${year}-P${page}`, allOperationsCurPage);
+        if (!allOperationsCurPage || allOperationsCurPage.length === 0) break;
+      }
     }
   }
 
