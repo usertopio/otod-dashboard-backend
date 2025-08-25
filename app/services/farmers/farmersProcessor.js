@@ -18,11 +18,6 @@ class FarmersProcessor {
    * Returns a result object with metrics and tracking info.
    */
   static async fetchAndProcessData() {
-    // Calculate number of API pages to fetch
-    const pages = Math.ceil(
-      FARMERS_CONFIG.DEFAULT_TOTAL_RECORDS / FARMERS_CONFIG.DEFAULT_PAGE_SIZE
-    );
-
     // Initialize metrics for tracking processing
     const metrics = {
       allFarmersAllPages: [],
@@ -39,7 +34,7 @@ class FarmersProcessor {
     const dbCountBefore = await this._getDatabaseCount();
 
     // Fetch all pages from the API and accumulate results
-    await this._fetchFarmersPages(pages, metrics);
+    await this._fetchFarmersPages(metrics);
 
     // Deduplicate farmers by recId
     const uniqueFarmers = this._getUniqueFarmers(metrics.allFarmersAllPages);
@@ -63,7 +58,11 @@ class FarmersProcessor {
    * @param {number} pages - Number of pages to fetch.
    * @param {object} metrics - Metrics object to accumulate results.
    */
-  static async _fetchFarmersPages(pages, metrics) {
+  static async _fetchFarmersPages(metrics) {
+    // Calculate number of API pages to fetch
+    const pages = Math.ceil(
+      FARMERS_CONFIG.DEFAULT_TOTAL_RECORDS / FARMERS_CONFIG.DEFAULT_PAGE_SIZE
+    );
     for (let page = 1; page <= pages; page++) {
       const requestBody = {
         provinceName: "",
