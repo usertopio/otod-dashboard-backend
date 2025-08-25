@@ -20,22 +20,46 @@ class FarmersProcessor {
   static async fetchAndProcessData() {
     let page = 1;
     let hasMore = true;
-    let inserted = 0;
-    let updated = 0;
-    let errors = 0;
+    let allFarmers = [];
 
+    // Fetch all pages and accumulate farmers
     while (hasMore) {
       const apiResult = await this._fetchFarmersPage(page);
       if (!apiResult || apiResult.length === 0) {
         hasMore = false;
         break;
       }
-      // Process and upsert data here
-      // Update inserted, updated, errors counts
+      allFarmers = allFarmers.concat(apiResult);
       page++;
     }
 
-    return { inserted, updated, errors };
+    // Deduplicate across all pages
+    const uniqueFarmers = this._getUniqueFarmers(allFarmers);
+
+    let inserted = 0;
+    let updated = 0;
+    let errors = 0;
+
+    // Upsert each unique farmer
+    for (const farmer of uniqueFarmers) {
+      const result = await insertOrUpdateFarmer(farmer);
+      switch (result.operation) {
+        case OPERATIONS.INSERT:
+          inserted++;
+          break;
+        case OPERATIONS.UPDATE:
+          updated++;
+          break;
+        case OPERATIONS.ERROR:
+          errors++;
+          break;
+      }
+    }
+
+    // Get DB count after processing
+    const dbCountAfter = await this._getDatabaseCount();
+
+    return { inserted, updated, errors, totalAfter: dbCountAfter };
   }
 
   /**

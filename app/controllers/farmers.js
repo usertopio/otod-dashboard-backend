@@ -21,10 +21,7 @@ class FarmersController {
         FARMERS_CONFIG.DEFAULT_MAX_ATTEMPTS;
 
       // Call the service to fetch farmers with the specified parameters
-      const result = await FarmersService.fetchFarmers(
-        targetCount,
-        maxAttempts
-      );
+      const result = await FarmersService.fetchAllFarmers();
 
       // Respond with the result as JSON
       return res.status(200).json(result);

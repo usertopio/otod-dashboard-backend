@@ -5,7 +5,7 @@ class FarmersLogger {
    * Logs the start of an attempt.
    */
   static logAttemptStart(attempt, maxAttempts) {
-    console.log(`\n🔄 === ATTEMPT ${attempt}/${maxAttempts} ===`);
+    console.log(`\n🚀 Attempt ${attempt} of ${maxAttempts}`);
   }
 
   /**
@@ -60,13 +60,6 @@ class FarmersLogger {
     console.log(`   🔄 Updated: ${result.updated}`);
     console.log(`   ❌ Errors: ${result.errors}`);
     console.log(`   📊 Total now: ${result.totalAfter}`);
-
-    if (result.recordsInDbNotInAPI > 0) {
-      console.log(
-        `📍 Records in DB but not in current API: ${result.recordsInDbNotInAPI}`
-      );
-    }
-
     console.log("==========================================\n");
   }
 
@@ -124,8 +117,8 @@ class FarmersLogger {
   /**
    * Logs info for each API page.
    */
-  static logPageInfo(page, farmers) {
-    console.log(`📄 Page ${page}: Length: ${farmers.length}`);
+  static logPageInfo(page, records) {
+    console.log(`📄 Page ${page}: Length: ${records.length}`);
   }
 
   /**

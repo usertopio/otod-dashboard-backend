@@ -109,12 +109,9 @@ class FarmersService {
   }
 
   /**
-   * Main entry point for fetching ALL farmers from the API and storing them in the database.
-   * - Resets the farmers table before starting.
-   * - Loops up to maxAttempts, fetching and processing data each time.
-   * - Logs progress and metrics for each attempt.
-   * - Stops early if the API returns no new data.
-   * - Returns a summary result object.
+   * Fetches ALL farmers from the API and stores them in the database.
+   * Loops up to maxAttempts, stops early if API returns no new data.
+   * Returns a summary result object.
    * @param {number} maxAttempts - The maximum number of fetch attempts.
    */
   static async fetchAllFarmers(
@@ -133,7 +130,6 @@ class FarmersService {
     while (attempt <= maxAttempts && hasMoreData) {
       FarmersLogger.logAttemptStart(attempt, maxAttempts);
 
-      // Always make an API call and process the data
       const result = await FarmersProcessor.fetchAndProcessData();
 
       FarmersLogger.logAttemptResults(attempt, result);
@@ -142,8 +138,8 @@ class FarmersService {
       totalUpdated += result.updated || 0;
       totalErrors += result.errors || 0;
 
-      // If the API returned no new data, stop
-      hasMoreData = (result.inserted || 0) > 0 || (result.updated || 0) > 0;
+      // Only continue if new records were inserted in this attempt
+      hasMoreData = (result.inserted || 0) > 0;
       attempt++;
     }
 
