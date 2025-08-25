@@ -14,11 +14,6 @@ class OperationsProcessor {
    * Returns a result object with metrics and tracking info.
    */
   static async fetchAndProcessData() {
-    const pages = Math.ceil(
-      OPERATIONS_CONFIG.DEFAULT_TOTAL_RECORDS /
-        OPERATIONS_CONFIG.DEFAULT_PAGE_SIZE
-    );
-
     // Initialize counters
     const metrics = {
       allOperationsAllPages: [],
