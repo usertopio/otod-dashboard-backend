@@ -34,7 +34,7 @@ class MerchantsProcessor {
     const dbCountBefore = await this._getDatabaseCount();
 
     // Fetch all pages from the API and accumulate results
-    await this._fetchMerchantsPages(pages, metrics);
+    await this._fetchMerchantsPages(metrics);
 
     // Deduplicate merchants by recId
     const uniqueMerchants = this._getUniqueMerchants(
