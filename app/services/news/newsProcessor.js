@@ -33,7 +33,7 @@ class NewsProcessor {
     const dbCountBefore = await this._getDatabaseCount();
 
     // Fetch data from all pages
-    await this._fetchAllPages(pages, metrics);
+    await this._fetchNewsPages(pages, metrics);
 
     // Process unique news
     const uniqueNews = this._getUniqueNews(metrics.allNewsAllPages);
@@ -53,7 +53,7 @@ class NewsProcessor {
    * @param {number} pages - Number of pages to fetch.
    * @param {object} metrics - Metrics object to accumulate results.
    */
-  static async _fetchAllPages(pages, metrics) {
+  static async _fetchNewsPages(pages, metrics) {
     for (let page = 1; page <= pages; page++) {
       const requestBody = {
         provinceName: "",
