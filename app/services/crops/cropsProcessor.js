@@ -71,35 +71,41 @@ class CropsProcessor {
   // 🔧 Fetch from GetCrops API (paginated)
   static async _fetchGetCropsPages(metrics) {
     console.log(``);
-    console.log("📞 Sending request to GetCrops API (paginated)...");
-
-    // Use totalRecords from actual API response (4 records in example)
-    // But we'll use config for flexibility
-    const pages = Math.ceil(
-      CROPS_CONFIG.DEFAULT_TOTAL_RECORDS / CROPS_CONFIG.DEFAULT_PAGE_SIZE
+    console.log(
+      `📞 Sending request to GetCrops API (paginated, by year ${CROPS_CONFIG.START_YEAR}-${CROPS_CONFIG.END_YEAR})...`
     );
 
-    for (let page = 1; page <= pages; page++) {
-      const requestBody = {
-        cropYear: CROPS_CONFIG.DEFAULT_CROP_YEAR || 2024,
-        provinceName: "",
-        pageIndex: page,
-        pageSize: CROPS_CONFIG.DEFAULT_PAGE_SIZE,
-      };
+    for (
+      let year = CROPS_CONFIG.START_YEAR;
+      year <= CROPS_CONFIG.END_YEAR;
+      year++
+    ) {
+      const pages = Math.ceil(
+        CROPS_CONFIG.DEFAULT_TOTAL_RECORDS / CROPS_CONFIG.DEFAULT_PAGE_SIZE
+      );
 
-      const customHeaders = {
-        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-      };
+      for (let page = 1; page <= pages; page++) {
+        const requestBody = {
+          cropYear: year,
+          provinceName: "",
+          pageIndex: page,
+          pageSize: CROPS_CONFIG.DEFAULT_PAGE_SIZE,
+        };
 
-      const crops = await getCrops(requestBody, customHeaders);
-      const cropsCurPage = crops.data || [];
-      metrics.allCropsFromGetCrops =
-        metrics.allCropsFromGetCrops.concat(cropsCurPage);
+        const customHeaders = {
+          Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+        };
 
-      CropsLogger.logPageInfo(page, cropsCurPage, "GetCrops");
+        const crops = await getCrops(requestBody, customHeaders);
+        const cropsCurPage = crops.data || [];
+        metrics.allCropsFromGetCrops =
+          metrics.allCropsFromGetCrops.concat(cropsCurPage);
 
-      // Stop if no more data
-      if (cropsCurPage.length === 0) break;
+        CropsLogger.logPageInfo(`Y${year}-P${page}`, cropsCurPage, "GetCrops");
+
+        // Stop if no more data
+        if (cropsCurPage.length === 0) break;
+      }
     }
   }
 
