@@ -7,24 +7,13 @@ const { OPERATIONS_CONFIG } = require("../utils/constants");
 // Handles HTTP requests for operation-related actions
 const fetchOperations = async (req, res) => {
   try {
-    // Get targetCount and maxAttempts from request body or use defaults
-    const targetCount =
-      (req.body && req.body.targetCount) ||
-      OPERATIONS_CONFIG.DEFAULT_TARGET_COUNT;
+    // Get maxAttempts from request body or use default
     const maxAttempts =
       (req.body && req.body.maxAttempts) ||
       OPERATIONS_CONFIG.DEFAULT_MAX_ATTEMPTS;
 
-    // Log the start of the fetch operation
-    console.log(
-      `Starting fetchOperations with target: ${targetCount}, max attempts: ${maxAttempts}`
-    );
-
-    // Call the service to fetch operations with the specified parameters
-    const result = await OperationsService.fetchOperations(
-      targetCount,
-      maxAttempts
-    );
+    // Call the service to fetch all operations
+    const result = await OperationsService.fetchAllOperations(maxAttempts);
 
     res.status(200).json(result);
   } catch (error) {
