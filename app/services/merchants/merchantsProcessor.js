@@ -18,11 +18,6 @@ class MerchantsProcessor {
    * Returns a result object with metrics and tracking info.
    */
   static async fetchAndProcessData() {
-    const pages = Math.ceil(
-      MERCHANTS_CONFIG.DEFAULT_TOTAL_RECORDS /
-        MERCHANTS_CONFIG.DEFAULT_PAGE_SIZE
-    );
-
     // Initialize metrics for tracking processing
     const metrics = {
       allMerchantsAllPages: [],
@@ -65,7 +60,12 @@ class MerchantsProcessor {
    * @param {number} pages - Number of pages to fetch.
    * @param {object} metrics - Metrics object to accumulate results.
    */
-  static async _fetchMerchantsPages(pages, metrics) {
+  static async _fetchMerchantsPages(metrics) {
+    const pages = Math.ceil(
+      MERCHANTS_CONFIG.DEFAULT_TOTAL_RECORDS /
+        MERCHANTS_CONFIG.DEFAULT_PAGE_SIZE
+    );
+
     for (let page = 1; page <= pages; page++) {
       const requestBody = {
         provinceName: "",
