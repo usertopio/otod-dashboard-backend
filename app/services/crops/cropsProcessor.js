@@ -38,7 +38,7 @@ class CropsProcessor {
     // 🔧 Fetch data from GetCrops API (with pagination)
     await this._fetchGetCropsPages(metrics);
 
-    // 🔧 Fetch data from GetCropHarvests API (single call, no pagination)
+    // 🔧 Fetch data from GetCropHarvests API (loop by year, no pagination)
     await this._fetchGetCropHarvests(metrics);
 
     // 🔧 Combine and merge records from both APIs by cropId
@@ -109,28 +109,39 @@ class CropsProcessor {
     }
   }
 
-  // 🔧 Fetch from GetCropHarvests API (single call, no pagination)
+  // 🔧 Fetch from GetCropHarvests API (loop by year, no pagination)
   static async _fetchGetCropHarvests(metrics) {
-    console.log("📞 Sending request to GetCropHarvests API (single call)...");
+    console.log(
+      `📞 Sending request to GetCropHarvests API (by year ${CROPS_CONFIG.START_YEAR}-${CROPS_CONFIG.END_YEAR})...`
+    );
 
-    const requestBody = {
-      cropYear: CROPS_CONFIG.DEFAULT_CROP_YEAR || 2024,
-      provinceName: "",
-      fromDate: "2024-09-01",
-      toDate: "2024-12-31",
-      pageIndex: 1, // Based on API response example
-      pageSize: 500,
-    };
+    let allHarvests = [];
+    for (
+      let year = CROPS_CONFIG.START_YEAR;
+      year <= CROPS_CONFIG.END_YEAR;
+      year++
+    ) {
+      const requestBody = {
+        cropYear: year,
+        provinceName: "",
+        fromDate: `${year}-01-01`,
+        toDate: `${year}-12-31`,
+        pageIndex: 1, // Based on API response example
+        pageSize: 500,
+      };
 
-    const customHeaders = {
-      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-    };
+      const customHeaders = {
+        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      };
 
-    const cropHarvests = await getCropHarvests(requestBody, customHeaders);
-    const harvestsCurPage = cropHarvests.data || [];
-    metrics.allCropsFromGetCropHarvests = harvestsCurPage;
+      const cropHarvests = await getCropHarvests(requestBody, customHeaders);
+      const harvestsCurPage = cropHarvests.data || [];
+      allHarvests = allHarvests.concat(harvestsCurPage);
 
-    CropsLogger.logPageInfo(1, harvestsCurPage, "GetCropHarvests");
+      CropsLogger.logPageInfo(`Y${year}`, harvestsCurPage, "GetCropHarvests");
+    }
+
+    metrics.allCropsFromGetCropHarvests = allHarvests;
   }
 
   // 🔧 Merge records from both APIs by cropId
