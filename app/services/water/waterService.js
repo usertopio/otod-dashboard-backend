@@ -85,6 +85,66 @@ class WaterService {
   }
 
   /**
+   * Main entry point for fetching ALL water usage summary from the API and storing it in the database.
+   * - Resets the water table before starting.
+   * - Loops up to maxAttempts, fetching and processing data each time.
+   * - Logs progress and metrics for each attempt.
+   * - Stops early if no new records are inserted.
+   * - Returns a summary result object.
+   * @param {number} maxAttempts - The maximum number of fetch attempts.
+   */
+  static async fetchAllWater(maxAttempts = WATER_CONFIG.DEFAULT_MAX_ATTEMPTS) {
+    await this.resetOnlyWaterTable();
+
+    let attempt = 1;
+    let totalInserted = 0;
+    let totalUpdated = 0;
+    let totalErrors = 0;
+    let hasMoreData = true;
+
+    console.log(`💧 Fetching ALL water records, Max attempts: ${maxAttempts}`);
+
+    while (attempt <= maxAttempts && hasMoreData) {
+      WaterLogger.logAttemptStart(attempt, maxAttempts);
+
+      const result = await WaterProcessor.fetchAndProcessData();
+
+      WaterLogger.logAttemptResults(attempt, result);
+
+      totalInserted += result.inserted || 0;
+      totalUpdated += result.updated || 0;
+      totalErrors += result.errors || 0;
+
+      // Only continue if new records were inserted in this attempt
+      hasMoreData = (result.inserted || 0) > 0;
+      attempt++;
+    }
+
+    const finalCount = await this._getDatabaseCount();
+
+    WaterLogger.logFinalResults(
+      "ALL",
+      finalCount,
+      attempt - 1,
+      maxAttempts,
+      STATUS.SUCCESS
+    );
+
+    return {
+      message: `Fetch loop completed - ALL records fetched`,
+      achieved: finalCount,
+      attemptsUsed: attempt - 1,
+      maxAttempts: maxAttempts,
+      inserted: totalInserted,
+      updated: totalUpdated,
+      errors: totalErrors,
+      status: STATUS.SUCCESS,
+      reachedTarget: true,
+      table: "water",
+    };
+  }
+
+  /**
    * Returns the current count of water records in the database.
    * @returns {Promise<number>} - The total number of water records in the DB.
    */
