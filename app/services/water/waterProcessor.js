@@ -14,9 +14,6 @@ class WaterProcessor {
    * Returns a result object with metrics and tracking info.
    */
   static async fetchAndProcessData() {
-    // Water API doesn't use pagination, so we just make one call
-    const pages = 1;
-
     // Initialize counters
     const metrics = {
       allWaterAllPages: [],
@@ -33,7 +30,7 @@ class WaterProcessor {
     const dbCountBefore = await this._getDatabaseCount();
 
     // Fetch data from API (single call)
-    await this._fetchWaterSummaryByMonthPages(pages, metrics);
+    await this._fetchWaterSummaryByMonth(metrics);
 
     // Process unique water records
     const uniqueWater = this._getUniqueWater(metrics.allWaterAllPages);
@@ -56,7 +53,7 @@ class WaterProcessor {
    * @param {number} pages - Number of pages to fetch (always 1).
    * @param {object} metrics - Metrics object to accumulate results.
    */
-  static async _fetchWaterSummaryByMonthPages(pages, metrics) {
+  static async _fetchWaterSummaryByMonth(metrics) {
     for (
       let year = WATER_CONFIG.START_YEAR;
       year <= WATER_CONFIG.END_YEAR;
