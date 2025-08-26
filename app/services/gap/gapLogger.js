@@ -106,7 +106,7 @@ class GapLogger {
   }
 
   static logPageInfo(page, gapCertificates) {
-    console.log(`📄 Page ${page}: Length: ${gapCertificates.length}`);
+    console.log(`📄 GAP Page ${page}: Length: ${gapCertificates.length}`);
   }
 
   static logApiSummary(totalFromAPI, uniqueCount) {

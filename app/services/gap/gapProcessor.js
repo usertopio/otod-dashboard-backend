@@ -77,7 +77,8 @@ class GapProcessor {
         const gapCertificates = this._extractGapCertificates(allCropsCurPage);
         metrics.allGapAllPages = metrics.allGapAllPages.concat(gapCertificates);
 
-        GapLogger.logPageInfo(page, gapCertificates);
+        // Log year and page info
+        GapLogger.logPageInfo(`Y${year}-P${page}`, gapCertificates);
       }
     }
   }
