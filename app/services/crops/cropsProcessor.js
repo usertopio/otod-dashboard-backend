@@ -99,9 +99,9 @@ class CropsProcessor {
         metrics.allCropsFromGetCrops =
           metrics.allCropsFromGetCrops.concat(cropsCurPage);
 
-        CropsLogger.logPageInfo(`Y${year}-P${page}`, cropsCurPage, "GetCrops");
+        // Standardized log
+        CropsLogger.logPageInfo(year, page, cropsCurPage);
 
-        // Stop if no more data
         if (cropsCurPage.length === 0) hasMore = false;
         page++;
       }
@@ -140,18 +140,13 @@ class CropsProcessor {
         const harvestsCurPage = cropHarvests.data || [];
         allHarvests = allHarvests.concat(harvestsCurPage);
 
-        CropsLogger.logPageInfo(
-          `Y${year}-P${page}`,
-          harvestsCurPage,
-          "GetCropHarvests"
-        );
+        // Standardized log
+        CropsLogger.logPageInfo(year, page, harvestsCurPage);
 
-        // Stop if no more data
         if (harvestsCurPage.length === 0) hasMore = false;
         page++;
       }
     }
-
     metrics.allCropsFromGetCropHarvests = allHarvests;
   }
 

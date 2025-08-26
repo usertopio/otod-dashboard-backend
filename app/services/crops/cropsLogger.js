@@ -100,8 +100,8 @@ class CropsLogger {
     }
   }
 
-  static logPageInfo(page, records, apiType) {
-    console.log(`📄 ${apiType} Page ${page}: Length: ${records.length}`);
+  static logPageInfo(year, page, records) {
+    console.log(`📄 Year: ${year} Page: ${page} Length: ${records.length}`);
   }
 
   static logApiSummary(
