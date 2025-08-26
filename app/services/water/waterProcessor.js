@@ -76,7 +76,7 @@ class WaterProcessor {
       metrics.allWaterAllPages =
         metrics.allWaterAllPages.concat(allWaterCurPage);
 
-      WaterLogger.logPageInfo(`Y${year}`, allWaterCurPage);
+      WaterLogger.logPageInfo(year, 1, allWaterCurPage);
     }
   }
 

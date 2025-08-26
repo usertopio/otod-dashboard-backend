@@ -122,8 +122,9 @@ class WaterLogger {
     }
   }
 
-  static logPageInfo(page, waterRecords) {
-    console.log(`📄 Page ${page}: Length: ${waterRecords.length}`);
+  static logPageInfo(year, page, records) {
+    const safeRecords = Array.isArray(records) ? records : [];
+    console.log(`📄 Year: ${year} Page: ${page} Length: ${safeRecords.length}`);
   }
 }
 
