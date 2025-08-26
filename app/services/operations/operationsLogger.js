@@ -20,8 +20,9 @@ class OperationsLogger {
     console.log(`🔄 Target reached but continuing API call for fresh data...`);
   }
 
-  static logPageInfo(page, records, apiType) {
-    console.log(`📄 ${apiType} Page ${page}: Length: ${records.length}`);
+  static logPageInfo(year, page, records) {
+    const safeRecords = Array.isArray(records) ? records : [];
+    console.log(`📄 Year: ${year} Page: ${page} Length: ${safeRecords.length}`);
   }
 
   static logApiSummary(totalFromAPI, uniqueFromAPI) {

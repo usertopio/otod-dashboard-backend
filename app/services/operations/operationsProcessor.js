@@ -78,11 +78,13 @@ class OperationsProcessor {
         };
 
         const operations = await getOperations(requestBody, customHeaders);
-        const operationsCurPage = operations.data;
+        const operationsCurPage = operations.data || [];
         metrics.allOperationsAllPages =
           metrics.allOperationsAllPages.concat(operationsCurPage);
 
-        OperationsLogger.logPageInfo(`Y${year}-P${page}`, operationsCurPage);
+        // Standardized log
+        OperationsLogger.logPageInfo(year, page, operationsCurPage);
+
         if (!operationsCurPage || operationsCurPage.length === 0)
           hasMore = false;
         page++;
