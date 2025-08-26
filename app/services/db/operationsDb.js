@@ -28,7 +28,7 @@ async function getRefCode(table, nameColumn, codeColumn, name) {
 }
 
 /**
- * Ensures a reference code exists in the table, inserts if not found.
+ * Standardized ensures a reference code exists in the table, inserts if not found.
  * @param {string} table - Reference table name.
  * @param {string} nameColumn - Column for the name.
  * @param {string} codeColumn - Column for the code.
@@ -44,17 +44,53 @@ async function ensureRefCode(
   generatedCodePrefix
 ) {
   if (!name) return null;
-  let code = await getRefCode(table, nameColumn, codeColumn, name);
-  if (!code) {
-    code = `${generatedCodePrefix}${Date.now()}`;
-    await connectionDB
+
+  try {
+    // Check if name exists in reference table
+    const [existing] = await connectionDB
       .promise()
       .query(
-        `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES (?, ?, 'generated')`,
-        [code, name]
+        `SELECT ${codeColumn} FROM ${table} WHERE ${nameColumn} = ? LIMIT 1`,
+        [name]
       );
+
+    if (existing.length > 0) {
+      return existing[0][codeColumn];
+    } else {
+      // Generate new sequential code if not found
+      const [maxResult] = await connectionDB
+        .promise()
+        .query(
+          `SELECT ${codeColumn} FROM ${table} WHERE ${codeColumn} LIKE '${generatedCodePrefix}%' ORDER BY ${codeColumn} DESC LIMIT 1`
+        );
+
+      let newCode;
+      if (maxResult.length > 0) {
+        const lastCode = maxResult[0][codeColumn];
+        const lastNumber =
+          parseInt(lastCode.replace(generatedCodePrefix, "")) || 0;
+        newCode = `${generatedCodePrefix}${String(lastNumber + 1).padStart(
+          3,
+          "0"
+        )}`;
+      } else {
+        newCode = `${generatedCodePrefix}001`;
+      }
+
+      await connectionDB
+        .promise()
+        .query(
+          `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES (?, ?, 'generated')`,
+          [newCode, name]
+        );
+
+      console.log(`🆕 Created new ${table}: ${newCode} = "${name}"`);
+      return newCode;
+    }
+  } catch (err) {
+    console.error(`${table} lookup error:`, err.message);
+    return null;
   }
-  return code;
 }
 
 /**
