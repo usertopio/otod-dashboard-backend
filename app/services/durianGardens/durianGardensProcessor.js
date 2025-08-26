@@ -74,6 +74,8 @@ class DurianGardensProcessor {
     console.log(``);
     console.log("📞 Sending request to GetLands API (paginated)...");
 
+    // If you have a year loop, use it here. If not, set year = 1.
+    let year = 1;
     const pages = Math.ceil(
       DURIAN_GARDENS_CONFIG.DEFAULT_TOTAL_RECORDS /
         DURIAN_GARDENS_CONFIG.DEFAULT_PAGE_SIZE
@@ -95,7 +97,8 @@ class DurianGardensProcessor {
       metrics.allGardensFromGetLands =
         metrics.allGardensFromGetLands.concat(landsCurPage);
 
-      DurianGardensLogger.logPageInfo(page, landsCurPage, "GetLands");
+      // Standardized log
+      DurianGardensLogger.logPageInfo(year, page, landsCurPage);
 
       // Stop if no more data
       if (landsCurPage.length === 0) break;
@@ -142,7 +145,7 @@ class DurianGardensProcessor {
     }
 
     metrics.allGardensFromGetLandGeoJSON = flattenedLands;
-    DurianGardensLogger.logPageInfo(1, flattenedLands, "GetLandGeoJSON");
+    DurianGardensLogger.logPageInfo(1, 1, "GetLandGeoJSON");
   }
 
   // 🌿 Merge records from both APIs by landId
