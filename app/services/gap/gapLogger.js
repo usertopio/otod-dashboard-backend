@@ -105,8 +105,9 @@ class GapLogger {
     }
   }
 
-  static logPageInfo(page, gapCertificates) {
-    console.log(`📄 GAP Page ${page}: Length: ${gapCertificates.length}`);
+  static logPageInfo(year, page, records) {
+    const safeRecords = Array.isArray(records) ? records : [];
+    console.log(`📄 Year: ${year} Page: ${page} Length: ${safeRecords.length}`);
   }
 
   static logApiSummary(totalFromAPI, uniqueCount) {

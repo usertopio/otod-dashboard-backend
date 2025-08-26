@@ -71,14 +71,14 @@ class GapProcessor {
         };
 
         const crops = await getCrops(requestBody, customHeaders);
-        const allCropsCurPage = crops.data;
+        const allCropsCurPage = crops.data || [];
 
         // Extract gap certificates from crops
         const gapCertificates = this._extractGapCertificates(allCropsCurPage);
         metrics.allGapAllPages = metrics.allGapAllPages.concat(gapCertificates);
 
-        // Log year and page info
-        GapLogger.logPageInfo(`Y${year}-P${page}`, gapCertificates);
+        // Standardized log
+        GapLogger.logPageInfo(year, page, gapCertificates);
       }
     }
   }
