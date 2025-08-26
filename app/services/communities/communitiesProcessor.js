@@ -61,32 +61,38 @@ class CommunitiesProcessor {
    * @param {object} metrics - Metrics object to accumulate results.
    */
   static async _fetchCommunitiesPages(metrics) {
-    // Calculate number of API pages to fetch
     const pages = Math.ceil(
       COMMUNITIES_CONFIG.DEFAULT_TOTAL_RECORDS /
         COMMUNITIES_CONFIG.DEFAULT_PAGE_SIZE
     );
 
-    for (let page = 1; page <= pages; page++) {
-      const requestBody = {
-        provinceName: "",
-        pageIndex: page,
-        pageSize: COMMUNITIES_CONFIG.DEFAULT_PAGE_SIZE,
-      };
+    for (
+      let year = COMMUNITIES_CONFIG.START_YEAR;
+      year <= COMMUNITIES_CONFIG.END_YEAR;
+      year++
+    ) {
+      for (let page = 1; page <= pages; page++) {
+        const requestBody = {
+          provinceName: "",
+          pageIndex: page,
+          pageSize: COMMUNITIES_CONFIG.DEFAULT_PAGE_SIZE,
+          cropYear: year, // If your API supports year filtering
+        };
 
-      const customHeaders = {
-        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-      };
+        const customHeaders = {
+          Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+        };
 
-      // Fetch a page of communities from the API
-      const communities = await getCommunities(requestBody, customHeaders);
-      const allCommunitiesCurPage = communities.data;
-      metrics.allCommunitiesAllPages = metrics.allCommunitiesAllPages.concat(
-        allCommunitiesCurPage
-      );
+        // Fetch a page of communities from the API
+        const communities = await getCommunities(requestBody, customHeaders);
+        const allCommunitiesCurPage = communities.data;
+        metrics.allCommunitiesAllPages = metrics.allCommunitiesAllPages.concat(
+          allCommunitiesCurPage
+        );
 
-      // Log info for this page
-      CommunitiesLogger.logPageInfo(page, allCommunitiesCurPage);
+        // Log info for this year and page
+        CommunitiesLogger.logPageInfo(year, page, allCommunitiesCurPage);
+      }
     }
   }
 

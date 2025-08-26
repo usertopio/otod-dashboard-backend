@@ -25,8 +25,8 @@ class CommunitiesLogger {
   }
 
   // Log info for each API page
-  static logPageInfo(page, communities) {
-    console.log(`📄 Page ${page}: Length: ${communities.length}`);
+  static logPageInfo(year, page, communities) {
+    console.log(`📄 Year: ${year} Page: ${page} Length: ${communities.length}`);
   }
 
   // Log API summary after deduplication
