@@ -80,11 +80,9 @@ class CropsProcessor {
       year <= CROPS_CONFIG.END_YEAR;
       year++
     ) {
-      const pages = Math.ceil(
-        CROPS_CONFIG.DEFAULT_TOTAL_RECORDS / CROPS_CONFIG.DEFAULT_PAGE_SIZE
-      );
-
-      for (let page = 1; page <= pages; page++) {
+      let page = 1;
+      let hasMore = true;
+      while (hasMore) {
         const requestBody = {
           cropYear: year,
           provinceName: "",
@@ -104,7 +102,8 @@ class CropsProcessor {
         CropsLogger.logPageInfo(`Y${year}-P${page}`, cropsCurPage, "GetCrops");
 
         // Stop if no more data
-        if (cropsCurPage.length === 0) break;
+        if (cropsCurPage.length === 0) hasMore = false;
+        page++;
       }
     }
   }
@@ -121,11 +120,9 @@ class CropsProcessor {
       year <= CROPS_CONFIG.END_YEAR;
       year++
     ) {
-      const pages = Math.ceil(
-        CROPS_CONFIG.DEFAULT_TOTAL_RECORDS / CROPS_CONFIG.DEFAULT_PAGE_SIZE
-      );
-
-      for (let page = 1; page <= pages; page++) {
+      let page = 1;
+      let hasMore = true;
+      while (hasMore) {
         const requestBody = {
           cropYear: year,
           provinceName: "",
@@ -150,7 +147,8 @@ class CropsProcessor {
         );
 
         // Stop if no more data
-        if (harvestsCurPage.length === 0) break;
+        if (harvestsCurPage.length === 0) hasMore = false;
+        page++;
       }
     }
 

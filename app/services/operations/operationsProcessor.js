@@ -61,12 +61,9 @@ class OperationsProcessor {
       year <= OPERATIONS_CONFIG.END_YEAR;
       year++
     ) {
-      const pages = Math.ceil(
-        OPERATIONS_CONFIG.DEFAULT_TOTAL_RECORDS /
-          OPERATIONS_CONFIG.DEFAULT_PAGE_SIZE
-      );
-
-      for (let page = 1; page <= pages; page++) {
+      let page = 1;
+      let hasMore = true;
+      while (hasMore) {
         const requestBody = {
           cropYear: year,
           provinceName: "",
@@ -81,12 +78,14 @@ class OperationsProcessor {
         };
 
         const operations = await getOperations(requestBody, customHeaders);
-        const allOperationsCurPage = operations.data;
+        const operationsCurPage = operations.data;
         metrics.allOperationsAllPages =
-          metrics.allOperationsAllPages.concat(allOperationsCurPage);
+          metrics.allOperationsAllPages.concat(operationsCurPage);
 
-        OperationsLogger.logPageInfo(`Y${year}-P${page}`, allOperationsCurPage);
-        if (!allOperationsCurPage || allOperationsCurPage.length === 0) break;
+        OperationsLogger.logPageInfo(`Y${year}-P${page}`, operationsCurPage);
+        if (!operationsCurPage || operationsCurPage.length === 0)
+          hasMore = false;
+        page++;
       }
     }
   }
