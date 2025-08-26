@@ -78,7 +78,7 @@ class SubstanceProcessor {
       metrics.allSubstanceAllPages =
         metrics.allSubstanceAllPages.concat(allSubstanceCurPage);
 
-      SubstanceLogger.logPageInfo(`Y${year}`, allSubstanceCurPage);
+      SubstanceLogger.logPageInfo(year, 1, allSubstanceCurPage);
     }
   }
 

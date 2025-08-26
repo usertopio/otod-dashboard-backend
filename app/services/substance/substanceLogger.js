@@ -108,8 +108,9 @@ class SubstanceLogger {
     }
   }
 
-  static logPageInfo(page, substanceRecords) {
-    console.log(`📄 Page ${page}: Length: ${substanceRecords.length}`);
+  static logPageInfo(year, page, records) {
+    const safeRecords = Array.isArray(records) ? records : [];
+    console.log(`📄 Year: ${year} Page: ${page} Length: ${safeRecords.length}`);
   }
 
   static logApiSummary(totalFromAPI, uniqueCount) {
