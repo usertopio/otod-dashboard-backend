@@ -84,7 +84,7 @@ class MerchantsProcessor {
         metrics.allMerchantsAllPages.concat(allMerchantsCurPage);
 
       // Log info for this page
-      MerchantsLogger.logPageInfo(page, allMerchantsCurPage);
+      MerchantsLogger.logPageInfo(1, page, allMerchantsCurPage);
     }
   }
 
