@@ -50,11 +50,9 @@ class NewsProcessor {
    * @param {object} metrics - Metrics object to accumulate results.
    */
   static async _fetchNewsPages(metrics) {
-    const pages = Math.ceil(
-      NEWS_CONFIG.DEFAULT_TOTAL_RECORDS / NEWS_CONFIG.DEFAULT_PAGE_SIZE
-    );
-
-    for (let page = 1; page <= pages; page++) {
+    let page = 1;
+    let hasMore = true;
+    while (hasMore) {
       const requestBody = {
         provinceName: "",
         pageIndex: page,
@@ -68,10 +66,17 @@ class NewsProcessor {
       };
 
       const news = await getNews(requestBody, customHeaders);
-      const allNewsCurPage = news.data;
+      const allNewsCurPage = news.data || [];
       metrics.allNewsAllPages = metrics.allNewsAllPages.concat(allNewsCurPage);
 
       NewsLogger.logPageInfo(page, allNewsCurPage);
+
+      // Stop if no more data
+      if (allNewsCurPage.length < NEWS_CONFIG.DEFAULT_PAGE_SIZE) {
+        hasMore = false;
+      } else {
+        page++;
+      }
     }
   }
 

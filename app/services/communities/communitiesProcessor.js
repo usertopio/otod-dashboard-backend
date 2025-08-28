@@ -61,12 +61,9 @@ class CommunitiesProcessor {
    * @param {object} metrics - Metrics object to accumulate results.
    */
   static async _fetchCommunitiesPages(metrics) {
-    const pages = Math.ceil(
-      COMMUNITIES_CONFIG.DEFAULT_TOTAL_RECORDS /
-        COMMUNITIES_CONFIG.DEFAULT_PAGE_SIZE
-    );
-
-    for (let page = 1; page <= pages; page++) {
+    let page = 1;
+    let hasMore = true;
+    while (hasMore) {
       const requestBody = {
         provinceName: "",
         pageIndex: page,
@@ -79,13 +76,20 @@ class CommunitiesProcessor {
 
       // Fetch a page of communities from the API
       const communities = await getCommunities(requestBody, customHeaders);
-      const allCommunitiesCurPage = communities.data;
+      const allCommunitiesCurPage = communities.data || [];
       metrics.allCommunitiesAllPages = metrics.allCommunitiesAllPages.concat(
         allCommunitiesCurPage
       );
 
-      // Log info for this year and page
+      // Log info for this page
       CommunitiesLogger.logPageInfo(1, page, allCommunitiesCurPage);
+
+      // Stop if no more data
+      if (allCommunitiesCurPage.length < COMMUNITIES_CONFIG.DEFAULT_PAGE_SIZE) {
+        hasMore = false;
+      } else {
+        page++;
+      }
     }
   }
 

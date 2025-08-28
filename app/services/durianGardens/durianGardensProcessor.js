@@ -71,17 +71,13 @@ class DurianGardensProcessor {
 
   // 🌿 Fetch from GetLands API (paginated)
   static async _fetchGetLandsPages(metrics) {
-    console.log(``);
+    console.log("");
     console.log("📞 Sending request to GetLands API (paginated)...");
 
-    // If you have a year loop, use it here. If not, set year = 1.
-    let year = 1;
-    const pages = Math.ceil(
-      DURIAN_GARDENS_CONFIG.DEFAULT_TOTAL_RECORDS /
-        DURIAN_GARDENS_CONFIG.DEFAULT_PAGE_SIZE
-    );
-
-    for (let page = 1; page <= pages; page++) {
+    let year = 1; // If you don't have a year loop, keep as 1
+    let page = 1;
+    let hasMore = true;
+    while (hasMore) {
       const requestBody = {
         provinceName: "",
         pageIndex: page,
@@ -101,7 +97,11 @@ class DurianGardensProcessor {
       DurianGardensLogger.logPageInfo(year, page, landsCurPage);
 
       // Stop if no more data
-      if (landsCurPage.length === 0) break;
+      if (landsCurPage.length < DURIAN_GARDENS_CONFIG.DEFAULT_PAGE_SIZE) {
+        hasMore = false;
+      } else {
+        page++;
+      }
     }
   }
 

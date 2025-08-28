@@ -61,12 +61,9 @@ class MerchantsProcessor {
    * @param {object} metrics - Metrics object to accumulate results.
    */
   static async _fetchMerchantsPages(metrics) {
-    const pages = Math.ceil(
-      MERCHANTS_CONFIG.DEFAULT_TOTAL_RECORDS /
-        MERCHANTS_CONFIG.DEFAULT_PAGE_SIZE
-    );
-
-    for (let page = 1; page <= pages; page++) {
+    let page = 1;
+    let hasMore = true;
+    while (hasMore) {
       const requestBody = {
         provinceName: "",
         pageIndex: page,
@@ -79,12 +76,19 @@ class MerchantsProcessor {
 
       // Fetch a page of merchants from the API
       const merchants = await getMerchants(requestBody, customHeaders);
-      const allMerchantsCurPage = merchants.data;
+      const allMerchantsCurPage = merchants.data || [];
       metrics.allMerchantsAllPages =
         metrics.allMerchantsAllPages.concat(allMerchantsCurPage);
 
       // Log info for this page
-      MerchantsLogger.logPageInfo(1, page, allMerchantsCurPage);
+      MerchantsLogger.logPageInfo(page, allMerchantsCurPage);
+
+      // Stop if no more data
+      if (allMerchantsCurPage.length < MERCHANTS_CONFIG.DEFAULT_PAGE_SIZE) {
+        hasMore = false;
+      } else {
+        page++;
+      }
     }
   }
 

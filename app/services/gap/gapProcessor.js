@@ -55,10 +55,9 @@ class GapProcessor {
       year <= GAP_CONFIG.END_YEAR;
       year++
     ) {
-      const pages = Math.ceil(
-        GAP_CONFIG.DEFAULT_TOTAL_RECORDS / GAP_CONFIG.DEFAULT_PAGE_SIZE
-      );
-      for (let page = 1; page <= pages; page++) {
+      let page = 1;
+      let hasMore = true;
+      while (hasMore) {
         const requestBody = {
           cropYear: year,
           provinceName: "",
@@ -79,6 +78,13 @@ class GapProcessor {
 
         // Standardized log
         GapLogger.logPageInfo(year, page, gapCertificates);
+
+        // Stop if no more data
+        if (gapCertificates.length < GAP_CONFIG.DEFAULT_PAGE_SIZE) {
+          hasMore = false;
+        } else {
+          page++;
+        }
       }
     }
   }
