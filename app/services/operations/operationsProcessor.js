@@ -67,8 +67,8 @@ class OperationsProcessor {
         const requestBody = {
           cropYear: year,
           provinceName: "",
-          fromDate: `${year}-01-01`,
-          toDate: `${year}-12-31`,
+          fromDate: OPERATIONS_CONFIG.FROM_DATE,
+          toDate: OPERATIONS_CONFIG.TO_DATE,
           pageIndex: page,
           pageSize: OPERATIONS_CONFIG.DEFAULT_PAGE_SIZE,
         };
