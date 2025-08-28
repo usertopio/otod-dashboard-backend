@@ -126,8 +126,8 @@ class CropsProcessor {
         const requestBody = {
           cropYear: year,
           provinceName: "",
-          fromDate: `${year}-01-01`,
-          toDate: `${year}-12-31`,
+          fromDate: `2010-01-01`,
+          toDate: `2025-12-31`,
           pageIndex: page,
           pageSize: CROPS_CONFIG.DEFAULT_PAGE_SIZE,
         };
@@ -202,6 +202,10 @@ class CropsProcessor {
         existing.source = "Both APIs";
         mergedMap.set(harvest.cropId, existing);
       } else {
+        // Log cropId that exists only in GetCropHarvests
+        console.log(
+          `🆕 cropId from GetCropHarvests only: ${harvest.cropId} (lotNumber: ${harvest.lotNumber})`
+        );
         // Create new record from GetCropHarvests only
         mergedMap.set(harvest.cropId, {
           source: "GetCropHarvests",
