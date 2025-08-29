@@ -2,7 +2,7 @@
 // Import API clients for fetching crop data
 const { getCrops, getCropHarvests } = require("../api/crops");
 // Import DB helper for upserting crop records
-const { insertOrUpdateCrop } = require("../db/cropsDb");
+const { insertOrUpdateCrop, ensureRefCode } = require("../db/cropsDb");
 // Import DB connection for direct queries
 const { connectionDB } = require("../../config/db/db.conf.js");
 // Import config constants and operation enums
@@ -253,20 +253,33 @@ class CropsProcessor {
   // 🔧 Process all unique crops into single crops table
   static async _processUniqueCrops(uniqueCrops, metrics) {
     for (const crop of uniqueCrops) {
-      const result = await insertOrUpdateCrop(crop);
+      // Ensure breedId is set from reference data (plain number, no prefix)
+      const breedId = crop.breedName
+        ? await ensureRefCode(
+            "ref_breeds",
+            "breed_name",
+            "breed_id",
+            crop.breedName,
+            "" // empty string for plain numbers
+          )
+        : null;
+
+      // Upsert crop record with resolved breedId
+      const cropData = { ...crop, breedId };
+      const result = await insertOrUpdateCrop(cropData);
 
       const cropId = crop.cropId;
 
       switch (result.operation) {
-        case OPERATIONS.INSERT:
+        case "INSERT":
           metrics.insertCount++;
           metrics.newRecIds.push(cropId);
           break;
-        case OPERATIONS.UPDATE:
+        case "UPDATE":
           metrics.updateCount++;
           metrics.updatedRecIds.push(cropId);
           break;
-        case OPERATIONS.ERROR:
+        case "ERROR":
           metrics.errorCount++;
           metrics.errorRecIds.push(cropId);
           break;
