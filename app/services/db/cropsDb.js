@@ -6,6 +6,53 @@ const { connectionDB } = require("../../config/db/db.conf.js");
 // Provides helper functions for upserting crops
 
 /**
+ * Ensures a reference code exists in a ref table, creates it if not.
+ * For stages, use generatedCodePrefix = "" for plain numbers.
+ */
+async function ensureRefCode(
+  table,
+  nameColumn,
+  codeColumn,
+  name,
+  generatedCodePrefix = ""
+) {
+  if (!name) return null;
+
+  // Check if name exists
+  const [existing] = await connectionDB
+    .promise()
+    .query(
+      `SELECT ${codeColumn} FROM ${table} WHERE ${nameColumn} = ? LIMIT 1`,
+      [name]
+    );
+
+  if (existing.length > 0) {
+    return existing[0][codeColumn];
+  } else {
+    // Generate next number (plain, no prefix)
+    const [maxResult] = await connectionDB
+      .promise()
+      .query(
+        `SELECT MAX(CAST(${codeColumn} AS UNSIGNED)) AS maxId FROM ${table}`
+      );
+    let newCode;
+    if (maxResult.length > 0 && maxResult[0].maxId !== null) {
+      newCode = String(Number(maxResult[0].maxId) + 1);
+    } else {
+      newCode = "1";
+    }
+    await connectionDB
+      .promise()
+      .query(
+        `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES (?, ?, 'generated')`,
+        [newCode, name]
+      );
+    console.log(`🆕 Created new ${table}: ${newCode} = "${name}"`);
+    return newCode;
+  }
+}
+
+/**
  * Inserts or updates a crop record in the database.
  * Maps reference codes, checks for existence, and upserts accordingly.
  * @param {object} crop - Crop data object.
@@ -127,53 +174,6 @@ async function insertOrUpdateCrop(crop) {
       recId: crop.cropId,
       error: err.message,
     };
-  }
-}
-
-/**
- * Ensures a reference code exists in a ref table, creates it if not.
- * For stages, use generatedCodePrefix = "" for plain numbers.
- */
-async function ensureRefCode(
-  table,
-  nameColumn,
-  codeColumn,
-  name,
-  generatedCodePrefix = ""
-) {
-  if (!name) return null;
-
-  // Check if name exists
-  const [existing] = await connectionDB
-    .promise()
-    .query(
-      `SELECT ${codeColumn} FROM ${table} WHERE ${nameColumn} = ? LIMIT 1`,
-      [name]
-    );
-
-  if (existing.length > 0) {
-    return existing[0][codeColumn];
-  } else {
-    // Generate next number (plain, no prefix)
-    const [maxResult] = await connectionDB
-      .promise()
-      .query(
-        `SELECT MAX(CAST(${codeColumn} AS UNSIGNED)) AS maxId FROM ${table}`
-      );
-    let newCode;
-    if (maxResult.length > 0 && maxResult[0].maxId !== null) {
-      newCode = String(Number(maxResult[0].maxId) + 1);
-    } else {
-      newCode = "1";
-    }
-    await connectionDB
-      .promise()
-      .query(
-        `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES (?, ?, 'generated')`,
-        [newCode, name]
-      );
-    console.log(`🆕 Created new ${table}: ${newCode} = "${name}"`);
-    return newCode;
   }
 }
 
