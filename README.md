@@ -1,8 +1,15 @@
 <h1 align="center">Welcome to OTOD-Dashboard 👋</h1>
-<p>
-  <img alt="Version" src="https://img.shields.io/badge/version-2.0.0-blue.svg?cacheSeconds=2592000" />
-  <a href="https://opensource.org/licenses/ISC" target="_blank">
-    <img alt="License: ISC" src="https://img.shields.io/badge/License-ISC-yellow.svg" />
+
+<p align="center">
+  <img alt="Version" src="https://img.shields.io/badge/version-2.1.0-blue.svg?cacheSeconds=2592000" />
+  <a href="https://github.com/usertopio/otod-durian-lab1#readme" target="_blank">
+    <img alt="Documentation" src="https://img.shields.io/badge/documentation-yes-brightgreen.svg" />
+  </a>
+  <a href="https://github.com/usertopio/otod-durian-lab1/graphs/commit-activity" target="_blank">
+    <img alt="Maintenance" src="https://img.shields.io/badge/Maintained%3F-yes-green.svg" />
+  </a>
+  <a href="https://github.com/usertopio/otod-durian-lab1/blob/main/LICENSE" target="_blank">
+    <img alt="License: UNLICENSED" src="https://img.shields.io/badge/license-UNLICENSED-lightgrey.svg" />
   </a>
 </p>
 
@@ -32,12 +39,12 @@ npm run test
 
 👤 **Tammasorn Rojanaakarapong**
 
-* Website: https://github.com/usertopio
-* Github: [@usertopio](https://github.com/usertopio)
+- Github: [@usertopio](https://github.com/usertopio)
+- LinkedIn: [@www.linkedin.com\/in\/tammasornroj](https://linkedin.com/in/www.linkedin.com/in/tammasornroj)
 
 ## 🤝 Contributing
 
-Contributions, issues and feature requests are welcome!<br />Feel free to check [issues page](https://github.com/usertopio/otod-durian-lab1/issues). 
+Contributions, issues and feature requests are welcome!<br />Feel free to check [issues page](https://github.com/usertopio/otod-durian-lab1/issues). You can also take a look at the [contributing guide](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/blob/master/CONTRIBUTING.md).
 
 ## Show your support
 
@@ -46,7 +53,8 @@ Give a ⭐️ if this project helped you!
 ## 📝 License
 
 Copyright © 2025 [Tammasorn Rojanaakarapong](https://github.com/usertopio).<br />
-This project is [ISC](https://opensource.org/licenses/ISC) licensed.
+This project is [UNLICENSED](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/blob/master/LICENSE) licensed.
 
-***
+---
+
 _This README was generated with ❤️ by [readme-md-generator](https://github.com/kefranabg/readme-md-generator)_
