@@ -13,7 +13,23 @@
   </a>
 </p>
 
-> This project is a Node.js API service designed for the collection, processing, and storage of agricultural data related to durian farming. It integrates with multiple external APIs to fetch up-to-date information and stores the processed results in a MySQL database. The system is modular, with each domain (such as crops, farmers, operations, substance usage, water usage, merchants, news, and durian gardens) handled by its own set of controllers, services, and processors.
+### 📌 Project Description
+> OTOD-Dashboard is a web application integrated with Power BI dashboards, developed under the One Tambon One Digital (OTOD) – Durian Digital project by depa.  
+>  
+> **👉 This repository contains only the backend code for OTOD-Dashboard.**  
+>  
+> The backend is responsible for connecting to the National Agriculture Platform (NAP) APIs (provided by the outsource team), processing the data, and storing it into a local MySQL database. The processed data is then used for Power BI dashboards that support data-driven decision-making for farmers, communities, and policymakers.
+
+### 📌 Key Features
+- Backend (Node.js + Express.js) – fetches data from NAP APIs, applies duplicate filtering, and upserts into the database.
+- Database (MySQL) – local MySQL database with structured schema for farmers, gardens, crops, operations, merchants, communities, GAP, water, and substances.
+- Power BI Integration – backend provides clean and validated datasets for interactive dashboards.
+- Data Pipeline – ensures synchronization, validation, logging, and error handling for continuous data ingestion.
+
+### 🎯 Objectives
+- Provide a reliable backend service for OTOD-Dashboard.
+- Ensure real-time and accurate data for Power BI dashboards.
+- Support depa’s mission of digital transformation in agriculture through centralized National Agriculture Platform (NAP) APIs.
 
 ### 🏠 [Homepage](https://github.com/usertopio/otod-durian-lab1)
 
