@@ -54,11 +54,11 @@ class NewsProcessor {
     let hasMore = true;
     while (hasMore) {
       const requestBody = {
+        fromDate: NEWS_CONFIG.FROM_DATE,
+        toDate: NEWS_CONFIG.TO_DATE,
         provinceName: "",
         pageIndex: page,
         pageSize: NEWS_CONFIG.DEFAULT_PAGE_SIZE,
-        fromDate: NEWS_CONFIG.FROM_DATE,
-        toDate: NEWS_CONFIG.TO_DATE,
       };
 
       const customHeaders = {

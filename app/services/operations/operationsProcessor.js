@@ -66,9 +66,9 @@ class OperationsProcessor {
       while (hasMore) {
         const requestBody = {
           cropYear: year,
-          provinceName: "",
           fromDate: OPERATIONS_CONFIG.FROM_DATE,
           toDate: OPERATIONS_CONFIG.TO_DATE,
+          provinceName: "",
           pageIndex: page,
           pageSize: OPERATIONS_CONFIG.DEFAULT_PAGE_SIZE,
         };
