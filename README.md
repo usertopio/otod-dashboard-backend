@@ -45,12 +45,6 @@ npm install
 npm start
 ```
 
-## Run tests
-
-```sh
-npm run test
-```
-
 ## Author
 
 👤 **Tammasorn Rojanaakarapong**
@@ -60,7 +54,7 @@ npm run test
 
 ## 🤝 Contributing
 
-Contributions, issues and feature requests are welcome!<br />Feel free to check [issues page](https://github.com/usertopio/otod-durian-lab1/issues). You can also take a look at the [contributing guide](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/blob/master/CONTRIBUTING.md).
+Contributions, issues and feature requests are welcome!<br />Feel free to check [issues page](https://github.com/usertopio/otod-durian-lab1/issues). You can also take a look at the [contributing guide](https://github.com/usertopio/otod-durian-lab1/blob/master/CONTRIBUTING.md).
 
 ## Show your support
 
@@ -69,8 +63,4 @@ Give a ⭐️ if this project helped you!
 ## 📝 License
 
 Copyright © 2025 [Tammasorn Rojanaakarapong](https://github.com/usertopio).<br />
-This project is [UNLICENSED](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/blob/master/LICENSE) licensed.
-
----
-
-_This README was generated with ❤️ by [readme-md-generator](https://github.com/kefranabg/readme-md-generator)_
+This project is [UNLICENSED](https://github.com/usertopio/otod-durian-lab1/blob/master/LICENSE) licensed.
