@@ -145,7 +145,7 @@ class DurianGardensProcessor {
     }
 
     metrics.allGardensFromGetLandGeoJSON = flattenedLands;
-    DurianGardensLogger.logPageInfo(1, 1, "GetLandGeoJSON");
+    DurianGardensLogger.logPageInfo(1, 1, flattenedLands);
   }
 
   // 🌿 Merge records from both APIs by landId
