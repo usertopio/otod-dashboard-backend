@@ -35,26 +35,23 @@ async function ensureRefCode(
       const [maxResult] = await connectionDB
         .promise()
         .query(
-          `SELECT ${codeColumn} FROM ${table} ORDER BY ${codeColumn} DESC LIMIT 1`
+          `SELECT MAX(CAST(${codeColumn} AS UNSIGNED)) AS maxId FROM ${table}`
         );
 
       let newCode;
-      if (maxResult.length > 0) {
-        const lastCode = maxResult[0][codeColumn];
-        const lastNumber = parseInt(lastCode.replace(generatedCodePrefix, ""));
-        newCode = `${generatedCodePrefix}${String(lastNumber + 1).padStart(
-          3,
-          "0"
-        )}`;
+      if (maxResult.length > 0 && maxResult[0].maxId !== null) {
+        newCode = String(Number(maxResult[0].maxId) + 1);
       } else {
-        newCode = `${generatedCodePrefix}001`;
+        newCode = "1";
       }
 
-      await connectionDB.promise().query(
-        `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) 
-         VALUES (?, ?, 'generated')`,
-        [newCode, name]
-      );
+      // Insert new code if not found
+      await connectionDB
+        .promise()
+        .query(
+          `INSERT INTO ${table} (${codeColumn}, ${nameColumn}) VALUES (?, ?)`,
+          [newCode, name]
+        );
 
       console.log(`🆕 Created new ${table}: ${newCode} = "${name}"`);
       return newCode;
