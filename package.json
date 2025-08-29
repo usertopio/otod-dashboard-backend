@@ -1,6 +1,6 @@
 {
   "name": "otod-durian-lab1",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "private": true,
   "description": "",
   "type": "commonjs",
@@ -8,17 +8,15 @@
   "scripts": {
     "start": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-
-    "readme": "readme-md-generator",
+    "readme": "npx readme-md-generator",
     "commit": "cz",
-
     "release": "standard-version",
     "release:minor": "standard-version --release-as minor",
     "release:major": "standard-version --release-as major"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "UNLICENSED",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>.git"

@@ -2,6 +2,89 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.1.0](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/compare/v2.0.0...v2.1.0) (2025-08-29)
+
+
+### 📝 Docs
+
+* **README:** 📝update project description and fix minor formatting issues ([1afbe79](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/1afbe79ab19d0b1488570ba74a197f3c02caf675))
+
+
+### ✨ Features
+
+* **api:** ✨fetch crop harvests by year for improved data retrieval ([415ecd5](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/415ecd5388c5b2ad46f987cb28e9aa1530781497))
+* **api:** ✨refactor operations data fetching to support multiple years ([edbf77f](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/edbf77f03d79df0b44483959bf2f4fd3139050e8))
+* **crops:** ✨enhance GetCrops API fetching to support multiple years ([3281564](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/3281564f60226d1d625778d05733574c8380c2d9))
+* **crops:** ✨update GetCropHarvests API fetching to support pagination ([049c863](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/049c8634f3d5d6eafe0197bb27f6400e7d18962f))
+* **db:** 🗃️add province mapping to operation records ([647825b](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/647825bb91dd0f7b70b9992ae30017caeecc02c1))
+* **db:** 🗃️refactor community, merchant, news, and operation insert/update logic for clarity and efficiency ([0d00680](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/0d006801b00e022fc42ba082f1827549161975b3))
+* **db:** 🗃️refactor crop insert/update logic for clarity and efficiency ([ea83c3c](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/ea83c3c1da781e66e996c47a67d3dd0d8524e95a))
+* **db:** 🗃️refactor insert/update logic for durian gardens and farmers ([ebddf08](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/ebddf08427cf6668614d1613269ae8764b89a1d3))
+* **db:** 🗃️refactor operation type handling for clarity and efficiency ([0577328](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/0577328f4c612c856d44a8c747b06b75c4531986))
+* **substance:** ✨fetch substance data for multiple years ([1b2d981](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/1b2d98141b3c9a8afae9179e47e983c75392f1f0))
+* **water:** ✨refactor water data fetching to support multiple years ([cd05fca](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/cd05fca707e34176afe4df825c9227836f82c148))
+
+
+### ♻️ Refactor
+
+* **api:** ♻️standardize error handling and logging for API requests ([526bbb1](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/526bbb18d716f888a3464a65164b0c1508533fe1))
+* **communities:** ♻️enhance logging for API page info with year context ([38ea240](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/38ea2405d3e9e57617bb5c22c07378a1c115ab49))
+* **communities:** ♻️rename fetch method for clarity ([87cf0a3](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/87cf0a3600c0459992c7c0a3c3afd736f234676b))
+* **communities:** ♻️simplify communities fetching logic ([f3d1966](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/f3d196632235679748c0c17e3258dac9b7147f5c))
+* **communities:** ♻️simplify fetch and process logic ([2e98076](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/2e98076040456c041d225f3e5cbe20751742f93a))
+* **communitiesProcessor, durianGardensProcessor, gapProcessor, merchantsProcessor, newsProcessor:** ♻️standardize pagination logic for data fetching ([fd5f31b](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/fd5f31baaf6b93591ffb83854dccbb011c17ffef))
+* **constants:** ♻️remove unused target count and total records from config ([e3f9790](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/e3f97900648e2d3469e231d6a106cecac27ef481))
+* **constants:** ♻️standardize total records for Durian Gardens config ([09a59ae](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/09a59aee7f37bf3f34c2d64b2928aa8776c2bbc5))
+* **crops, operations:** ♻️simplify pagination logic and improve logging ([1e0aaaa](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/1e0aaaa0d2baccfba973f25eb833efece3130e3e))
+* **crops:** ♻️simplify crops fetching logic and improve error handling ([99b5807](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/99b58070ba6a749abc2aa5a8ce87277d82400792))
+* **crops:** ♻️standardize logging for page info with year context ([a623ebc](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/a623ebcbf42e8fe17d26e67b69f68be2f4607028))
+* **cropsProcessor, cropsDb:** ♻️add ensureRefCode function for breedId resolution ([1909d62](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/1909d627eb3564fe58f87b58c8e7df275c6e222b))
+* **cropsProcessor, cropsDb:** ♻️enhance crop upsert logic with durianStageId resolution ([39d6d94](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/39d6d94f78ce60211f9f9ba82050243498c781f9))
+* **cropsProcessor:** ♻️standardize date range for crop data fetching ([db2aa38](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/db2aa38dae859e047aabde76f26a0c24f0d7c27b))
+* **db:** ♻️improve reference code generation logic (remove "NG") ([91c95f3](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/91c95f3b4f9bcf5cd0048431937238baa8a93974))
+* **db:** ♻️remove duplicate ensureRefCode function and streamline code ([4faad32](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/4faad32cc9082a4fa0fe5a62b4925118e45b58bb))
+* **db:** ♻️standardize ensureRefCode implementation across modules ([958834b](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/958834b1ee7b97d28f14607121ebfddc878e6644))
+* **durianGardens:** ♻️simplify durian gardens fetching logic and improve error handling ([e7af418](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/e7af418e084aa559c8ef61d0d931e2245066a6e0))
+* **durianGardens:** ♻️standardize logging for page info with year context ([88394a4](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/88394a4c2f4de3218d18efea15dc8aee467ef028))
+* **durianGardensProcessor:** ♻️update logging to include flattened lands data ([ca59553](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/ca5955341dbbf5016f521a74ede9ec20ad696133))
+* **farmers:** ♻️rename fetch method for clarity ([856a70e](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/856a70e549c96efec24cfecaed6966c5670369e9))
+* **farmers:** ♻️simplify farmers data fetching and processing logic ([5b55ab6](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/5b55ab60d09543d8c6d29f0cf02ecc4ca50647d4))
+* **farmers:** ♻️simplify farmers data fetching and processing logic ([946e943](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/946e9438eef914c166bb362a0c7f238ae5f99261))
+* **farmers:** ♻️simplify fetch and process logic ([0d36fc6](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/0d36fc6d425ef230efbf65c682b029a7655c0e91))
+* **gap, merchants, news, substance:** ♻️rename fetch methods for clarity ([23ea447](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/23ea447791b3256457b8ed7aa3e60ed786366dea))
+* **gap:** ♻️enhance logging for GAP page info ([762ec1f](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/762ec1fa9c24dfa53c79412fd51a6fb17d485dec))
+* **gap:** ♻️improve gap fetching logic to support multiple years ([c37d781](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/c37d7813aa6a9c15801335b0f301d677d11f13ef))
+* **gap:** ♻️simplify fetch and process logic ([1aa8bc6](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/1aa8bc6d41dd15b5a5b06dab68f613719505fc58))
+* **gap:** ♻️simplify gap fetching logic and improve error handling ([048d9fc](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/048d9fc229be4d4bea23c7c97f0e9dfd2100934f))
+* **gapLogger:** ♻️standardize logging for page info with year context ([94dd150](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/94dd1509d33cab315032651b49055e0b72a698bf))
+* **merchants:** ♻️simplify fetch logic in MerchantsProcessor ([50b20d3](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/50b20d3daad419411f074cb2eccd32e2ecb2f70b))
+* **merchants:** ♻️simplify merchants data fetching logic ([2bcee86](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/2bcee86f2fa09628f9e816fa5729cdb3d6684792))
+* **merchants:** ♻️simplify merchants fetching logic and improve error handling ([02fce06](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/02fce063f7a37e882b7813620d825289a8a5b906))
+* **news:** ♻️simplify fetch logic in NewsProcessor ([e1de6ba](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/e1de6baa8b6458954a9a2cc4f653ff9bc8b10b4e))
+* **news:** ♻️simplify news data fetching logic ([e27da95](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/e27da958c25905425c46be2e907a8c3ffd8b7c7b))
+* **news:** ♻️simplify news fetching logic and improve error handling ([3c65fa2](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/3c65fa253cee9c537876b1262c0603f7b1445412))
+* **newsProcessor, operationsProcessor:** ♻️standardize request body structure for API calls ([67818ea](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/67818ea00c518423129ed5ec20fe71cd70aaafae))
+* **operations:** ♻️simplify fetch logic in OperationsProcessor ([d9b86bb](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/d9b86bb37380e27d78dda2b42ac7978d7790e637))
+* **operations:** ♻️simplify operations fetching logic and improve error handling ([9711764](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/971176423e3ebd723a9d6a49c7b22ac74fd6a9ce))
+* **operations:** ♻️standardize logging for page info with year context ([5782586](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/578258687a370ca76a4c0e828a88066a9953d947))
+* **operationsProcessor:** ♻️standardize date range for operations data fetching ([06d4e4c](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/06d4e4cd29ee8ea83efc980363c89b24c55a60a6))
+* **substance:** ♻️rename fetch method for clarity ([a9847bb](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/a9847bb8dc288b9732892b110d1da18bd62bd4c9))
+* **substance:** ♻️simplify fetch logic in SubstanceProcessor ([160804b](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/160804bd2171f1e3bc3e891c4cae864718da66ad))
+* **substance:** ♻️simplify fetch logic in SubstanceProcessor ([732e012](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/732e0124595db40d2a2330facdf59f91eed9f04a))
+* **substance:** ♻️simplify substance fetching logic and improve error handling ([5a6e6e5](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/5a6e6e54c38fd148af1d62fb13ffd2c1fa539b2d))
+* **substanceLogger:** ♻️standardize logging for page info with year context ([d05502a](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/d05502a6b3d16a7b359c8fcc7d305915f4114cec))
+* **water:** ♻️simplify water data fetching logic ([64c7654](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/64c76542247ad50153e21c88a9fffe89adc19d7c))
+* **water:** ♻️simplify water fetching logic and improve error handling ([bc546f4](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/bc546f477b68e44c40b8169749e68e5c071b2068))
+* **waterLogger:** ♻️standardize logging for page info with year context ([9e3ff53](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/9e3ff534fee14a76d00f2b48a50959b8ca6d1c10))
+
+
+### 🧹 Chore
+
+* **.gitignore:** 🙈add result-from-database to ignore list ([cfca738](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/cfca73811f53adb379206c711a2148c1bd9a3631))
+* **.gitignore:** 🙈add venv to .gitignore ([647d3df](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/647d3df8687947f3f7fda726add9be0d073c516f))
+* **.gitignore:** 🙈update .gitignore to include automation scripts ([cf2ca75](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/cf2ca759a9357d68b9114897a6de91bea64988ff))
+* update package.json with new scripts and dependencies ([6b5b935](https://github.com/<YOUR_GH_USERNAME>/<YOUR_REPO>/commit/6b5b9358c9c2ecda89fd54b040791e047796612c))
+
 ## [2.0.0](https://github.com/usertopio/otod-durian-lab1/compare/v1.0.1...v2.0.0) (2025-08-09)
 
 
