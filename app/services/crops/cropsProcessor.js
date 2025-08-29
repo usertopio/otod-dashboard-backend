@@ -260,12 +260,23 @@ class CropsProcessor {
             "breed_name",
             "breed_id",
             crop.breedName,
-            "" // empty string for plain numbers
+            "" // plain numbers
           )
         : null;
 
-      // Upsert crop record with resolved breedId
-      const cropData = { ...crop, breedId };
+      // Ensure durianStageId is set from reference data (plain number, no prefix)
+      const durianStageId = crop.durianStageName
+        ? await ensureRefCode(
+            "ref_durian_stages",
+            "stage_name_th",
+            "stage_id",
+            crop.durianStageName,
+            "" // plain numbers
+          )
+        : null;
+
+      // Upsert crop record with resolved breedId and durianStageId
+      const cropData = { ...crop, breedId, durianStageId };
       const result = await insertOrUpdateCrop(cropData);
 
       const cropId = crop.cropId;

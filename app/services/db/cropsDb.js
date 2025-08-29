@@ -1,7 +1,6 @@
 // ===================== Imports =====================
 // Import DB connection for executing SQL queries
 const { connectionDB } = require("../../config/db/db.conf.js");
-const { OPERATIONS } = require("../../utils/constants");
 
 // ===================== DB Utilities =====================
 // Provides helper functions for upserting crops
@@ -86,7 +85,7 @@ async function insertOrUpdateCrop(crop) {
           crop.cropId,
         ]
       );
-      return { operation: OPERATIONS.UPDATE, recId: crop.cropId };
+      return { operation: "UPDATE", recId: crop.cropId };
     } else {
       // Direct SQL INSERT
       await connectionDB.promise().query(
@@ -119,12 +118,12 @@ async function insertOrUpdateCrop(crop) {
           values.fetch_at,
         ]
       );
-      return { operation: OPERATIONS.INSERT, recId: crop.cropId };
+      return { operation: "INSERT", recId: crop.cropId };
     }
   } catch (err) {
     console.error("Crop insert/update error:", err);
     return {
-      operation: OPERATIONS.ERROR,
+      operation: "ERROR",
       recId: crop.cropId,
       error: err.message,
     };
@@ -133,7 +132,7 @@ async function insertOrUpdateCrop(crop) {
 
 /**
  * Ensures a reference code exists in a ref table, creates it if not.
- * For breeds, use generatedCodePrefix = "" for plain numbers.
+ * For stages, use generatedCodePrefix = "" for plain numbers.
  */
 async function ensureRefCode(
   table,
