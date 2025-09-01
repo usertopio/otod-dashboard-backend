@@ -1,14 +1,16 @@
 const axios = require("axios");
-const apiConfig = require("../../config/api/api.conf.js");
 const tokenManager = require("../../utils/tokenManager");
 
-// Create an Axios instance with the base URL and headers from the config
+// Create axios instance
 const apiClient = axios.create({
-  baseURL: apiConfig.baseURL,
-  headers: apiConfig.headers,
+  baseURL: process.env.OUTSOURCE_API_BASE_URL,
+  timeout: 10000,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
-// Create an axios interceptor to automatically add the token
+// Request interceptor to add token
 apiClient.interceptors.request.use(
   async (config) => {
     // Skip token for login requests
@@ -31,7 +33,7 @@ apiClient.interceptors.request.use(
   }
 );
 
-// Add response interceptor to handle token expiry
+// Response interceptor to handle token expiry
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {

@@ -70,12 +70,12 @@ class CommunitiesProcessor {
         pageSize: COMMUNITIES_CONFIG.DEFAULT_PAGE_SIZE,
       };
 
-      const customHeaders = {
-        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-      };
+      // const customHeaders = {
+      //   Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      // };
 
       // Fetch a page of communities from the API
-      const communities = await getCommunities(requestBody, customHeaders);
+      const communities = await getCommunities(requestBody);
       const allCommunitiesCurPage = communities.data || [];
       metrics.allCommunitiesAllPages = metrics.allCommunitiesAllPages.concat(
         allCommunitiesCurPage

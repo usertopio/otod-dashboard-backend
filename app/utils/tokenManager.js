@@ -18,17 +18,52 @@ class TokenManager {
       // Use your existing login service
       const response = await login();
 
-      if (response && response.accessToken) {
-        this.cachedToken = response.accessToken;
+      // 🔍 DEBUG: Log the actual response structure
+      console.log(
+        "🔍 DEBUG - Login response:",
+        JSON.stringify(response, null, 2)
+      );
 
-        // Calculate expiry time (assuming expiresIn is in seconds)
-        const expiresIn = response.expiresIn || 3600; // Default 1 hour
+      // Check for the actual response structure: userInfo.token
+      if (response && response.userInfo && response.userInfo.token) {
+        this.cachedToken = response.userInfo.token;
+
+        // Since there's no expiry info in the response, use default 1 hour
+        const expiresIn = 3600; // Default 1 hour
+        this.tokenExpiry = Date.now() + expiresIn * 1000 - this.refreshBuffer;
+
+        console.log("✅ Token fetched successfully");
+        return this.cachedToken;
+      }
+      // Check other possible response structures as fallback
+      else if (response && response.accessToken) {
+        this.cachedToken = response.accessToken;
+        const expiresIn = response.expiresIn || 3600;
+        this.tokenExpiry = Date.now() + expiresIn * 1000 - this.refreshBuffer;
+
+        console.log("✅ Token fetched successfully");
+        return this.cachedToken;
+      } else if (response && response.access_token) {
+        // Alternative naming convention
+        this.cachedToken = response.access_token;
+        const expiresIn = response.expires_in || 3600;
+        this.tokenExpiry = Date.now() + expiresIn * 1000 - this.refreshBuffer;
+
+        console.log("✅ Token fetched successfully");
+        return this.cachedToken;
+      } else if (response && response.token) {
+        // Simple token field
+        this.cachedToken = response.token;
+        const expiresIn = response.expiresIn || response.expires_in || 3600;
         this.tokenExpiry = Date.now() + expiresIn * 1000 - this.refreshBuffer;
 
         console.log("✅ Token fetched successfully");
         return this.cachedToken;
       } else {
-        throw new Error("Invalid token response");
+        console.error("❌ Unexpected response structure:", response);
+        throw new Error(
+          "Invalid token response - check login API response structure"
+        );
       }
     } catch (error) {
       console.error("❌ Failed to fetch token:", error.message);
