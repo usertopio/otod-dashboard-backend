@@ -18,12 +18,6 @@ class TokenManager {
       // Use your existing login service
       const response = await login();
 
-      // 🔍 DEBUG: Log the actual response structure
-      console.log(
-        "🔍 DEBUG - Login response:",
-        JSON.stringify(response, null, 2)
-      );
-
       // Check for the actual response structure: userInfo.token
       if (response && response.userInfo && response.userInfo.token) {
         this.cachedToken = response.userInfo.token;
