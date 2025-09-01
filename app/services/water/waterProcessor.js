@@ -64,14 +64,11 @@ class WaterProcessor {
         provinceName: "",
       };
 
-      const customHeaders = {
-        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-      };
+      // const customHeaders = {
+      //   Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      // };
 
-      const waterResponse = await getWaterUsageSummaryByMonth(
-        requestBody,
-        customHeaders
-      );
+      const waterResponse = await getWaterUsageSummaryByMonth(requestBody);
       const allWaterCurPage = waterResponse.data || [];
       metrics.allWaterAllPages =
         metrics.allWaterAllPages.concat(allWaterCurPage);
