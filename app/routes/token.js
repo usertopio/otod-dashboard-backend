@@ -2,7 +2,7 @@ const express = require("express");
 const {
   getTokenStatus,
   refreshToken,
-} = require("../controllers/tokenController");
+} = require("../controllers/tokenControllerCon.js");
 const router = express.Router();
 
 // Get token status

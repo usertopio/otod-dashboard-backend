@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { fetchMerchants } = require("../controllers/merchants.js");
+const { fetchMerchants } = require("../controllers/merchantsCon.js");
 
 router.post("/fetchMerchants", fetchMerchants);
 
