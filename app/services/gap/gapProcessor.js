@@ -65,11 +65,11 @@ class GapProcessor {
           pageSize: GAP_CONFIG.DEFAULT_PAGE_SIZE,
         };
 
-        const customHeaders = {
-          Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-        };
+        // const customHeaders = {
+        //   Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+        // };
 
-        const crops = await getCrops(requestBody, customHeaders);
+        const crops = await getCrops(requestBody);
         const allCropsCurPage = crops.data || [];
 
         // Extract gap certificates from crops
