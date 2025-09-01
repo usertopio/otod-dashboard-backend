@@ -73,11 +73,11 @@ class OperationsProcessor {
           pageSize: OPERATIONS_CONFIG.DEFAULT_PAGE_SIZE,
         };
 
-        const customHeaders = {
-          Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-        };
+        // const customHeaders = {
+        //   Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+        // };
 
-        const operations = await getOperations(requestBody, customHeaders);
+        const operations = await getOperations(requestBody);
         const operationsCurPage = operations.data || [];
         metrics.allOperationsAllPages =
           metrics.allOperationsAllPages.concat(operationsCurPage);
