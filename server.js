@@ -7,13 +7,6 @@ const { readdirSync } = require("fs");
 
 require("dotenv").config();
 
-// Debug: Check environment variables
-console.log("🔍 Environment Variables:");
-console.log("DB_HOST:", process.env.DB_HOST);
-console.log("DB_USER:", process.env.DB_USER);
-console.log("DB_PASSWORD:", process.env.DB_PASSWORD ? "***" : "UNDEFINED");
-console.log("DB_NAME:", process.env.DB_NAME);
-
 // Import app AFTER environment variables are loaded
 const app = express();
 
