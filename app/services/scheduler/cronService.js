@@ -16,6 +16,13 @@ class CronService {
   static _initialized = false; // guard for nodemon/double init
 
   /**
+   * Get formatted timestamp
+   */
+  static getTimestamp() {
+    return new Date().toISOString().replace("T", " ").substring(0, 19);
+  }
+
+  /**
    * Run one step with uniform logging and error capture.
    * Pushes {status, value|reason, name, ms} into results.
    */
@@ -49,28 +56,39 @@ class CronService {
 
     console.log("🕐 Initializing scheduled tasks...");
 
-    // ── Schedule: at second 0 of every minute ──
-    const expr = "* * * * * *"; // sec min hr dom mon dow
-    if (!cron.validate(expr)) {
-      throw new Error(`Invalid cron expression: ${expr}`);
+    // ── Schedule: 9:00 AM, 9:30 AM ──
+    const expr1 = "0 0,30 9 * * *"; // sec min hr dom mon dow
+    // ── Schedule: 10:25 PM ──
+    const expr2 = "0 25 22 * * *"; // sec min hr dom mon dow
+
+    if (!cron.validate(expr1) || !cron.validate(expr2)) {
+      throw new Error(`Invalid cron expression`);
     }
 
-    cron.schedule(
-      expr,
-      async () => {
-        if (this.isRunning) {
-          console.log("⏳ Previous 1-minute fetch still running - skipping");
-          return;
-        }
+    // Single callback function to avoid duplication
+    const scheduleCallback = async () => {
+      if (this.isRunning) {
+        console.log("⏳ Previous scheduled fetch still running - skipping");
+        return;
+      }
 
-        console.log("🔄 Running 1-minute data fetch...");
-        await this.runScheduledFetch();
-      },
-      { timezone: "Asia/Bangkok" }
-    );
+      const now = new Date();
+      const hour = now.getHours();
+      const minute = now.getMinutes();
+      const timeStr = `${hour.toString().padStart(2, "0")}:${minute
+        .toString()
+        .padStart(2, "0")}`;
+
+      console.log(`🔄 Running scheduled data fetch at ${timeStr}...`);
+      await this.runScheduledFetch();
+    };
+
+    // Schedule both expressions with the same callback
+    cron.schedule(expr1, scheduleCallback, { timezone: "Asia/Bangkok" });
+    cron.schedule(expr2, scheduleCallback, { timezone: "Asia/Bangkok" });
 
     console.log(
-      "✅ Scheduled task initialized: Every 1 minute at :00 (Asia/Bangkok)"
+      "✅ Scheduled task initialized: 9:00 AM, 9:30 AM, 10:25 PM (Asia/Bangkok)"
     );
 
     // Optional: kick off once on startup (uncomment if you want immediate run)
@@ -86,10 +104,13 @@ class CronService {
     }
 
     this.isRunning = true;
-    console.log("🔒 Setting execution lock");
+    const startTimestamp = this.getTimestamp();
+    console.log(`[${startTimestamp}] 🔒 Setting execution lock`);
 
     try {
-      console.log("📊 Starting 1-minute data fetch (Sequential)...");
+      console.log(
+        `[${startTimestamp}] 📊 Starting scheduled data fetch (Sequential)...`
+      );
       const startTime = Date.now();
 
       const steps = [
@@ -127,11 +148,15 @@ class CronService {
       }
 
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
+      const durationMinutes = (duration / 60).toFixed(2);
+      const endTimestamp = this.getTimestamp();
 
       console.log("");
       console.log("==========================================");
       console.log("📊 FINAL SUMMARY:");
-      console.log(`📈 Sequential fetch completed in ${duration} seconds`);
+      console.log(
+        `📈 Sequential fetch completed in ${duration} seconds (${durationMinutes} minutes)`
+      );
       steps.forEach((s, i) => {
         const r = results[i];
         if (r?.status === "fulfilled") {
@@ -140,14 +165,17 @@ class CronService {
           console.log(`❌ ${s.name}: Failed - ${r?.reason?.message}`);
         }
       });
+      console.log(`[${endTimestamp}] 🏁 Task completed successfully`);
     } catch (error) {
-      console.error("❌ Sequential data fetch failed:", error.message);
-      console.log("==========================================");
-      console.log("================END TASK==================");
-      console.log("==========================================");
+      const errorTimestamp = this.getTimestamp();
+      console.error(
+        `[${errorTimestamp}] ❌ Sequential data fetch failed:`,
+        error.message
+      );
     } finally {
+      const finalTimestamp = this.getTimestamp();
       this.isRunning = false;
-      console.log("🔓 Released execution lock");
+      console.log(`[${finalTimestamp}] 🔓 Released execution lock`);
       console.log("==========================================");
       console.log("================END TASK==================");
       console.log("==========================================");
@@ -160,7 +188,8 @@ class CronService {
       console.log("⏳ Automated fetch is running - please wait");
       return;
     }
-    console.log("🚀 Manually triggering 1-minute fetch...");
+    const timestamp = this.getTimestamp();
+    console.log(`[${timestamp}] 🚀 Manually triggering scheduled fetch...`);
     await this.runScheduledFetch();
   }
 }
