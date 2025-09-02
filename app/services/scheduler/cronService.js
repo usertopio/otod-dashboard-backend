@@ -16,24 +16,26 @@ class CronService {
   static init() {
     console.log("🕐 Initializing scheduled tasks...");
 
-    // Every 2 minutes - fetch all data (with lock)
-    cron.schedule("*/2 * * * *", async () => {
+    // Every 1 minute - fetch all data (with lock)
+    cron.schedule("* * * * * *", async () => {
+      const timestamp = new Date().toISOString();
+
       // Check if previous execution is still running
       if (this.isRunning) {
         console.log(
-          "⏳ Previous 2-minute fetch still running - skipping this execution"
+          `[${timestamp}] ⏳ Previous 1-minute fetch still running - skipping`
         );
         return;
       }
 
-      console.log("🔄 Running 2-minute data fetch...");
-      await this.runEvery2MinutesFetch();
+      console.log(`[${timestamp}] 🔄 Running 1-minute data fetch...`);
+      await this.runScheduledFetch();
     });
 
-    console.log("✅ Scheduled task initialized: Every 2 minutes");
+    console.log("✅ Scheduled task initialized: Every 1 minute");
   }
 
-  static async runEvery2MinutesFetch() {
+  static async runScheduledFetch() {
     // Set lock at start
     if (this.isRunning) {
       console.log("🔒 Fetch already in progress - aborting");
@@ -44,7 +46,7 @@ class CronService {
     console.log("🔒 Setting execution lock");
 
     try {
-      console.log("📊 Starting 2-minute data fetch (Sequential)...");
+      console.log("📊 Starting 1-minute data fetch (Sequential)...");
       const startTime = Date.now();
 
       const results = [];
@@ -201,8 +203,8 @@ class CronService {
       return;
     }
 
-    console.log("🚀 Manually triggering 2-minute fetch...");
-    await this.runEvery2MinutesFetch();
+    console.log("🚀 Manually triggering 1-minute fetch...");
+    await this.runScheduledFetch();
   }
 }
 
