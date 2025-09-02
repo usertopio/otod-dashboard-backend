@@ -11,21 +11,40 @@ const NewsService = require("../news/newsService");
 const OperationsService = require("../operations/operationsService");
 
 class CronService {
+  static isRunning = false; // Add execution flag
+
   static init() {
     console.log("🕐 Initializing scheduled tasks...");
 
-    // Every 3 minutes - fetch all data
-    cron.schedule("*/3 * * * *", async () => {
-      console.log("🔄 Running 3-minute data fetch...");
-      await this.runEvery3MinutesFetch();
+    // Every 2 minutes - fetch all data (with lock)
+    cron.schedule("*/2 * * * *", async () => {
+      // Check if previous execution is still running
+      if (this.isRunning) {
+        console.log(
+          "⏳ Previous 2-minute fetch still running - skipping this execution"
+        );
+        return;
+      }
+
+      console.log("🔄 Running 2-minute data fetch...");
+      await this.runEvery2MinutesFetch();
     });
 
-    console.log("✅ Scheduled task initialized: Every 3 minutes");
+    console.log("✅ Scheduled task initialized: Every 2 minutes");
   }
 
-  static async runEvery3MinutesFetch() {
+  static async runEvery2MinutesFetch() {
+    // Set lock at start
+    if (this.isRunning) {
+      console.log("🔒 Fetch already in progress - aborting");
+      return;
+    }
+
+    this.isRunning = true;
+    console.log("🔒 Setting execution lock");
+
     try {
-      console.log("📊 Starting 3-minute data fetch (Sequential)...");
+      console.log("📊 Starting 2-minute data fetch (Sequential)...");
       const startTime = Date.now();
 
       const results = [];
@@ -168,13 +187,22 @@ class CronService {
       });
     } catch (error) {
       console.error("❌ Sequential data fetch failed:", error.message);
+    } finally {
+      // Always release lock
+      this.isRunning = false;
+      console.log("🔓 Released execution lock");
     }
   }
 
   // Manual trigger method (for testing)
   static async triggerManualFetch() {
-    console.log("🚀 Manually triggering 3-minute fetch...");
-    await this.runEvery3MinutesFetch();
+    if (this.isRunning) {
+      console.log("⏳ Automated fetch is running - please wait");
+      return;
+    }
+
+    console.log("🚀 Manually triggering 2-minute fetch...");
+    await this.runEvery2MinutesFetch();
   }
 }
 
