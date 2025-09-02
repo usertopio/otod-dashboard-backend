@@ -1,3 +1,4 @@
+// app/services/scheduler/cronService.js
 const cron = require("node-cron");
 const CropsService = require("../crops/cropsService");
 const FarmersService = require("../farmers/farmersService");
@@ -11,32 +12,74 @@ const NewsService = require("../news/newsService");
 const OperationsService = require("../operations/operationsService");
 
 class CronService {
-  static isRunning = false; // Add execution flag
+  static isRunning = false;
+  static _initialized = false; // guard for nodemon/double init
+
+  /**
+   * Run one step with uniform logging and error capture.
+   * Pushes {status, value|reason, name, ms} into results.
+   */
+  static async runStep({ name, run }, index, total, results, retries = 0) {
+    console.log(`🔄 Step ${index}/${total}: Fetching ${name}...`);
+    const t0 = Date.now();
+    try {
+      const value = await run();
+      const ms = Date.now() - t0;
+      results.push({ status: "fulfilled", value, name, ms });
+      console.log(`✅ ${name} completed (${ms} ms)`);
+    } catch (err) {
+      if (retries > 0) {
+        console.log(
+          `⚠️ ${name} failed: ${err?.message}. Retrying (${retries})...`
+        );
+        return this.runStep({ name, run }, index, total, results, retries - 1);
+      }
+      const ms = Date.now() - t0;
+      results.push({ status: "rejected", reason: err, name, ms });
+      console.log(`❌ ${name} failed: ${err?.message}`);
+    }
+  }
 
   static init() {
+    if (this._initialized) {
+      console.log("♻️ CronService already initialized. Skipping.");
+      return;
+    }
+    this._initialized = true;
+
     console.log("🕐 Initializing scheduled tasks...");
 
-    // Every 1 minute - fetch all data (with lock)
-    cron.schedule("* * * * * *", async () => {
-      const timestamp = new Date().toISOString();
+    // ── Schedule: at second 0 of every minute ──
+    const expr = "* * * * * *"; // sec min hr dom mon dow
+    if (!cron.validate(expr)) {
+      throw new Error(`Invalid cron expression: ${expr}`);
+    }
 
-      // Check if previous execution is still running
-      if (this.isRunning) {
-        console.log(
-          `[${timestamp}] ⏳ Previous 1-minute fetch still running - skipping`
-        );
-        return;
-      }
+    cron.schedule(
+      expr,
+      async () => {
+        if (this.isRunning) {
+          console.log("⏳ Previous 1-minute fetch still running - skipping");
+          return;
+        }
 
-      console.log(`[${timestamp}] 🔄 Running 1-minute data fetch...`);
-      await this.runScheduledFetch();
-    });
+        console.log("🔄 Running 1-minute data fetch...");
+        await this.runScheduledFetch();
+      },
+      { timezone: "Asia/Bangkok" }
+    );
 
-    console.log("✅ Scheduled task initialized: Every 1 minute");
+    console.log(
+      "✅ Scheduled task initialized: Every 1 minute at :00 (Asia/Bangkok)"
+    );
+
+    // Optional: kick off once on startup (uncomment if you want immediate run)
+    // this.runScheduledFetch().catch((e) =>
+    //   console.error("❌ Startup fetch failed:", e.message)
+    // );
   }
 
   static async runScheduledFetch() {
-    // Set lock at start
     if (this.isRunning) {
       console.log("🔒 Fetch already in progress - aborting");
       return;
@@ -49,160 +92,74 @@ class CronService {
       console.log("📊 Starting 1-minute data fetch (Sequential)...");
       const startTime = Date.now();
 
-      const results = [];
-      const modules = [
-        "Farmers",
-        "DurianGardens",
-        "Crops",
-        "Communities",
-        "Merchants",
-        "Operations",
-        "Substance",
-        "Water",
-        "News",
-        "GAP",
+      const steps = [
+        { name: "Farmers", run: () => FarmersService.fetchAllFarmers() },
+        {
+          name: "Durian Gardens",
+          run: () => DurianGardensService.fetchAllDurianGardens(),
+        },
+        { name: "Crops", run: () => CropsService.fetchAllCrops() },
+        {
+          name: "Communities",
+          run: () => CommunitiesService.fetchAllCommunities(),
+        },
+        { name: "Merchants", run: () => MerchantsService.fetchAllMerchants() },
+        {
+          name: "Operations",
+          run: () => OperationsService.fetchAllOperations(),
+        },
+        { name: "Substance", run: () => SubstanceService.fetchAllSubstance() },
+        { name: "Water", run: () => WaterService.fetchAllWater() },
+        { name: "News", run: () => NewsService.fetchAllNews() },
+        { name: "GAP", run: () => GapService.fetchAllGap() },
       ];
 
-      // Step 1: Farmers (required by durian gardens and crops)
-      console.log("🔄 Step 1/10: Fetching farmers...");
-      try {
-        const farmersResult = await FarmersService.fetchAllFarmers();
-        results.push({ status: "fulfilled", value: farmersResult });
-        console.log("✅ Farmers completed");
-      } catch (error) {
-        results.push({ status: "rejected", reason: error });
-        console.log("❌ Farmers failed:", error.message);
-      }
-
-      // Step 2: Durian Gardens (requires farmers)
-      console.log("🔄 Step 2/10: Fetching durian gardens...");
-      try {
-        const gardensResult =
-          await DurianGardensService.fetchAllDurianGardens();
-        results.push({ status: "fulfilled", value: gardensResult });
-        console.log("✅ Durian Gardens completed");
-      } catch (error) {
-        results.push({ status: "rejected", reason: error });
-        console.log("❌ Durian Gardens failed:", error.message);
-      }
-
-      // Step 3: Crops (requires farmers and durian gardens)
-      console.log("🔄 Step 3/10: Fetching crops...");
-      try {
-        const cropsResult = await CropsService.fetchAllCrops();
-        results.push({ status: "fulfilled", value: cropsResult });
-        console.log("✅ Crops completed");
-      } catch (error) {
-        results.push({ status: "rejected", reason: error });
-        console.log("❌ Crops failed:", error.message);
-      }
-
-      // Step 4: Communities (independent)
-      console.log("🔄 Step 4/10: Fetching communities...");
-      try {
-        const communitiesResult =
-          await CommunitiesService.fetchAllCommunities();
-        results.push({ status: "fulfilled", value: communitiesResult });
-        console.log("✅ Communities completed");
-      } catch (error) {
-        results.push({ status: "rejected", reason: error });
-        console.log("❌ Communities failed:", error.message);
-      }
-
-      // Step 5: Merchants (independent)
-      console.log("🔄 Step 5/10: Fetching merchants...");
-      try {
-        const merchantsResult = await MerchantsService.fetchAllMerchants();
-        results.push({ status: "fulfilled", value: merchantsResult });
-        console.log("✅ Merchants completed");
-      } catch (error) {
-        results.push({ status: "rejected", reason: error });
-        console.log("❌ Merchants failed:", error.message);
-      }
-
-      // Step 6: Operations (requires crops)
-      console.log("🔄 Step 6/10: Fetching operations...");
-      try {
-        const operationsResult = await OperationsService.fetchAllOperations();
-        results.push({ status: "fulfilled", value: operationsResult });
-        console.log("✅ Operations completed");
-      } catch (error) {
-        results.push({ status: "rejected", reason: error });
-        console.log("❌ Operations failed:", error.message);
-      }
-
-      // Step 7: Substance (independent)
-      console.log("🔄 Step 7/10: Fetching substance...");
-      try {
-        const substanceResult = await SubstanceService.fetchAllSubstance();
-        results.push({ status: "fulfilled", value: substanceResult });
-        console.log("✅ Substance completed");
-      } catch (error) {
-        results.push({ status: "rejected", reason: error });
-        console.log("❌ Substance failed:", error.message);
-      }
-
-      // Step 8: Water (independent)
-      console.log("🔄 Step 8/10: Fetching water...");
-      try {
-        const waterResult = await WaterService.fetchAllWater();
-        results.push({ status: "fulfilled", value: waterResult });
-        console.log("✅ Water completed");
-      } catch (error) {
-        results.push({ status: "rejected", reason: error });
-        console.log("❌ Water failed:", error.message);
-      }
-
-      // Step 9: News (independent)
-      console.log("🔄 Step 9/10: Fetching news...");
-      try {
-        const newsResult = await NewsService.fetchAllNews();
-        results.push({ status: "fulfilled", value: newsResult });
-        console.log("✅ News completed");
-      } catch (error) {
-        results.push({ status: "rejected", reason: error });
-        console.log("❌ News failed:", error.message);
-      }
-
-      // Step 10: GAP (independent)
-      console.log("🔄 Step 10/10: Fetching GAP...");
-      try {
-        const gapResult = await GapService.fetchAllGap();
-        results.push({ status: "fulfilled", value: gapResult });
-        console.log("✅ GAP completed");
-      } catch (error) {
-        results.push({ status: "rejected", reason: error });
-        console.log("❌ GAP failed:", error.message);
+      const results = [];
+      for (let i = 0; i < steps.length; i++) {
+        // Set retries to 0 or 1 if you want a single retry on transient failures
+        await this.runStep(
+          steps[i],
+          i + 1,
+          steps.length,
+          results,
+          /*retries*/ 0
+        );
       }
 
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
-      console.log("📈 Sequential fetch completed in", duration, "seconds");
 
-      // Final summary
+      console.log("");
+      console.log("==========================================");
       console.log("📊 FINAL SUMMARY:");
-      results.forEach((result, index) => {
-        if (result.status === "fulfilled") {
-          console.log(`✅ ${modules[index]}: Success`);
+      console.log(`📈 Sequential fetch completed in ${duration} seconds`);
+      steps.forEach((s, i) => {
+        const r = results[i];
+        if (r?.status === "fulfilled") {
+          console.log(`✅ ${s.name}: Success (${r.ms} ms)`);
         } else {
-          console.log(`❌ ${modules[index]}: Failed -`, result.reason?.message);
+          console.log(`❌ ${s.name}: Failed - ${r?.reason?.message}`);
         }
       });
     } catch (error) {
       console.error("❌ Sequential data fetch failed:", error.message);
+      console.log("==========================================");
+      console.log("================END TASK==================");
+      console.log("==========================================");
     } finally {
-      // Always release lock
       this.isRunning = false;
       console.log("🔓 Released execution lock");
+      console.log("==========================================");
+      console.log("================END TASK==================");
+      console.log("==========================================");
     }
   }
 
-  // Manual trigger method (for testing)
+  // Manual trigger (for testing)
   static async triggerManualFetch() {
     if (this.isRunning) {
       console.log("⏳ Automated fetch is running - please wait");
       return;
     }
-
     console.log("🚀 Manually triggering 1-minute fetch...");
     await this.runScheduledFetch();
   }
