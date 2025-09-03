@@ -37,9 +37,7 @@ class CronService {
       console.log(`✅ ${name} completed (${ms} ms)`);
     } catch (err) {
       if (retries > 0) {
-        console.log(
-          `⚠️ ${name} failed: ${err?.message}. Retrying (${retries})...`
-        );
+        console.log(`⚠️ ${name} failed: ${err?.message}. Retrying (${retries})...`);
         return this.runStep({ name, run }, index, total, results, retries - 1);
       }
       const ms = Date.now() - t0;
@@ -73,9 +71,7 @@ class CronService {
       const now = new Date();
       const hour = now.getHours();
       const minute = now.getMinutes();
-      const timeStr = `${hour.toString().padStart(2, "0")}:${minute
-        .toString()
-        .padStart(2, "0")}`;
+      const timeStr = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
 
       console.log(`🔄 Running scheduled data fetch at ${timeStr}...`);
       await this.runScheduledFetch();
@@ -86,9 +82,7 @@ class CronService {
       cron.schedule(schedule, scheduleCallback, { timezone: "Asia/Bangkok" });
     });
 
-    console.log(
-      "✅ Scheduled tasks initialized: 9:00 AM, 9:30 AM, 10:15 AM, 11:30 AM (Asia/Bangkok)"
-    );
+    console.log("✅ Scheduled tasks initialized: 9:00 AM, 9:30 AM, 10:15 AM, 11:30 AM (Asia/Bangkok)");
   }
 
   static async runScheduledFetch() {
@@ -102,9 +96,7 @@ class CronService {
     console.log(`[${startTimestamp}] 🔒 Setting execution lock`);
 
     try {
-      console.log(
-        `[${startTimestamp}] 📊 Starting scheduled data fetch (Sequential)...`
-      );
+      console.log(`[${startTimestamp}] 📊 Starting scheduled data fetch (Sequential)...`);
       const startTime = Date.now();
 
       const steps = [
@@ -132,13 +124,7 @@ class CronService {
       const results = [];
       for (let i = 0; i < steps.length; i++) {
         // Set retries to 0 or 1 if you want a single retry on transient failures
-        await this.runStep(
-          steps[i],
-          i + 1,
-          steps.length,
-          results,
-          /*retries*/ 0
-        );
+        await this.runStep(steps[i], i + 1, steps.length, results, /*retries*/ 0);
       }
 
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
@@ -148,9 +134,7 @@ class CronService {
       console.log("");
       console.log("==========================================");
       console.log("📊 FINAL SUMMARY:");
-      console.log(
-        `📈 Sequential fetch completed in ${duration} seconds (${durationMinutes} minutes)`
-      );
+      console.log(`📈 Sequential fetch completed in ${duration} seconds (${durationMinutes} minutes)`);
       steps.forEach((s, i) => {
         const r = results[i];
         if (r?.status === "fulfilled") {
@@ -162,10 +146,7 @@ class CronService {
       console.log(`[${endTimestamp}] 🏁 Task completed successfully`);
     } catch (error) {
       const errorTimestamp = this.getTimestamp();
-      console.error(
-        `[${errorTimestamp}] ❌ Sequential data fetch failed:`,
-        error.message
-      );
+      console.error(`[${errorTimestamp}] ❌ Sequential data fetch failed:`, error.message);
     } finally {
       const finalTimestamp = this.getTimestamp();
       this.isRunning = false;
