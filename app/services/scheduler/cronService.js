@@ -1,5 +1,6 @@
 // app/services/scheduler/cronService.js
 const cron = require("node-cron");
+const { SCHEDULES_CONFIG } = require("../../utils/cronUtils"); // Add this line
 const CropsService = require("../crops/cropsService");
 const FarmersService = require("../farmers/farmersService");
 const MerchantsService = require("../merchants/merchantsService");
@@ -56,14 +57,9 @@ class CronService {
 
     console.log("🕐 Initializing scheduled tasks...");
 
-    // Schedule: 9:00 AM, 9:30 AM
-    // Schedule: 10:15 AM
-    // Schedule: 11:14 AM
-    const exprs = ["0 0,30 9 * * *", "0 15 10 * * *", "0 14 11 * * *"];
-
-    exprs.forEach((expr) => {
-      if (!cron.validate(expr)) {
-        throw new Error(`Invalid cron expression: ${expr}`);
+    Object.values(SCHEDULES_CONFIG).forEach((schedule) => {
+      if (!cron.validate(schedule)) {
+        throw new Error(`Invalid cron schedule: ${schedule}`);
       }
     });
 
@@ -85,14 +81,13 @@ class CronService {
       await this.runScheduledFetch();
     };
 
-    // Schedule expressions with the same callback
-
-    exprs.forEach((expr) => {
-      cron.schedule(expr, scheduleCallback, { timezone: "Asia/Bangkok" });
+    // Schedule sessions with the same callback
+    Object.values(SCHEDULES_CONFIG).forEach((schedule) => {
+      cron.schedule(schedule, scheduleCallback, { timezone: "Asia/Bangkok" });
     });
 
     console.log(
-      "✅ Scheduled tasks initialized: 9:00 AM, 9:30 AM, 10:15 AM, 11:00 AM (Asia/Bangkok)"
+      "✅ Scheduled tasks initialized: 9:00 AM, 9:30 AM, 10:15 AM, 11:30 AM (Asia/Bangkok)"
     );
   }
 
