@@ -56,14 +56,16 @@ class CronService {
 
     console.log("🕐 Initializing scheduled tasks...");
 
-    // ── Schedule: 9:00 AM, 9:30 AM ──
-    const expr1 = "0 0,30 9 * * *"; // sec min hr dom mon dow
-    // ── Schedule: 10:25 PM ──
-    const expr2 = "0 25 22 * * *"; // sec min hr dom mon dow
+    // Schedule: 9:00 AM, 9:30 AM
+    // Schedule: 10:15 AM
+    // Schedule: 11:14 AM
+    const exprs = ["0 0,30 9 * * *", "0 15 10 * * *", "0 14 11 * * *"];
 
-    if (!cron.validate(expr1) || !cron.validate(expr2)) {
-      throw new Error(`Invalid cron expression`);
-    }
+    exprs.forEach((expr) => {
+      if (!cron.validate(expr)) {
+        throw new Error(`Invalid cron expression: ${expr}`);
+      }
+    });
 
     // Single callback function to avoid duplication
     const scheduleCallback = async () => {
@@ -83,18 +85,15 @@ class CronService {
       await this.runScheduledFetch();
     };
 
-    // Schedule both expressions with the same callback
-    cron.schedule(expr1, scheduleCallback, { timezone: "Asia/Bangkok" });
-    cron.schedule(expr2, scheduleCallback, { timezone: "Asia/Bangkok" });
+    // Schedule expressions with the same callback
+
+    exprs.forEach((expr) => {
+      cron.schedule(expr, scheduleCallback, { timezone: "Asia/Bangkok" });
+    });
 
     console.log(
-      "✅ Scheduled task initialized: 9:00 AM, 9:30 AM, 10:25 PM (Asia/Bangkok)"
+      "✅ Scheduled tasks initialized: 9:00 AM, 9:30 AM, 10:15 AM, 11:00 AM (Asia/Bangkok)"
     );
-
-    // Optional: kick off once on startup (uncomment if you want immediate run)
-    // this.runScheduledFetch().catch((e) =>
-    //   console.error("❌ Startup fetch failed:", e.message)
-    // );
   }
 
   static async runScheduledFetch() {
