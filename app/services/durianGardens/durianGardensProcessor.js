@@ -84,11 +84,11 @@ class DurianGardensProcessor {
         pageSize: DURIAN_GARDENS_CONFIG.DEFAULT_PAGE_SIZE,
       };
 
-      const customHeaders = {
-        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-      };
+      // const customHeaders = {
+      //   Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      // };
 
-      const lands = await getLands(requestBody, customHeaders);
+      const lands = await getLands(requestBody);
       const landsCurPage = lands.data || [];
       metrics.allGardensFromGetLands =
         metrics.allGardensFromGetLands.concat(landsCurPage);
@@ -116,11 +116,11 @@ class DurianGardensProcessor {
       landType: "",
     };
 
-    const customHeaders = {
-      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-    };
+    // const customHeaders = {
+    //   Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+    // };
 
-    const landGeoJSON = await getLandGeoJSON(requestBody, customHeaders);
+    const landGeoJSON = await getLandGeoJSON(requestBody);
 
     // Transform nested farmers.lands structure to flat array
     const flattenedLands = [];

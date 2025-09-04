@@ -66,13 +66,12 @@ class SubstanceProcessor {
         provinceName: "",
       };
 
-      const customHeaders = {
-        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-      };
+      // const customHeaders = {
+      //   Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      // };
 
       const substanceResponse = await getSubstanceUsageSummaryByMonth(
-        requestBody,
-        customHeaders
+        requestBody
       );
       const allSubstanceCurPage = substanceResponse.data || [];
       metrics.allSubstanceAllPages =

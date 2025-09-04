@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { fetchDurianGardens } = require("../controllers/durianGardens.js");
+const { fetchDurianGardens } = require("../controllers/durianGardensCon.js");
 
 router.post("/fetchDurianGardens", fetchDurianGardens);
 

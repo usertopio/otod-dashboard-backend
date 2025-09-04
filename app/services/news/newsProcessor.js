@@ -61,11 +61,11 @@ class NewsProcessor {
         pageSize: NEWS_CONFIG.DEFAULT_PAGE_SIZE,
       };
 
-      const customHeaders = {
-        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-      };
+      // const customHeaders = {
+      //   Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      // };
 
-      const news = await getNews(requestBody, customHeaders);
+      const news = await getNews(requestBody);
       const allNewsCurPage = news.data || [];
       metrics.allNewsAllPages = metrics.allNewsAllPages.concat(allNewsCurPage);
 

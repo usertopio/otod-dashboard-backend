@@ -70,12 +70,12 @@ class MerchantsProcessor {
         pageSize: MERCHANTS_CONFIG.DEFAULT_PAGE_SIZE,
       };
 
-      const customHeaders = {
-        Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-      };
+      // const customHeaders = {
+      //   Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+      // };
 
       // Fetch a page of merchants from the API
-      const merchants = await getMerchants(requestBody, customHeaders);
+      const merchants = await getMerchants(requestBody);
       const allMerchantsCurPage = merchants.data || [];
       metrics.allMerchantsAllPages =
         metrics.allMerchantsAllPages.concat(allMerchantsCurPage);

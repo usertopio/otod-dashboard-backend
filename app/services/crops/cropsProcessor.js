@@ -90,11 +90,11 @@ class CropsProcessor {
           pageSize: CROPS_CONFIG.DEFAULT_PAGE_SIZE,
         };
 
-        const customHeaders = {
-          Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-        };
+        // const customHeaders = {
+        //   Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+        // };
 
-        const crops = await getCrops(requestBody, customHeaders);
+        const crops = await getCrops(requestBody);
         const cropsCurPage = crops.data || [];
         metrics.allCropsFromGetCrops =
           metrics.allCropsFromGetCrops.concat(cropsCurPage);

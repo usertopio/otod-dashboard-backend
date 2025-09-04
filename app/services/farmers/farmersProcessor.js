@@ -74,12 +74,12 @@ class FarmersProcessor {
       pageSize: FARMERS_CONFIG.DEFAULT_PAGE_SIZE,
     };
 
-    const customHeaders = {
-      Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-    };
+    // const customHeaders = {
+    //   Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
+    // };
 
     // Fetch a page of farmers from the API
-    const farmers = await getFarmers(requestBody, customHeaders);
+    const farmers = await getFarmers(requestBody);
     const allFarmersCurPage = farmers.data;
 
     // Log info for this page

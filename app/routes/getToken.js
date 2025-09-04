@@ -1,5 +1,5 @@
 const express = require("express");
-const { getToken } = require("../controllers/login");
+const { getToken } = require("../controllers/loginCon");
 const router = express.Router();
 
 // Get access token from the outsource API
