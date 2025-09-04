@@ -2,6 +2,52 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.2.0](https://github.com/usertopio/otod-durian-lab1/compare/v2.1.0...v2.2.0) (2025-09-04)
+
+
+### 📝 Docs
+
+* 📝add LICENSE file and update README for licensing information ([bab9f5a](https://github.com/usertopio/otod-durian-lab1/commit/bab9f5a059978e1e37214fe7dd35260e2868dfdc))
+
+
+### ✨ Features
+
+* **api:** ✨add community, crops, durian gardens, farmers, gap, merchants, news, operations, substance, token, and water controllers ([6fe364f](https://github.com/usertopio/otod-durian-lab1/commit/6fe364ffaca7f6f7671766bf65dcd80682ebff67))
+* **api:** ✨refactor API client and login service for improved structure ([cbaff7d](https://github.com/usertopio/otod-durian-lab1/commit/cbaff7d235d3b83513e761b8f0ebd23d2c68af58))
+* **auth:** ✨add token management and API endpoints ([a74bd80](https://github.com/usertopio/otod-durian-lab1/commit/a74bd80ee8031f471f3f1e878edc797bf4203894))
+* **cron:** ⚠️add cron service for scheduled data fetching ([233b21c](https://github.com/usertopio/otod-durian-lab1/commit/233b21ccda8d8ef0d73373dcee8c743f5097d867))
+* **cron:** ✨add SCHEDULES_CONFIG for dynamic cron scheduling ([a14dfd8](https://github.com/usertopio/otod-durian-lab1/commit/a14dfd82e99a50e5d4fd9930fb8d6fb7a7ad85d4))
+* **cron:** ✨enhance cron service with improved error handling and logging ([d25e1ba](https://github.com/usertopio/otod-durian-lab1/commit/d25e1ba34b4ecd8aa47850205a801810a8b3cf73))
+* **cron:** ✨enhance cron service with improved logging and error handling ([d9fa82a](https://github.com/usertopio/otod-durian-lab1/commit/d9fa82a6130e5523f415cd59b03c8c031a2a27a6))
+* **cron:** ✨improve data fetching schedule and execution control ([0658fb0](https://github.com/usertopio/otod-durian-lab1/commit/0658fb0be3ba336908c457af624a7840340b1f40))
+* **cron:** ✨update cron scheduling with validation and multiple expressions ([8741850](https://github.com/usertopio/otod-durian-lab1/commit/8741850e7a19709db78b8c97aa212e89b79c7b92))
+* **cron:** ✨update data fetching schedule to every 1 minute (start at any second) ([eeed8dc](https://github.com/usertopio/otod-durian-lab1/commit/eeed8dc54bad8519ad645765327f42882ebe2038))
+* **deps:** ➕add node-cron dependency for task scheduling ([be7ccb9](https://github.com/usertopio/otod-durian-lab1/commit/be7ccb9c1e44067b9cc230c89855ce7b3e1aa6c1))
+
+
+### ♻️ Refactor
+
+* **api:** 🔥remove unused custom headers from farmers API request ([f39b108](https://github.com/usertopio/otod-durian-lab1/commit/f39b108917d67f432f6f6336b3c13be81bb6e34d))
+* **api:** 🔥remove unused custom headers from getCrops API request ([20de1c2](https://github.com/usertopio/otod-durian-lab1/commit/20de1c21a05d3a2ab6981998d5421dd09ce4e100))
+* **api:** 🔥remove unused custom headers from GetLands and GetLandGeoJSON API requests ([8d9bd86](https://github.com/usertopio/otod-durian-lab1/commit/8d9bd86f57aa81879a68e1746801cccbcddc92fa))
+* **api:** 🔥remove unused custom headers from getMerchants API request ([52b83a6](https://github.com/usertopio/otod-durian-lab1/commit/52b83a66693700b599e68273b54f8c2a434d6967))
+* **api:** 🔥remove unused custom headers from getNews API request ([ca50fb9](https://github.com/usertopio/otod-durian-lab1/commit/ca50fb98c682e62ae48644f404056d40119f966b))
+* **api:** 🔥remove unused custom headers from operations API request ([71aa423](https://github.com/usertopio/otod-durian-lab1/commit/71aa4235a07b4c668d7b8b8a8e8afadf79cc7d52))
+* **api:** 🔥remove unused custom headers from substance API request ([c9928b6](https://github.com/usertopio/otod-durian-lab1/commit/c9928b6ba63503175f058f19f613df7e9c0778f1))
+* **api:** 🔥remove unused custom headers from water API request ([5b0ecb3](https://github.com/usertopio/otod-durian-lab1/commit/5b0ecb37b77323dae8c53ba43324236d89c128d9))
+* **auth:** 🔍remove debug logging for login response ([f1af26f](https://github.com/usertopio/otod-durian-lab1/commit/f1af26fac84783a4aa60a3e4c93234c7cf587b8d))
+* **cron:** ♻️improve logging consistency and formatting ([fa97003](https://github.com/usertopio/otod-durian-lab1/commit/fa97003d741c921e1c9d2efa448e2107a030c3af))
+* **cron:** ♻️improve sequential data fetching logic ([13a0087](https://github.com/usertopio/otod-durian-lab1/commit/13a00873ea18d4d5c1906b87d6f5caa4b40dbf57))
+* **cron:** ♻️update cron schedules for clarity and consistency ([f1acb43](https://github.com/usertopio/otod-durian-lab1/commit/f1acb439f25d445c6febb9669890323b1e165aa1))
+* **crops:** 🔥remove unused custom headers for GetCrops API request ([9391cf4](https://github.com/usertopio/otod-durian-lab1/commit/9391cf4220f1bf6f5b6484016b9ab9fd5e20b791))
+* **server:** ♻️remove debug logging for environment variables ([0976cb6](https://github.com/usertopio/otod-durian-lab1/commit/0976cb6df75c22b2dcc341231297230656c01de4))
+
+
+### 🧹 Chore
+
+* **config:** 🔧update repository URL in package.json ([242c274](https://github.com/usertopio/otod-durian-lab1/commit/242c2743960891411e20dc29465fc8d846c86a07))
+* **release:** merge release/V2.2.0 into main ([965618e](https://github.com/usertopio/otod-durian-lab1/commit/965618e6af78ce44a8bb2b697a271f4d88f2fbd4))
+
 ## [2.1.0](https://github.com/usertopio/otod-durian-lab1/compare/v2.0.0...v2.1.0) (2025-08-29)
 
 ### 📝 Docs
