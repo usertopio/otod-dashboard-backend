@@ -1,6 +1,8 @@
+// services/news/newsLogger.js (ESM)
+
 // ===================== Logger =====================
 // NewsLogger provides structured logging for the news fetch/process workflow.
-class NewsLogger {
+export default class NewsLogger {
   // EXACT MATCH to communities/farmers logging pattern
   static logTargetStart(targetCount, maxAttempts) {
     console.log(`🎯 Target: ${targetCount} news, Max attempts: ${maxAttempts}`);
@@ -64,6 +66,3 @@ class NewsLogger {
     console.log(`✅ Status: ${status}`);
   }
 }
-
-// ===================== Exports =====================
-module.exports = NewsLogger;

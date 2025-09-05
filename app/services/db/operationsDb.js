@@ -1,9 +1,11 @@
+// db/operationsDb.js (ESM)
+
 // ===================== Imports =====================
 // Import DB connection for executing SQL queries
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { OPERATIONS } = require("../../utils/constants");
-// Add this import:
-const { getOrInsertProvince } = require("./locationHelper");
+import { connectionDB } from "../../config/db/db.conf.js";
+import { OPERATIONS } from "../../utils/constants.js";
+// Add this import (ensure the path ends with .js)
+import { getOrInsertProvince } from "./locationHelper.js"; // (Note: currently unused)
 
 // ===================== DB Utilities =====================
 // Provides helper functions for reference code lookup and upserting operations
@@ -16,7 +18,7 @@ const { getOrInsertProvince } = require("./locationHelper");
  * @param {string} name - Name to look up.
  * @returns {Promise<string|null>} - The code if found, else null.
  */
-async function getRefCode(table, nameColumn, codeColumn, name) {
+export async function getRefCode(table, nameColumn, codeColumn, name) {
   if (!name) return null;
   const [rows] = await connectionDB
     .promise()
@@ -34,9 +36,9 @@ async function getRefCode(table, nameColumn, codeColumn, name) {
  * @param {string} codeColumn - Column for the code.
  * @param {string} name - Name to look up or insert.
  * @param {string} generatedCodePrefix - Prefix for generated codes.
- * @returns {Promise<string>} - The code.
+ * @returns {Promise<string|null>} - The code.
  */
-async function ensureRefCode(
+export async function ensureRefCode(
   table,
   nameColumn,
   codeColumn,
@@ -56,37 +58,37 @@ async function ensureRefCode(
 
     if (existing.length > 0) {
       return existing[0][codeColumn];
-    } else {
-      // Generate new sequential code if not found
-      const [maxResult] = await connectionDB
-        .promise()
-        .query(
-          `SELECT ${codeColumn} FROM ${table} WHERE ${codeColumn} LIKE '${generatedCodePrefix}%' ORDER BY ${codeColumn} DESC LIMIT 1`
-        );
-
-      let newCode;
-      if (maxResult.length > 0) {
-        const lastCode = maxResult[0][codeColumn];
-        const lastNumber =
-          parseInt(lastCode.replace(generatedCodePrefix, "")) || 0;
-        newCode = `${generatedCodePrefix}${String(lastNumber + 1).padStart(
-          3,
-          "0"
-        )}`;
-      } else {
-        newCode = `${generatedCodePrefix}001`;
-      }
-
-      await connectionDB
-        .promise()
-        .query(
-          `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES (?, ?, 'generated')`,
-          [newCode, name]
-        );
-
-      console.log(`🆕 Created new ${table}: ${newCode} = "${name}"`);
-      return newCode;
     }
+
+    // Generate new sequential code if not found
+    const [maxResult] = await connectionDB
+      .promise()
+      .query(
+        `SELECT ${codeColumn} FROM ${table} WHERE ${codeColumn} LIKE '${generatedCodePrefix}%' ORDER BY ${codeColumn} DESC LIMIT 1`
+      );
+
+    let newCode;
+    if (maxResult.length > 0) {
+      const lastCode = maxResult[0][codeColumn];
+      const lastNumber =
+        parseInt(String(lastCode).replace(generatedCodePrefix, ""), 10) || 0;
+      newCode = `${generatedCodePrefix}${String(lastNumber + 1).padStart(
+        3,
+        "0"
+      )}`;
+    } else {
+      newCode = `${generatedCodePrefix}001`;
+    }
+
+    await connectionDB
+      .promise()
+      .query(
+        `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES (?, ?, 'generated')`,
+        [newCode, name]
+      );
+
+    console.log(`🆕 Created new ${table}: ${newCode} = "${name}"`);
+    return newCode;
   } catch (err) {
     console.error(`${table} lookup error:`, err.message);
     return null;
@@ -115,7 +117,7 @@ async function getOperationTypeIdByName(name) {
  * @param {object} operation - Operation data object.
  * @returns {Promise<object>} - Operation result.
  */
-async function insertOrUpdateOperation(operation) {
+export async function insertOrUpdateOperation(operation) {
   try {
     // === Map province name to code ===
     const provinceCode = await ensureRefCode(
@@ -179,10 +181,10 @@ async function insertOrUpdateOperation(operation) {
       // Update
       await connectionDB.promise().query(
         `UPDATE operations SET
-            operation_province_code = ?, crop_year = ?, oper_id = ?, crop_id = ?, operation_type_id = ?, oper_date = ?,
-            no_of_workers = ?, worker_cost = ?, fertilizer_cost = ?, equipment_cost = ?,
-            created_at = ?, updated_at = ?, fetch_at = ?, company_id = ?
-          WHERE rec_id = ?`,
+              operation_province_code = ?, crop_year = ?, oper_id = ?, crop_id = ?, operation_type_id = ?, oper_date = ?,
+              no_of_workers = ?, worker_cost = ?, fertilizer_cost = ?, equipment_cost = ?,
+              created_at = ?, updated_at = ?, fetch_at = ?, company_id = ?
+            WHERE rec_id = ?`,
         [
           provinceCode,
           operation.cropYear || null,
@@ -202,26 +204,20 @@ async function insertOrUpdateOperation(operation) {
         ]
       );
       return { operation: OPERATIONS.UPDATE };
-    } else {
-      // Insert
-      await connectionDB.promise().query(
-        `INSERT INTO operations
+    }
+
+    // Insert
+    await connectionDB.promise().query(
+      `INSERT INTO operations
             (rec_id, operation_province_code, crop_year, oper_id, crop_id, operation_type_id, oper_date,
              no_of_workers, worker_cost, fertilizer_cost, equipment_cost,
              created_at, updated_at, fetch_at, company_id)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        values
-      );
-      return { operation: OPERATIONS.INSERT };
-    }
+      values
+    );
+    return { operation: OPERATIONS.INSERT };
   } catch (err) {
     console.error("Operation insert/update error:", err);
     return { operation: OPERATIONS.ERROR, error: err.message };
   }
 }
-
-module.exports = {
-  insertOrUpdateOperation,
-  getRefCode,
-  ensureRefCode,
-};

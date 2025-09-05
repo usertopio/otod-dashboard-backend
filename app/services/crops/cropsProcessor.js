@@ -1,14 +1,16 @@
+// cropsProcessor.js (ESM)
+
 // ===================== Imports =====================
 // Import API clients for fetching crop data
-const { getCrops, getCropHarvests } = require("../api/crops");
+import { getCrops, getCropHarvests } from "../api/crops.js";
 // Import DB helper for upserting crop records
-const { insertOrUpdateCrop, ensureRefCode } = require("../db/cropsDb");
+import { insertOrUpdateCrop, ensureRefCode } from "../db/cropsDb.js";
 // Import DB connection for direct queries
-const { connectionDB } = require("../../config/db/db.conf.js");
+import { connectionDB } from "../../config/db/db.conf.js";
 // Import config constants and operation enums
-const { CROPS_CONFIG, OPERATIONS } = require("../../utils/constants");
+import { CROPS_CONFIG, OPERATIONS } from "../../utils/constants.js";
 // Import logger for structured process logging
-const CropsLogger = require("./cropsLogger");
+import CropsLogger from "./cropsLogger.js";
 
 // ===================== Processor =====================
 // CropsProcessor handles fetching, merging, deduplication, and DB upserts for crops.
@@ -282,15 +284,15 @@ class CropsProcessor {
       const cropId = crop.cropId;
 
       switch (result.operation) {
-        case "INSERT":
+        case OPERATIONS.INSERT:
           metrics.insertCount++;
           metrics.newRecIds.push(cropId);
           break;
-        case "UPDATE":
+        case OPERATIONS.UPDATE:
           metrics.updateCount++;
           metrics.updatedRecIds.push(cropId);
           break;
-        case "ERROR":
+        case OPERATIONS.ERROR:
           metrics.errorCount++;
           metrics.errorRecIds.push(cropId);
           break;
@@ -349,4 +351,4 @@ class CropsProcessor {
 }
 
 // ===================== Exports =====================
-module.exports = CropsProcessor;
+export default CropsProcessor;

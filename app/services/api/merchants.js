@@ -1,13 +1,10 @@
-const apiClient = require("./apiClient.js");
+// api/merchants.js (ESM)
+import apiClient from "./apiClient.js";
 
 // Outsource doc: API Name: GetMerchants
-const getMerchants = async (requestBody, customHeaders = {}) => {
+export const getMerchants = async (requestBody, customHeaders = {}) => {
   const res = await apiClient.post("/api/report/GetMerchants", requestBody, {
-    headers: {
-      ...customHeaders,
-    },
+    headers: { ...customHeaders },
   });
   return res.data;
 };
-
-module.exports = { getMerchants };

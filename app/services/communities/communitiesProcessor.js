@@ -1,14 +1,16 @@
+// communitiesProcessor.js  (ESM)
+
 // ===================== Imports =====================
 // Import API client for fetching communities data
-const { getCommunities } = require("../api/communities");
+import { getCommunities } from "../api/communities.js";
 // Import DB helper for upserting community records
-const { insertOrUpdateCommunity } = require("../db/communitiesDb");
+import { insertOrUpdateCommunity } from "../db/communitiesDb.js";
 // Import DB connection for direct queries
-const { connectionDB } = require("../../config/db/db.conf.js");
+import { connectionDB } from "../../config/db/db.conf.js";
 // Import config constants and operation enums
-const { COMMUNITIES_CONFIG, OPERATIONS } = require("../../utils/constants");
-// Import logger for structured process logging
-const CommunitiesLogger = require("./communitiesLogger");
+import { COMMUNITIES_CONFIG, OPERATIONS } from "../../utils/constants.js";
+// Import logger for structured process logging (default export)
+import CommunitiesLogger from "./communitiesLogger.js";
 
 // ===================== Processor =====================
 // CommunitiesProcessor handles fetching, deduplication, and DB upserts for communities.
@@ -57,7 +59,6 @@ class CommunitiesProcessor {
 
   /**
    * Fetches all pages of communities from the API and logs each page.
-   * @param {number} pages - Number of pages to fetch.
    * @param {object} metrics - Metrics object to accumulate results.
    */
   static async _fetchCommunitiesPages(metrics) {
@@ -190,4 +191,4 @@ class CommunitiesProcessor {
 }
 
 // ===================== Exports =====================
-module.exports = CommunitiesProcessor;
+export default CommunitiesProcessor;

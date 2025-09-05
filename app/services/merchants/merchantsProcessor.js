@@ -1,14 +1,16 @@
+// merchantsProcessor.js (ESM)
+
 // ===================== Imports =====================
 // Import API client for fetching merchants data
-const { getMerchants } = require("../api/merchants");
+import { getMerchants } from "../api/merchants.js";
 // Import DB helper for upserting merchant records
-const { insertOrUpdateMerchant } = require("../db/merchantsDb");
+import { insertOrUpdateMerchant } from "../db/merchantsDb.js";
 // Import DB connection for direct queries
-const { connectionDB } = require("../../config/db/db.conf.js");
+import { connectionDB } from "../../config/db/db.conf.js";
 // Import config constants and operation enums
-const { MERCHANTS_CONFIG, OPERATIONS } = require("../../utils/constants");
+import { MERCHANTS_CONFIG, OPERATIONS } from "../../utils/constants.js";
 // Import logger for structured process logging
-const MerchantsLogger = require("./merchantsLogger");
+import MerchantsLogger from "./merchantsLogger.js";
 
 // ===================== Processor =====================
 // MerchantsProcessor handles fetching, deduplication, and DB upserts for merchants.
@@ -57,7 +59,6 @@ class MerchantsProcessor {
 
   /**
    * Fetches all pages of merchants from the API and logs each page.
-   * @param {number} pages - Number of pages to fetch.
    * @param {object} metrics - Metrics object to accumulate results.
    */
   static async _fetchMerchantsPages(metrics) {
@@ -189,4 +190,4 @@ class MerchantsProcessor {
 }
 
 // ===================== Exports =====================
-module.exports = MerchantsProcessor;
+export default MerchantsProcessor;

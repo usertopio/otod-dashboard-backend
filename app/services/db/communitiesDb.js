@@ -1,7 +1,9 @@
+// db/communitiesDb.js (ESM)
+
 // ===================== Imports =====================
 // Import DB connection for executing SQL queries
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { OPERATIONS } = require("../../utils/constants");
+import { connectionDB } from "../../config/db/db.conf.js";
+import { OPERATIONS } from "../../utils/constants.js";
 
 // ===================== DB Utilities =====================
 // Provides helper functions for reference code lookup and upserting communities
@@ -13,9 +15,9 @@ const { OPERATIONS } = require("../../utils/constants");
  * @param {string} codeColumn - Column for the code.
  * @param {string} name - Name to look up or insert.
  * @param {string} generatedCodePrefix - Prefix for generated codes.
- * @returns {Promise<string>} - The code.
+ * @returns {Promise<string|null>} - The code or null on error/empty name.
  */
-async function ensureRefCode(
+export async function ensureRefCode(
   table,
   nameColumn,
   codeColumn,
@@ -35,35 +37,39 @@ async function ensureRefCode(
 
     if (existing.length > 0) {
       return existing[0][codeColumn];
+    }
+
+    // Generate new code if not found
+    const [maxResult] = await connectionDB
+      .promise()
+      .query(
+        `SELECT ${codeColumn} FROM ${table} ORDER BY ${codeColumn} DESC LIMIT 1`
+      );
+
+    let newCode;
+    if (maxResult.length > 0) {
+      const lastCode = maxResult[0][codeColumn];
+      const lastNumber = parseInt(
+        String(lastCode).replace(generatedCodePrefix, ""),
+        10
+      );
+      newCode = `${generatedCodePrefix}${String(lastNumber + 1).padStart(
+        3,
+        "0"
+      )}`;
     } else {
-      // Generate new code if not found
-      const [maxResult] = await connectionDB
-        .promise()
-        .query(
-          `SELECT ${codeColumn} FROM ${table} ORDER BY ${codeColumn} DESC LIMIT 1`
-        );
+      newCode = `${generatedCodePrefix}001`;
+    }
 
-      let newCode;
-      if (maxResult.length > 0) {
-        const lastCode = maxResult[0][codeColumn];
-        const lastNumber = parseInt(lastCode.replace(generatedCodePrefix, ""));
-        newCode = `${generatedCodePrefix}${String(lastNumber + 1).padStart(
-          3,
-          "0"
-        )}`;
-      } else {
-        newCode = `${generatedCodePrefix}001`;
-      }
-
-      await connectionDB.promise().query(
-        `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) 
-         VALUES (?, ?, 'generated')`,
+    await connectionDB
+      .promise()
+      .query(
+        `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES (?, ?, 'generated')`,
         [newCode, name]
       );
 
-      console.log(`🆕 Created new ${table}: ${newCode} = "${name}"`);
-      return newCode;
-    }
+    console.log(`🆕 Created new ${table}: ${newCode} = "${name}"`);
+    return newCode;
   } catch (err) {
     console.error(`${table} lookup error:`, err.message);
     return null;
@@ -76,7 +82,7 @@ async function ensureRefCode(
  * @param {object} community - Community data object.
  * @returns {Promise<object>} - Operation result.
  */
-const insertOrUpdateCommunity = async (community) => {
+export async function insertOrUpdateCommunity(community) {
   try {
     // Map province, district, subdistrict to codes
     const provinceCode = await ensureRefCode(
@@ -130,19 +136,19 @@ const insertOrUpdateCommunity = async (community) => {
       // UPDATE existing community
       await connectionDB.promise().query(
         `UPDATE communities SET 
-         community_province_code = ?, 
-         community_district_code = ?, 
-         community_subdistrict_code = ?, 
-         post_code = ?, 
-         comm_id = ?, 
-         comm_name = ?, 
-         total_members = ?, 
-         no_of_rais = ?, 
-         no_of_trees = ?, 
-         forecast_yield = ?, 
-         updated_at = ?, 
-         fetch_at = ?
-         WHERE rec_id = ?`,
+           community_province_code = ?, 
+           community_district_code = ?, 
+           community_subdistrict_code = ?, 
+           post_code = ?, 
+           comm_id = ?, 
+           comm_name = ?, 
+           total_members = ?, 
+           no_of_rais = ?, 
+           no_of_trees = ?, 
+           forecast_yield = ?, 
+           updated_at = ?, 
+           fetch_at = ?
+           WHERE rec_id = ?`,
         [
           values.community_province_code,
           values.community_district_code,
@@ -161,35 +167,35 @@ const insertOrUpdateCommunity = async (community) => {
       );
 
       return { operation: OPERATIONS.UPDATE, recId: values.rec_id };
-    } else {
-      // INSERT new community
-      await connectionDB.promise().query(
-        `INSERT INTO communities 
+    }
+
+    // INSERT new community
+    await connectionDB.promise().query(
+      `INSERT INTO communities 
          (rec_id, community_province_code, community_district_code, 
           community_subdistrict_code, post_code, comm_id, comm_name, 
           total_members, no_of_rais, no_of_trees, forecast_yield, 
           created_at, updated_at, fetch_at) 
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          values.rec_id,
-          values.community_province_code,
-          values.community_district_code,
-          values.community_subdistrict_code,
-          values.post_code,
-          values.comm_id,
-          values.comm_name,
-          values.total_members,
-          values.no_of_rais,
-          values.no_of_trees,
-          values.forecast_yield,
-          values.created_at,
-          values.updated_at,
-          values.fetch_at,
-        ]
-      );
+      [
+        values.rec_id,
+        values.community_province_code,
+        values.community_district_code,
+        values.community_subdistrict_code,
+        values.post_code,
+        values.comm_id,
+        values.comm_name,
+        values.total_members,
+        values.no_of_rais,
+        values.no_of_trees,
+        values.forecast_yield,
+        values.created_at,
+        values.updated_at,
+        values.fetch_at,
+      ]
+    );
 
-      return { operation: OPERATIONS.INSERT, recId: values.rec_id };
-    }
+    return { operation: OPERATIONS.INSERT, recId: values.rec_id };
   } catch (err) {
     console.error("Community insert/update error:", err);
     return {
@@ -198,9 +204,4 @@ const insertOrUpdateCommunity = async (community) => {
       error: err.message,
     };
   }
-};
-
-// ===================== Exports =====================
-module.exports = {
-  insertOrUpdateCommunity,
-};
+}

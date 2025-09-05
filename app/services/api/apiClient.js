@@ -1,5 +1,6 @@
-const axios = require("axios");
-const tokenManager = require("../../utils/tokenManager");
+// services/api/apiClient.js (ESM)
+import axios from "axios";
+import tokenManager from "../../utils/tokenManager.js";
 
 // Create axios instance
 const apiClient = axios.create({
@@ -14,9 +15,7 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   async (config) => {
     // Skip token for login requests
-    if (config.url?.includes("/JWT/Login")) {
-      return config;
-    }
+    if (config.url?.includes("/JWT/Login")) return config;
 
     try {
       const token = await tokenManager.getToken();
@@ -28,9 +27,7 @@ apiClient.interceptors.request.use(
 
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
 // Response interceptor to handle token expiry
@@ -41,7 +38,8 @@ apiClient.interceptors.response.use(
       console.log("🔄 Token expired, refreshing...");
       try {
         await tokenManager.refreshToken();
-        // Retry the original request
+
+        // Retry the original request with a fresh token
         const originalRequest = error.config;
         const token = await tokenManager.getToken();
         originalRequest.headers.Authorization = `Bearer ${token}`;
@@ -55,4 +53,4 @@ apiClient.interceptors.response.use(
   }
 );
 
-module.exports = apiClient;
+export default apiClient;

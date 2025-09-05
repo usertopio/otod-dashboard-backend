@@ -1,14 +1,16 @@
+// farmersProcessor.js (ESM)
+
 // ===================== Imports =====================
 // Import API client for fetching farmers data
-const { getFarmers } = require("../api/farmers");
+import { getFarmers } from "../api/farmers.js";
 // Import DB helper for upserting farmer records
-const { insertOrUpdateFarmer } = require("../db/farmersDb");
+import { insertOrUpdateFarmer } from "../db/farmersDb.js";
 // Import DB connection for direct queries
-const { connectionDB } = require("../../config/db/db.conf.js");
+import { connectionDB } from "../../config/db/db.conf.js";
 // Import config constants and operation enums
-const { FARMERS_CONFIG, OPERATIONS } = require("../../utils/constants");
+import { FARMERS_CONFIG, OPERATIONS } from "../../utils/constants.js";
 // Import logger for structured process logging
-const FarmersLogger = require("./farmersLogger");
+import FarmersLogger from "./farmersLogger.js";
 
 // ===================== Processor =====================
 // FarmersProcessor handles fetching, deduplication, and DB upserts for farmers.
@@ -102,8 +104,7 @@ class FarmersProcessor {
 
   /**
    * Upserts each unique farmer into the DB and updates metrics.
-   * @param {Array} uniqueFarmers - Array of unique farmers.
-   * @param {object} metrics - Metrics object to update.
+   * (Unused in the current flow, but kept for parity with other processors.)
    */
   static async _processUniqueFarmers(uniqueFarmers, metrics) {
     for (const farmer of uniqueFarmers) {
@@ -141,10 +142,7 @@ class FarmersProcessor {
 
   /**
    * Builds a detailed result object with metrics and insights.
-   * @param {object} metrics - Metrics object.
-   * @param {number} dbCountBefore - DB count before processing.
-   * @param {number} dbCountAfter - DB count after processing.
-   * @returns {object} - Result summary.
+   * (Retained for compatibility with your other processors.)
    */
   static _buildResult(metrics, dbCountBefore, dbCountAfter) {
     return {
@@ -185,4 +183,4 @@ class FarmersProcessor {
 }
 
 // ===================== Exports =====================
-module.exports = FarmersProcessor;
+export default FarmersProcessor;

@@ -1,9 +1,12 @@
+// gapProcessor.js (ESM)
+
 // ===================== Imports =====================
-const { getCrops } = require("../api/crops");
-const { insertOrUpdateGap } = require("../db/gapDb");
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { GAP_CONFIG, OPERATIONS } = require("../../utils/constants");
-const GapLogger = require("./gapLogger");
+// Import API client for fetching crops (source of GAP data)
+import { getCrops } from "../api/crops.js";
+import { insertOrUpdateGap } from "../db/gapDb.js";
+import { connectionDB } from "../../config/db/db.conf.js";
+import { GAP_CONFIG, OPERATIONS } from "../../utils/constants.js";
+import GapLogger from "./gapLogger.js";
 
 // ===================== Processor =====================
 // GapProcessor handles fetching, deduplication, and DB upserts for GAP certificates.
@@ -46,7 +49,6 @@ class GapProcessor {
 
   /**
    * Fetches all pages of crops from the API and extracts GAP certificates.
-   * @param {number} pages - Number of pages to fetch.
    * @param {object} metrics - Metrics object to accumulate results.
    */
   static async _fetchGapPages(metrics) {
@@ -212,4 +214,4 @@ class GapProcessor {
 }
 
 // ===================== Exports =====================
-module.exports = GapProcessor;
+export default GapProcessor;

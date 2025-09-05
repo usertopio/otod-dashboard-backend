@@ -1,10 +1,12 @@
+// operationsProcessor.js (ESM)
+
 // ===================== Imports =====================
 // Import API client for fetching operations data
-const { getOperations } = require("../api/operations");
-const { insertOrUpdateOperation } = require("../db/operationsDb");
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { OPERATIONS_CONFIG, OPERATIONS } = require("../../utils/constants");
-const OperationsLogger = require("./operationsLogger");
+import { getOperations } from "../api/operations.js";
+import { insertOrUpdateOperation } from "../db/operationsDb.js";
+import { connectionDB } from "../../config/db/db.conf.js";
+import { OPERATIONS_CONFIG, OPERATIONS } from "../../utils/constants.js";
+import OperationsLogger from "./operationsLogger.js";
 
 // ===================== Processor =====================
 // OperationsProcessor handles fetching, deduplication, and DB upserts for operations.
@@ -52,7 +54,6 @@ class OperationsProcessor {
 
   /**
    * Fetches all pages of operations from the API and logs each page.
-   * @param {number} pages - Number of pages to fetch.
    * @param {object} metrics - Metrics object to accumulate results.
    */
   static async _fetchOperationsPages(metrics) {
@@ -189,4 +190,4 @@ class OperationsProcessor {
 }
 
 // ===================== Exports =====================
-module.exports = OperationsProcessor;
+export default OperationsProcessor;

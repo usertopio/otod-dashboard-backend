@@ -1,6 +1,8 @@
+// utils/loggers/cropsLogger.js (ESM)
+
 // ===================== Logger =====================
 // CropsLogger provides structured logging for the crops fetch/process workflow.
-class CropsLogger {
+export default class CropsLogger {
   static logAttemptStart(attempt, maxAttempts) {
     console.log(`\n🔄 === ATTEMPT ${attempt}/${maxAttempts} ===`);
   }
@@ -117,6 +119,3 @@ class CropsLogger {
     console.log(`🔗 Merged unique crops: ${totalMerged}`);
   }
 }
-
-// ===================== Exports =====================
-module.exports = CropsLogger;

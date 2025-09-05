@@ -1,6 +1,8 @@
+// db/gapDb.js (ESM)
+
 // ===================== Imports =====================
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { OPERATIONS } = require("../../utils/constants");
+import { connectionDB } from "../../config/db/db.conf.js";
+import { OPERATIONS } from "../../utils/constants.js";
 
 // ===================== Insert/Update =====================
 /**
@@ -9,7 +11,7 @@ const { OPERATIONS } = require("../../utils/constants");
  * @param {object} gap - GAP certificate data object.
  * @returns {Promise<object>} - Operation result.
  */
-const insertOrUpdateGap = async (gap) => {
+export async function insertOrUpdateGap(gap) {
   try {
     // Check if GAP certificate already exists
     const [existing] = await connectionDB
@@ -22,13 +24,13 @@ const insertOrUpdateGap = async (gap) => {
       // UPDATE existing GAP certificate
       await connectionDB.promise().query(
         `UPDATE gap SET 
-         gap_cert_type = ?, 
-         gap_issued_date = ?, 
-         gap_expiry_date = ?, 
-         farmer_id = ?, 
-         land_id = ?, 
-         fetch_at = NOW()
-         WHERE gap_cert_number = ?`,
+             gap_cert_type = ?, 
+             gap_issued_date = ?, 
+             gap_expiry_date = ?, 
+             farmer_id = ?, 
+             land_id = ?, 
+             fetch_at = NOW()
+           WHERE gap_cert_number = ?`,
         [
           gap.gapCertType || null,
           gap.gapIssuedDate || null,
@@ -40,25 +42,25 @@ const insertOrUpdateGap = async (gap) => {
       );
 
       return { operation: OPERATIONS.UPDATE, gapCertNumber: gap.gapCertNumber };
-    } else {
-      // INSERT new GAP certificate
-      await connectionDB.promise().query(
-        `INSERT INTO gap 
-         (gap_cert_number, gap_cert_type, gap_issued_date, gap_expiry_date, 
-          farmer_id, land_id, fetch_at) 
-         VALUES (?, ?, ?, ?, ?, ?, NOW())`,
-        [
-          gap.gapCertNumber,
-          gap.gapCertType || null,
-          gap.gapIssuedDate || null,
-          gap.gapExpiryDate || null,
-          gap.farmerId,
-          gap.landId,
-        ]
-      );
-
-      return { operation: OPERATIONS.INSERT, gapCertNumber: gap.gapCertNumber };
     }
+
+    // INSERT new GAP certificate
+    await connectionDB.promise().query(
+      `INSERT INTO gap 
+           (gap_cert_number, gap_cert_type, gap_issued_date, gap_expiry_date, 
+            farmer_id, land_id, fetch_at) 
+         VALUES (?, ?, ?, ?, ?, ?, NOW())`,
+      [
+        gap.gapCertNumber,
+        gap.gapCertType || null,
+        gap.gapIssuedDate || null,
+        gap.gapExpiryDate || null,
+        gap.farmerId,
+        gap.landId,
+      ]
+    );
+
+    return { operation: OPERATIONS.INSERT, gapCertNumber: gap.gapCertNumber };
   } catch (err) {
     console.error("GAP insert/update error:", err);
     return {
@@ -67,9 +69,4 @@ const insertOrUpdateGap = async (gap) => {
       error: err.message,
     };
   }
-};
-
-// ===================== Exports =====================
-module.exports = {
-  insertOrUpdateGap,
-};
+}

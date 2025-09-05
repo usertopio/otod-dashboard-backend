@@ -1,10 +1,12 @@
+// waterProcessor.js (ESM)
+
 // ===================== Imports =====================
 // Import API client for fetching water usage summary
-const { getWaterUsageSummaryByMonth } = require("../api/water");
-const { insertOrUpdateWater } = require("../db/waterDb");
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { WATER_CONFIG, OPERATIONS } = require("../../utils/constants");
-const WaterLogger = require("./waterLogger");
+import { getWaterUsageSummaryByMonth } from "../api/water.js";
+import { insertOrUpdateWater } from "../db/waterDb.js";
+import { connectionDB } from "../../config/db/db.conf.js";
+import { WATER_CONFIG, OPERATIONS } from "../../utils/constants.js";
+import WaterLogger from "./waterLogger.js";
 
 // ===================== Processor =====================
 // WaterProcessor handles fetching, deduplication, and DB upserts for water usage summary.
@@ -50,7 +52,6 @@ class WaterProcessor {
 
   /**
    * Fetches all pages of water usage summary from the API and logs each page.
-   * @param {number} pages - Number of pages to fetch (always 1).
    * @param {object} metrics - Metrics object to accumulate results.
    */
   static async _fetchWaterSummaryByMonth(metrics) {
@@ -189,4 +190,4 @@ class WaterProcessor {
 }
 
 // ===================== Exports =====================
-module.exports = WaterProcessor;
+export default WaterProcessor;

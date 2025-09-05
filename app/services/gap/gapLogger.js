@@ -1,6 +1,8 @@
+// services/gap/gapLogger.js (ESM)
+
 // ===================== Logger =====================
 // GapLogger provides structured logging for the GAP fetch/process workflow.
-class GapLogger {
+export default class GapLogger {
   static logTargetStart(targetCount, maxAttempts) {
     console.log(
       `🎯 Target: ${targetCount} gap certificates, Max attempts: ${maxAttempts}`
@@ -114,6 +116,3 @@ class GapLogger {
     console.log(`📊 Total from API: ${totalFromAPI}, Unique: ${uniqueCount}`);
   }
 }
-
-// ===================== Exports =====================
-module.exports = GapLogger;

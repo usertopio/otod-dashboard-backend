@@ -1,10 +1,12 @@
+// substanceProcessor.js (ESM)
+
 // ===================== Imports =====================
 // Import API client for fetching substance usage summary
-const { getSubstanceUsageSummaryByMonth } = require("../api/substance");
-const { insertOrUpdateSubstance } = require("../db/substanceDb");
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { SUBSTANCE_CONFIG, OPERATIONS } = require("../../utils/constants");
-const SubstanceLogger = require("./substanceLogger");
+import { getSubstanceUsageSummaryByMonth } from "../api/substance.js";
+import { insertOrUpdateSubstance } from "../db/substanceDb.js";
+import { connectionDB } from "../../config/db/db.conf.js";
+import { SUBSTANCE_CONFIG, OPERATIONS } from "../../utils/constants.js";
+import SubstanceLogger from "./substanceLogger.js";
 
 // ===================== Processor =====================
 // SubstanceProcessor handles fetching, deduplication, and DB upserts for substance usage summary.
@@ -29,7 +31,7 @@ class SubstanceProcessor {
     // Get database count before processing
     const dbCountBefore = await this._getDatabaseCount();
 
-    // Fetch data from API (single call)
+    // Fetch data from API (single call per year)
     await this._fetchSubstanceByMonth(metrics);
 
     // Process unique substance records
@@ -52,7 +54,6 @@ class SubstanceProcessor {
 
   /**
    * Fetches all pages of substance usage summary from the API and logs each page.
-   * @param {number} pages - Number of pages to fetch (always 1).
    * @param {object} metrics - Metrics object to accumulate results.
    */
   static async _fetchSubstanceByMonth(metrics) {
@@ -195,4 +196,4 @@ class SubstanceProcessor {
 }
 
 // ===================== Exports =====================
-module.exports = SubstanceProcessor;
+export default SubstanceProcessor;

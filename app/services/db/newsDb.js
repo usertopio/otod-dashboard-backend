@@ -1,6 +1,9 @@
+// db/newsDb.js (ESM)
+
 // ===================== Imports =====================
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { OPERATIONS } = require("../../utils/constants");
+// Import DB connection for executing SQL queries
+import { connectionDB } from "../../config/db/db.conf.js";
+import { OPERATIONS } from "../../utils/constants.js";
 
 // ===================== Reference Lookup =====================
 /**
@@ -9,15 +12,15 @@ const { OPERATIONS } = require("../../utils/constants");
  * @param {string} nameColumn - Column for the name.
  * @param {string} codeColumn - Column for the code.
  * @param {string} name - Name to look up or insert.
- * @param {string} generatedCodePrefix - Prefix for generated codes.
- * @returns {Promise<string>} - The code.
+ * @param {string} generatedCodePrefix - Prefix for generated codes. (kept for compatibility)
+ * @returns {Promise<string|null>} - The code.
  */
 async function ensureRefCode(
   table,
   nameColumn,
   codeColumn,
   name,
-  generatedCodePrefix
+  generatedCodePrefix // unused in this version (numeric MAX-based)
 ) {
   if (!name) return null;
 
@@ -31,31 +34,29 @@ async function ensureRefCode(
 
     if (existing.length > 0) {
       return existing[0][codeColumn];
-    } else {
-      const [maxResult] = await connectionDB
-        .promise()
-        .query(
-          `SELECT MAX(CAST(${codeColumn} AS UNSIGNED)) AS maxId FROM ${table}`
-        );
-
-      let newCode;
-      if (maxResult.length > 0 && maxResult[0].maxId !== null) {
-        newCode = String(Number(maxResult[0].maxId) + 1);
-      } else {
-        newCode = "1";
-      }
-
-      // Insert new code if not found
-      await connectionDB
-        .promise()
-        .query(
-          `INSERT INTO ${table} (${codeColumn}, ${nameColumn}) VALUES (?, ?)`,
-          [newCode, name]
-        );
-
-      console.log(`🆕 Created new ${table}: ${newCode} = "${name}"`);
-      return newCode;
     }
+
+    // Generate next numeric code (no prefix, uses MAX)
+    const [maxResult] = await connectionDB
+      .promise()
+      .query(
+        `SELECT MAX(CAST(${codeColumn} AS UNSIGNED)) AS maxId FROM ${table}`
+      );
+
+    const newCode =
+      maxResult.length > 0 && maxResult[0].maxId !== null
+        ? String(Number(maxResult[0].maxId) + 1)
+        : "1";
+
+    await connectionDB
+      .promise()
+      .query(
+        `INSERT INTO ${table} (${codeColumn}, ${nameColumn}) VALUES (?, ?)`,
+        [newCode, name]
+      );
+
+    console.log(`🆕 Created new ${table}: ${newCode} = "${name}"`);
+    return newCode;
   } catch (err) {
     console.error(`${table} lookup error:`, err.message);
     return null;
@@ -69,7 +70,7 @@ async function ensureRefCode(
  * @param {object} news - News data object.
  * @returns {Promise<object>} - Operation result.
  */
-const insertOrUpdateNews = async (news) => {
+export async function insertOrUpdateNews(news) {
   try {
     // Convert province and news group to codes
     const provinceCode = await ensureRefCode(
@@ -112,44 +113,49 @@ const insertOrUpdateNews = async (news) => {
 
     if (existing.length > 0) {
       // UPDATE existing news
-      await connectionDB.promise().query(
-        `UPDATE news SET 
-         news_province_code = ?, 
-         news_id = ?, 
-         announce_date = ?, 
-         news_group_id = ?, 
-         news_topic = ?, 
-         news_detail = ?, 
-         no_of_like = ?, 
-         no_of_comments = ?, 
-         updated_at = ?, 
-         fetch_at = ?,
-         company_id = ?
-         WHERE rec_id = ?`,
-        [
-          values.news_province_code,
-          values.news_id,
-          values.announce_date,
-          values.news_group_id,
-          values.news_topic,
-          values.news_detail,
-          values.no_of_like,
-          values.no_of_comments,
-          values.updated_at,
-          values.fetch_at,
-          values.company_id,
-          values.rec_id,
-        ]
-      );
+      await connectionDB
+        .promise()
+        .query(
+          `UPDATE news SET 
+             news_province_code = ?, 
+             news_id = ?, 
+             announce_date = ?, 
+             news_group_id = ?, 
+             news_topic = ?, 
+             news_detail = ?, 
+             no_of_like = ?, 
+             no_of_comments = ?, 
+             updated_at = ?, 
+             fetch_at = ?,
+             company_id = ?
+           WHERE rec_id = ?`,
+          [
+            values.news_province_code,
+            values.news_id,
+            values.announce_date,
+            values.news_group_id,
+            values.news_topic,
+            values.news_detail,
+            values.no_of_like,
+            values.no_of_comments,
+            values.updated_at,
+            values.fetch_at,
+            values.company_id,
+            values.rec_id,
+          ]
+        );
 
       return { operation: OPERATIONS.UPDATE, recId: values.rec_id };
-    } else {
-      // INSERT new news
-      await connectionDB.promise().query(
+    }
+
+    // INSERT new news
+    await connectionDB
+      .promise()
+      .query(
         `INSERT INTO news 
-         (rec_id, news_province_code, news_id, announce_date, 
-          news_group_id, news_topic, news_detail, no_of_like, 
-          no_of_comments, created_at, updated_at, fetch_at, company_id) 
+           (rec_id, news_province_code, news_id, announce_date, 
+            news_group_id, news_topic, news_detail, no_of_like, 
+            no_of_comments, created_at, updated_at, fetch_at, company_id) 
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           values.rec_id,
@@ -168,8 +174,7 @@ const insertOrUpdateNews = async (news) => {
         ]
       );
 
-      return { operation: OPERATIONS.INSERT, recId: values.rec_id };
-    }
+    return { operation: OPERATIONS.INSERT, recId: values.rec_id };
   } catch (err) {
     console.error("News insert/update error:", err);
     return {
@@ -178,9 +183,4 @@ const insertOrUpdateNews = async (news) => {
       error: err.message,
     };
   }
-};
-
-// ===================== Exports =====================
-module.exports = {
-  insertOrUpdateNews,
-};
+}

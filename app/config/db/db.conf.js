@@ -1,12 +1,14 @@
-// Load environment variables FIRST in this file
-require("dotenv").config();
+// db.conf.js (ESM)
 
-const mysql = require("mysql2");
+// Load environment variables FIRST
+import "dotenv/config";
 
-let connectionDB = null;
+import mysql from "mysql2";
 
-const getConnection = () => {
-  if (!connectionDB) {
+let _connection = null;
+
+function getConnection() {
+  if (!_connection) {
     console.log("🔍 Creating DB connection with:");
     console.log("DB_HOST:", process.env.DB_HOST);
     console.log("DB_USER:", process.env.DB_USER);
@@ -14,18 +16,18 @@ const getConnection = () => {
     console.log("DB_NAME:", process.env.DB_NAME);
 
     // Use mysql2 (not mysql2/promise) so .promise() method works
-    connectionDB = mysql.createConnection({
+    _connection = mysql.createConnection({
       host: process.env.DB_HOST,
       user: process.env.DB_USER,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
     });
   }
-  return connectionDB;
-};
+  return _connection;
+}
 
-module.exports = {
-  get connectionDB() {
-    return getConnection();
-  },
-};
+// Export a named binding so existing imports like
+// `import { connectionDB } from "../../config/db/db.conf.js";` keep working.
+// This will initialize on first import; if you want *lazy* init per callsite,
+// export getConnection() itself and adjust usages.
+export const connectionDB = getConnection();

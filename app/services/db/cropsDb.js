@@ -1,6 +1,8 @@
+// db/cropsDb.js (ESM)
+
 // ===================== Imports =====================
 // Import DB connection for executing SQL queries
-const { connectionDB } = require("../../config/db/db.conf.js");
+import { connectionDB } from "../../config/db/db.conf.js";
 
 // ===================== DB Utilities =====================
 // Provides helper functions for upserting crops
@@ -9,7 +11,7 @@ const { connectionDB } = require("../../config/db/db.conf.js");
  * Ensures a reference code exists in a ref table, creates it if not.
  * For stages, use generatedCodePrefix = "" for plain numbers.
  */
-async function ensureRefCode(
+export async function ensureRefCode(
   table,
   nameColumn,
   codeColumn,
@@ -35,18 +37,21 @@ async function ensureRefCode(
       .query(
         `SELECT MAX(CAST(${codeColumn} AS UNSIGNED)) AS maxId FROM ${table}`
       );
+
     let newCode;
     if (maxResult.length > 0 && maxResult[0].maxId !== null) {
       newCode = String(Number(maxResult[0].maxId) + 1);
     } else {
       newCode = "1";
     }
+
     await connectionDB
       .promise()
       .query(
         `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES (?, ?, 'generated')`,
         [newCode, name]
       );
+
     console.log(`🆕 Created new ${table}: ${newCode} = "${name}"`);
     return newCode;
   }
@@ -58,7 +63,7 @@ async function ensureRefCode(
  * @param {object} crop - Crop data object.
  * @returns {Promise<object>} - Operation result.
  */
-async function insertOrUpdateCrop(crop) {
+export async function insertOrUpdateCrop(crop) {
   try {
     // Prepare values
     const values = {
@@ -104,11 +109,11 @@ async function insertOrUpdateCrop(crop) {
       // Direct SQL UPDATE
       await connectionDB.promise().query(
         `UPDATE crops SET 
-          rec_id = ?, farmer_id = ?, land_id = ?, crop_year = ?, crop_name = ?, breed_id = ?, 
-          crop_start_date = ?, crop_end_date = ?, total_trees = ?, forecast_kg = ?, forecast_baht = ?, 
-          forecast_worker_cost = ?, forecast_fertilizer_cost = ?, forecast_equipment_cost = ?, 
-          forecast_petrol_cost = ?, durian_stage_id = ?, lot_number = ?, updated_at = ?, fetch_at = ?
-         WHERE crop_id = ?`,
+            rec_id = ?, farmer_id = ?, land_id = ?, crop_year = ?, crop_name = ?, breed_id = ?, 
+            crop_start_date = ?, crop_end_date = ?, total_trees = ?, forecast_kg = ?, forecast_baht = ?, 
+            forecast_worker_cost = ?, forecast_fertilizer_cost = ?, forecast_equipment_cost = ?, 
+            forecast_petrol_cost = ?, durian_stage_id = ?, lot_number = ?, updated_at = ?, fetch_at = ?
+           WHERE crop_id = ?`,
         [
           values.rec_id,
           values.farmer_id,
@@ -137,10 +142,10 @@ async function insertOrUpdateCrop(crop) {
       // Direct SQL INSERT
       await connectionDB.promise().query(
         `INSERT INTO crops 
-          (rec_id, farmer_id, land_id, crop_id, crop_year, crop_name, breed_id, crop_start_date, crop_end_date, 
-           total_trees, forecast_kg, forecast_baht, forecast_worker_cost, forecast_fertilizer_cost, 
-           forecast_equipment_cost, forecast_petrol_cost, durian_stage_id, lot_number, created_at, updated_at, fetch_at) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            (rec_id, farmer_id, land_id, crop_id, crop_year, crop_name, breed_id, crop_start_date, crop_end_date, 
+             total_trees, forecast_kg, forecast_baht, forecast_worker_cost, forecast_fertilizer_cost, 
+             forecast_equipment_cost, forecast_petrol_cost, durian_stage_id, lot_number, created_at, updated_at, fetch_at) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           values.rec_id,
           values.farmer_id,
@@ -176,9 +181,3 @@ async function insertOrUpdateCrop(crop) {
     };
   }
 }
-
-// ===================== Exports =====================
-module.exports = {
-  insertOrUpdateCrop,
-  ensureRefCode,
-};

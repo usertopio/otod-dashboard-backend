@@ -1,6 +1,8 @@
+// services/merchants/merchantsLogger.js (ESM)
+
 // ===================== Logger =====================
 // MerchantsLogger provides structured logging for the merchants fetch/process workflow.
-class MerchantsLogger {
+export default class MerchantsLogger {
   static logTargetStart(targetCount, maxAttempts) {
     console.log(
       `🎯 Target: ${targetCount} merchants, Max attempts: ${maxAttempts}`
@@ -64,6 +66,3 @@ class MerchantsLogger {
     console.log(`✅ Status: ${status}`);
   }
 }
-
-// ===================== Exports =====================
-module.exports = MerchantsLogger;

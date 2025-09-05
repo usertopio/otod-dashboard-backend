@@ -1,10 +1,15 @@
-const apiClient = require("./apiClient.js");
+// api/operations.js (ESM)
+import apiClient from "./apiClient.js";
 
-// Helper function to sleep for a given number of milliseconds
+// Helper: sleep for ms
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Outsource doc: API Name: GetOperations
-const getOperations = async (requestBody, customHeaders = {}, retries = 3) => {
+export async function getOperations(
+  requestBody,
+  customHeaders = {},
+  retries = 3
+) {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
       const res = await apiClient.post(
@@ -29,6 +34,4 @@ const getOperations = async (requestBody, customHeaders = {}, retries = 3) => {
     }
   }
   throw new Error("Max retries exceeded for GetOperations");
-};
-
-module.exports = { getOperations };
+}

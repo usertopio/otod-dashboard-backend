@@ -1,9 +1,16 @@
+// newsProcessor.js (ESM)
+
 // ===================== Imports =====================
-const { getNews } = require("../api/news");
-const { insertOrUpdateNews } = require("../db/newsDb");
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { NEWS_CONFIG, OPERATIONS } = require("../../utils/constants");
-const NewsLogger = require("./newsLogger");
+// Import API client for fetching news data
+import { getNews } from "../api/news.js";
+// Import DB helper for upserting news records
+import { insertOrUpdateNews } from "../db/newsDb.js";
+// Import DB connection for direct queries
+import { connectionDB } from "../../config/db/db.conf.js";
+// Import config constants and operation enums
+import { NEWS_CONFIG, OPERATIONS } from "../../utils/constants.js";
+// Import logger for structured process logging
+import NewsLogger from "./newsLogger.js";
 
 // ===================== Processor =====================
 // NewsProcessor handles fetching, deduplication, and DB upserts for news.
@@ -46,7 +53,6 @@ class NewsProcessor {
 
   /**
    * Fetches all pages of news from the API and logs each page.
-   * @param {number} pages - Number of pages to fetch.
    * @param {object} metrics - Metrics object to accumulate results.
    */
   static async _fetchNewsPages(metrics) {
@@ -177,4 +183,4 @@ class NewsProcessor {
 }
 
 // ===================== Exports =====================
-module.exports = NewsProcessor;
+export default NewsProcessor;

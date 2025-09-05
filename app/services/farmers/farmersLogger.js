@@ -1,6 +1,8 @@
+// services/farmers/farmersLogger.js (ESM)
+
 // ===================== Logger =====================
 // FarmersLogger provides structured logging for the farmers fetch/process workflow.
-class FarmersLogger {
+export default class FarmersLogger {
   /**
    * Logs the start of an attempt.
    */
@@ -128,6 +130,3 @@ class FarmersLogger {
     console.log(`📊 Total from API: ${totalFromAPI}, Unique: ${uniqueCount}`);
   }
 }
-
-// ===================== Exports =====================
-module.exports = FarmersLogger;

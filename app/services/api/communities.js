@@ -1,13 +1,10 @@
-const apiClient = require("./apiClient.js");
+// communities.js (ESM)
+import apiClient from "./apiClient.js";
 
 // Outsource doc: API Name: GetCommunities
-const getCommunities = async (requestBody, customHeaders = {}) => {
+export const getCommunities = async (requestBody, customHeaders = {}) => {
   const res = await apiClient.post("/api/report/GetCommunities", requestBody, {
-    headers: {
-      ...customHeaders,
-    },
+    headers: { ...customHeaders },
   });
   return res.data;
 };
-
-module.exports = { getCommunities };

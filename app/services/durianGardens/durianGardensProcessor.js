@@ -1,15 +1,17 @@
+// durianGardensProcessor.js (ESM)
+
 // ===================== Imports =====================
 // Import API clients for fetching garden data
-const { getLands } = require("../api/lands");
-const { getLandGeoJSON } = require("../api/landGeoJSON");
+import { getLands } from "../api/lands.js";
+import { getLandGeoJSON } from "../api/landGeoJSON.js";
 // Import DB helper for upserting garden records
-const { insertOrUpdateDurianGarden } = require("../db/durianGardensDb");
+import { insertOrUpdateDurianGarden } from "../db/durianGardensDb.js";
 // Import DB connection for direct queries
-const { connectionDB } = require("../../config/db/db.conf.js");
+import { connectionDB } from "../../config/db/db.conf.js";
 // Import config constants and operation enums
-const { DURIAN_GARDENS_CONFIG, OPERATIONS } = require("../../utils/constants");
+import { DURIAN_GARDENS_CONFIG, OPERATIONS } from "../../utils/constants.js";
 // Import logger for structured process logging
-const DurianGardensLogger = require("./durianGardensLogger");
+import DurianGardensLogger from "./durianGardensLogger.js";
 
 // ===================== Processor =====================
 // DurianGardensProcessor handles fetching, merging, deduplication, and DB upserts for durian gardens.
@@ -327,4 +329,4 @@ class DurianGardensProcessor {
 }
 
 // ===================== Exports =====================
-module.exports = DurianGardensProcessor;
+export default DurianGardensProcessor;

@@ -1,7 +1,9 @@
+// db/durianGardensDb.js (ESM)
+
 // ===================== Imports =====================
 // Import DB connection for executing SQL queries
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { OPERATIONS } = require("../../utils/constants");
+import { connectionDB } from "../../config/db/db.conf.js";
+import { OPERATIONS } from "../../utils/constants.js";
 
 // ===================== DB Utilities =====================
 // Provides helper functions for reference code lookup and upserting durian gardens
@@ -13,7 +15,7 @@ const { OPERATIONS } = require("../../utils/constants");
  * @param {string} codeColumn - Column for the code.
  * @param {string} name - Name to look up or insert.
  * @param {string} generatedCodePrefix - Prefix for generated codes.
- * @returns {Promise<string>} - The code.
+ * @returns {Promise<string|null>} - The code or null.
  */
 async function ensureRefCode(
   table,
@@ -35,35 +37,39 @@ async function ensureRefCode(
 
     if (existing.length > 0) {
       return existing[0][codeColumn];
+    }
+
+    // Generate new code if not found
+    const [maxResult] = await connectionDB
+      .promise()
+      .query(
+        `SELECT ${codeColumn} FROM ${table} ORDER BY ${codeColumn} DESC LIMIT 1`
+      );
+
+    let newCode;
+    if (maxResult.length > 0) {
+      const lastCode = maxResult[0][codeColumn];
+      const lastNumber = parseInt(
+        String(lastCode).replace(generatedCodePrefix, ""),
+        10
+      );
+      newCode = `${generatedCodePrefix}${String(lastNumber + 1).padStart(
+        3,
+        "0"
+      )}`;
     } else {
-      // Generate new code if not found
-      const [maxResult] = await connectionDB
-        .promise()
-        .query(
-          `SELECT ${codeColumn} FROM ${table} ORDER BY ${codeColumn} DESC LIMIT 1`
-        );
+      newCode = `${generatedCodePrefix}001`;
+    }
 
-      let newCode;
-      if (maxResult.length > 0) {
-        const lastCode = maxResult[0][codeColumn];
-        const lastNumber = parseInt(lastCode.replace(generatedCodePrefix, ""));
-        newCode = `${generatedCodePrefix}${String(lastNumber + 1).padStart(
-          3,
-          "0"
-        )}`;
-      } else {
-        newCode = `${generatedCodePrefix}001`;
-      }
-
-      await connectionDB.promise().query(
-        `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) 
-         VALUES (?, ?, 'generated')`,
+    await connectionDB
+      .promise()
+      .query(
+        `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES (?, ?, 'generated')`,
         [newCode, name]
       );
 
-      console.log(`🆕 Created new ${table}: ${newCode} = "${name}"`);
-      return newCode;
-    }
+    console.log(`🆕 Created new ${table}: ${newCode} = "${name}"`);
+    return newCode;
   } catch (err) {
     console.error(`${table} lookup error:`, err.message);
     return null;
@@ -76,7 +82,7 @@ async function ensureRefCode(
  * @param {object} garden - Durian garden data object.
  * @returns {Promise<object>} - Operation result.
  */
-async function insertOrUpdateDurianGarden(garden) {
+export async function insertOrUpdateDurianGarden(garden) {
   try {
     // === Map province, district, subdistrict, land type to codes ===
     const provinceCode = await ensureRefCode(
@@ -118,7 +124,7 @@ async function insertOrUpdateDurianGarden(garden) {
         try {
           const parsed = JSON.parse(garden.geojson);
           geoJsonValue = JSON.stringify(parsed);
-        } catch (e) {
+        } catch {
           geoJsonValue = JSON.stringify({
             type: "FeatureCollection",
             features: [
@@ -167,14 +173,14 @@ async function insertOrUpdateDurianGarden(garden) {
     if (values.created_at && typeof values.created_at === "string") {
       try {
         values.created_at = new Date(values.created_at);
-      } catch (e) {
+      } catch {
         values.created_at = null;
       }
     }
     if (values.updated_at && typeof values.updated_at === "string") {
       try {
         values.updated_at = new Date(values.updated_at);
-      } catch (e) {
+      } catch {
         values.updated_at = null;
       }
     }
@@ -190,10 +196,10 @@ async function insertOrUpdateDurianGarden(garden) {
       // Direct SQL UPDATE
       await connectionDB.promise().query(
         `UPDATE durian_gardens SET 
-          rec_id = ?, farmer_id = ?, garden_province_code = ?, garden_district_code = ?, 
-          garden_subdistrict_code = ?, land_type_id = ?, lat = ?, lon = ?, no_of_rais = ?, 
-          no_of_ngan = ?, no_of_wah = ?, kml = ?, geojson = ?, updated_at = ?, company_id = ?, fetch_at = ?
-         WHERE land_id = ?`,
+            rec_id = ?, farmer_id = ?, garden_province_code = ?, garden_district_code = ?, 
+            garden_subdistrict_code = ?, land_type_id = ?, lat = ?, lon = ?, no_of_rais = ?, 
+            no_of_ngan = ?, no_of_wah = ?, kml = ?, geojson = ?, updated_at = ?, company_id = ?, fetch_at = ?
+           WHERE land_id = ?`,
         [
           values.rec_id,
           values.farmer_id,
@@ -215,36 +221,36 @@ async function insertOrUpdateDurianGarden(garden) {
         ]
       );
       return { operation: OPERATIONS.UPDATE, landId: garden.landId };
-    } else {
-      // Direct SQL INSERT
-      await connectionDB.promise().query(
-        `INSERT INTO durian_gardens 
+    }
+
+    // Direct SQL INSERT
+    await connectionDB.promise().query(
+      `INSERT INTO durian_gardens 
           (rec_id, farmer_id, land_id, garden_province_code, garden_district_code, garden_subdistrict_code, 
            land_type_id, lat, lon, no_of_rais, no_of_ngan, no_of_wah, kml, geojson, created_at, updated_at, company_id, fetch_at)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          values.rec_id,
-          values.farmer_id,
-          values.land_id,
-          values.garden_province_code,
-          values.garden_district_code,
-          values.garden_subdistrict_code,
-          values.land_type_id,
-          values.lat,
-          values.lon,
-          values.no_of_rais,
-          values.no_of_ngan,
-          values.no_of_wah,
-          values.kml,
-          values.geojson,
-          values.created_at,
-          values.updated_at,
-          values.company_id,
-          values.fetch_at,
-        ]
-      );
-      return { operation: OPERATIONS.INSERT, landId: garden.landId };
-    }
+      [
+        values.rec_id,
+        values.farmer_id,
+        values.land_id,
+        values.garden_province_code,
+        values.garden_district_code,
+        values.garden_subdistrict_code,
+        values.land_type_id,
+        values.lat,
+        values.lon,
+        values.no_of_rais,
+        values.no_of_ngan,
+        values.no_of_wah,
+        values.kml,
+        values.geojson,
+        values.created_at,
+        values.updated_at,
+        values.company_id,
+        values.fetch_at,
+      ]
+    );
+    return { operation: OPERATIONS.INSERT, landId: garden.landId };
   } catch (err) {
     console.error("🔧 Durian garden insert/update error:", err);
     console.error("🔧 Garden data causing error:", {
@@ -263,8 +269,3 @@ async function insertOrUpdateDurianGarden(garden) {
     };
   }
 }
-
-// ===================== Exports =====================
-module.exports = {
-  insertOrUpdateDurianGarden,
-};

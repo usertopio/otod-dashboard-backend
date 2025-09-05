@@ -1,16 +1,16 @@
-// app/services/scheduler/cronService.js
-const cron = require("node-cron");
-const { SCHEDULES_CONFIG } = require("../../utils/cronUtils"); // Add this line
-const CropsService = require("../crops/cropsService");
-const FarmersService = require("../farmers/farmersService");
-const MerchantsService = require("../merchants/merchantsService");
-const CommunitiesService = require("../communities/communitiesService");
-const DurianGardensService = require("../durianGardens/durianGardensService");
-const WaterService = require("../water/waterService");
-const SubstanceService = require("../substance/substanceService");
-const GapService = require("../gap/gapService");
-const NewsService = require("../news/newsService");
-const OperationsService = require("../operations/operationsService");
+// app/services/scheduler/cronService.js (ESM)
+import cron from "node-cron";
+import { SCHEDULES_CONFIG } from "../../utils/cronUtils.js";
+import CropsService from "../crops/cropsService.js";
+import FarmersService from "../farmers/farmersService.js";
+import MerchantsService from "../merchants/merchantsService.js";
+import CommunitiesService from "../communities/communitiesService.js";
+import DurianGardensService from "../durianGardens/durianGardensService.js";
+import WaterService from "../water/waterService.js";
+import SubstanceService from "../substance/substanceService.js";
+import GapService from "../gap/gapService.js";
+import NewsService from "../news/newsService.js";
+import OperationsService from "../operations/operationsService.js";
 
 class CronService {
   static isRunning = false;
@@ -131,14 +131,7 @@ class CronService {
 
       const results = [];
       for (let i = 0; i < steps.length; i++) {
-        // Set retries to 0 or 1 if you want a single retry on transient failures
-        await this.runStep(
-          steps[i],
-          i + 1,
-          steps.length,
-          results,
-          /*retries*/ 0
-        );
+        await this.runStep(steps[i], i + 1, steps.length, results, 0);
       }
 
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);
@@ -188,4 +181,4 @@ class CronService {
   }
 }
 
-module.exports = CronService;
+export default CronService;

@@ -1,7 +1,9 @@
+// db/substanceDb.js (ESM)
+
 // ===================== Imports =====================
 // Import DB connection for executing SQL queries
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { OPERATIONS } = require("../../utils/constants");
+import { connectionDB } from "../../config/db/db.conf.js";
+import { OPERATIONS } from "../../utils/constants.js";
 
 // ===================== Reference Lookup =====================
 /**
@@ -9,7 +11,7 @@ const { OPERATIONS } = require("../../utils/constants");
  * @param {string} provinceName - Province name in Thai.
  * @returns {Promise<string|null>} - Province code.
  */
-const convertProvinceNameToCode = async (provinceName) => {
+async function convertProvinceNameToCode(provinceName) {
   if (!provinceName) return null;
 
   try {
@@ -22,38 +24,38 @@ const convertProvinceNameToCode = async (provinceName) => {
 
     if (existing.length > 0) {
       return existing[0].province_code;
-    } else {
-      const [maxResult] = await connectionDB
-        .promise()
-        .query(
-          `SELECT province_code FROM ref_provinces ORDER BY province_code DESC LIMIT 1`
-        );
-
-      let newProvinceCode;
-      if (maxResult.length > 0) {
-        const lastCode = maxResult[0].province_code;
-        const lastNumber = parseInt(lastCode.replace("P", ""));
-        newProvinceCode = `P${String(lastNumber + 1).padStart(3, "0")}`;
-      } else {
-        newProvinceCode = "P001";
-      }
-
-      await connectionDB.promise().query(
-        `INSERT INTO ref_provinces (province_code, province_name_th, source) 
-         VALUES (?, ?, 'generated')`,
-        [newProvinceCode, provinceName]
-      );
-
-      console.log(
-        `🆕 Created new province: ${newProvinceCode} = "${provinceName}"`
-      );
-      return newProvinceCode;
     }
+
+    const [maxResult] = await connectionDB
+      .promise()
+      .query(
+        `SELECT province_code FROM ref_provinces ORDER BY province_code DESC LIMIT 1`
+      );
+
+    let newProvinceCode;
+    if (maxResult.length > 0) {
+      const lastCode = maxResult[0].province_code;
+      const lastNumber = parseInt(String(lastCode).replace("P", ""), 10);
+      newProvinceCode = `P${String((lastNumber || 0) + 1).padStart(3, "0")}`;
+    } else {
+      newProvinceCode = "P001";
+    }
+
+    await connectionDB.promise().query(
+      `INSERT INTO ref_provinces (province_code, province_name_th, source) 
+         VALUES (?, ?, 'generated')`,
+      [newProvinceCode, provinceName]
+    );
+
+    console.log(
+      `🆕 Created new province: ${newProvinceCode} = "${provinceName}"`
+    );
+    return newProvinceCode;
   } catch (err) {
     console.error("Province lookup error:", err.message);
     return null;
   }
-};
+}
 
 // ===================== Insert/Update =====================
 /**
@@ -62,7 +64,7 @@ const convertProvinceNameToCode = async (provinceName) => {
  * @param {object} substance - Substance usage summary data object.
  * @returns {Promise<object>} - Operation result.
  */
-const insertOrUpdateSubstance = async (substance) => {
+export async function insertOrUpdateSubstance(substance) {
   try {
     // Convert province name to code
     const provinceCode = await convertProvinceNameToCode(
@@ -72,9 +74,9 @@ const insertOrUpdateSubstance = async (substance) => {
     // Check if substance record already exists based on unique combination
     const [existing] = await connectionDB.promise().query(
       `SELECT id FROM substance 
-         WHERE crop_year = ? AND province_code = ? AND substance = ? 
-         AND oper_month = STR_TO_DATE(CONCAT(?, '-01'), '%Y-%m-%d')
-         LIMIT 1`,
+           WHERE crop_year = ? AND province_code = ? AND substance = ? 
+             AND oper_month = STR_TO_DATE(CONCAT(?, '-01'), '%Y-%m-%d')
+           LIMIT 1`,
       [
         substance.cropYear,
         provinceCode,
@@ -87,10 +89,10 @@ const insertOrUpdateSubstance = async (substance) => {
       // UPDATE existing substance record
       await connectionDB.promise().query(
         `UPDATE substance SET 
-         total_records = ?, 
-         fetch_at = NOW()
-         WHERE crop_year = ? AND province_code = ? AND substance = ? 
-         AND oper_month = STR_TO_DATE(CONCAT(?, '-01'), '%Y-%m-%d')`,
+             total_records = ?, 
+             fetch_at = NOW()
+           WHERE crop_year = ? AND province_code = ? AND substance = ? 
+             AND oper_month = STR_TO_DATE(CONCAT(?, '-01'), '%Y-%m-%d')`,
         [
           substance.totalRecords || 0,
           substance.cropYear,
@@ -101,23 +103,23 @@ const insertOrUpdateSubstance = async (substance) => {
       );
 
       return { operation: OPERATIONS.UPDATE, substance: substance.substance };
-    } else {
-      // INSERT new substance record
-      await connectionDB.promise().query(
-        `INSERT INTO substance 
-         (crop_year, province_code, substance, oper_month, total_records, fetch_at) 
-         VALUES (?, ?, ?, STR_TO_DATE(CONCAT(?, '-01'), '%Y-%m-%d'), ?, NOW())`,
-        [
-          substance.cropYear,
-          provinceCode,
-          substance.substance,
-          substance.operMonth,
-          substance.totalRecords || 0,
-        ]
-      );
-
-      return { operation: OPERATIONS.INSERT, substance: substance.substance };
     }
+
+    // INSERT new substance record
+    await connectionDB.promise().query(
+      `INSERT INTO substance 
+           (crop_year, province_code, substance, oper_month, total_records, fetch_at) 
+         VALUES (?, ?, ?, STR_TO_DATE(CONCAT(?, '-01'), '%Y-%m-%d'), ?, NOW())`,
+      [
+        substance.cropYear,
+        provinceCode,
+        substance.substance,
+        substance.operMonth,
+        substance.totalRecords || 0,
+      ]
+    );
+
+    return { operation: OPERATIONS.INSERT, substance: substance.substance };
   } catch (err) {
     console.error("Substance insert/update error:", err);
     return {
@@ -126,9 +128,4 @@ const insertOrUpdateSubstance = async (substance) => {
       error: err.message,
     };
   }
-};
-
-// ===================== Exports =====================
-module.exports = {
-  insertOrUpdateSubstance,
-};
+}

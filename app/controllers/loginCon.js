@@ -1,21 +1,22 @@
-const { login } = require("../services/api/login.js");
+// controllers/authController.js (ESM)
+import { login } from "../services/api/login.js";
 
-exports.getToken = async (req, res) => {
+export async function getToken(req, res) {
   try {
-    let requestBody = {
+    const requestBody = {
       username: process.env.OUTSOURCE_USERNAME,
       password: process.env.OUTSOURCE_PASSWORD,
     };
 
-    let userInfo = await login(requestBody); // or login(wrappedBody)
+    const userInfo = await login(requestBody);
     console.log("User Info:", userInfo);
 
     res.json({
       message: "Login successful",
-      userInfo: userInfo,
+      userInfo,
     });
   } catch (error) {
     console.error("Error during login:", error);
-    return res.status(500).json({ error: "Login failed" });
+    res.status(500).json({ error: "Login failed" });
   }
-};
+}

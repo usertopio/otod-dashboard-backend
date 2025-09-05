@@ -1,8 +1,9 @@
-const apiClient = require("./apiClient.js");
+// api/crops.js (ESM)
+import apiClient from "./apiClient.js";
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const getCrops = async (requestBody, customHeaders = {}, retries = 3) => {
+export async function getCrops(requestBody, customHeaders = {}, retries = 3) {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
       const res = await apiClient.post("/api/report/GetCrops", requestBody, {
@@ -11,7 +12,6 @@ const getCrops = async (requestBody, customHeaders = {}, retries = 3) => {
       return res.data;
     } catch (err) {
       if (err.response && err.response.status === 429) {
-        // Use retry-after header if available, otherwise wait 60s
         const retryAfter =
           parseInt(err.response.headers["retry-after"] || "60", 10) * 1000;
         console.warn(
@@ -24,13 +24,13 @@ const getCrops = async (requestBody, customHeaders = {}, retries = 3) => {
     }
   }
   throw new Error("Max retries exceeded for GetCrops");
-};
+}
 
-const getCropHarvests = async (
+export async function getCropHarvests(
   requestBody,
   customHeaders = {},
   retries = 3
-) => {
+) {
   for (let attempt = 0; attempt < retries; attempt++) {
     try {
       const res = await apiClient.post(
@@ -55,9 +55,4 @@ const getCropHarvests = async (
     }
   }
   throw new Error("Max retries exceeded for GetCropHarvests");
-};
-
-module.exports = {
-  getCrops,
-  getCropHarvests,
-};
+}
