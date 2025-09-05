@@ -1,8 +1,9 @@
-const express = require("express");
+import express from "express";
+import { fetchCommunities } from "../controllers/communitiesCon.js";
+
 const router = express.Router();
-const { fetchCommunities } = require("../controllers/communitiesCon");
 
 // Main communities endpoints
 router.post("/fetchCommunities", fetchCommunities);
 
-module.exports = router;
+export default router;

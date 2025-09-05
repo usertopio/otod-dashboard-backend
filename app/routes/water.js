@@ -1,8 +1,9 @@
-const express = require("express");
+import express from "express";
+import { fetchWater } from "../controllers/waterCon.js";
+
 const router = express.Router();
-const { fetchWater } = require("../controllers/waterCon.js");
 
 // Main water endpoints
 router.post("/fetchWater", fetchWater);
 
-module.exports = router;
+export default router;

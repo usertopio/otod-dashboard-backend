@@ -1,7 +1,8 @@
-const express = require("express");
+import express from "express";
+import { fetchGap } from "../controllers/gapCon.js";
+
 const router = express.Router();
-const { fetchGap } = require("../controllers/gapCon.js");
 
 router.post("/fetchGap", fetchGap);
 
-module.exports = router;
+export default router;
