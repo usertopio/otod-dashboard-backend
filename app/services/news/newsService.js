@@ -1,8 +1,8 @@
 // ===================== Imports =====================
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { NEWS_CONFIG, STATUS } = require("../../utils/constants");
-const NewsProcessor = require("./newsProcessor");
-const NewsLogger = require("./newsLogger");
+import { connectionDB } from "../../config/db/db.conf.js";
+import { NEWS_CONFIG, STATUS } from "../../utils/constants.js";
+import NewsProcessor from "./newsProcessor.js";
+import NewsLogger from "./newsLogger.js";
 
 // ===================== Service =====================
 // NewsService handles the business logic for fetching, resetting, and managing news records.
@@ -182,4 +182,4 @@ class NewsService {
 }
 
 // ===================== Exports =====================
-module.exports = NewsService;
+export default NewsService;

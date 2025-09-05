@@ -1,8 +1,8 @@
 // ===================== Imports =====================
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { GAP_CONFIG, STATUS } = require("../../utils/constants");
-const GapProcessor = require("./gapProcessor");
-const GapLogger = require("./gapLogger");
+import { connectionDB } from "../../config/db/db.conf.js";
+import { GAP_CONFIG, STATUS } from "../../utils/constants.js";
+import GapProcessor from "./gapProcessor.js";
+import GapLogger from "./gapLogger.js";
 
 // ===================== Service =====================
 // GapService handles the business logic for fetching, resetting, and managing GAP certificate records.
@@ -44,9 +44,9 @@ class GapService {
    * - Resets the gap table before starting.
    * - Loops up to maxAttempts, fetching and processing data each time.
    * - Logs progress and metrics for each attempt.
-   * - Stops early if the target number of records is reached.
+   * - Stops early if the target number of certificates is reached.
    * - Returns a summary result object.
-   * @param {number} targetCount - The number of records to fetch and store.
+   * @param {number} targetCount - The number of GAP certificates to fetch and store.
    * @param {number} maxAttempts - The maximum number of fetch attempts.
    */
   static async fetchGap(targetCount, maxAttempts) {
@@ -57,7 +57,7 @@ class GapService {
     let attemptsUsed = 0;
 
     console.log(
-      `🎯 Target: ${targetCount} gap certificates, Max attempts: ${maxAttempts}`
+      `🎯 Target: ${targetCount} GAP certificates, Max attempts: ${maxAttempts}`
     );
 
     while (attempt <= maxAttempts) {
@@ -186,4 +186,4 @@ class GapService {
 }
 
 // ===================== Exports =====================
-module.exports = GapService;
+export default GapService;

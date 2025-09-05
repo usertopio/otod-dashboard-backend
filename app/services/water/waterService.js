@@ -1,9 +1,9 @@
 // ===================== Imports =====================
 // Import DB connection for executing SQL queries
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { WATER_CONFIG, STATUS } = require("../../utils/constants");
-const WaterProcessor = require("./waterProcessor");
-const WaterLogger = require("./waterLogger");
+import { connectionDB } from "../../config/db/db.conf.js";
+import { WATER_CONFIG, STATUS } from "../../utils/constants.js";
+import WaterProcessor from "./waterProcessor.js";
+import WaterLogger from "./waterLogger.js";
 
 // ===================== Service =====================
 // WaterService handles the business logic for fetching, resetting, and managing water records.
@@ -188,4 +188,4 @@ class WaterService {
 }
 
 // ===================== Exports =====================
-module.exports = WaterService;
+export default WaterService;

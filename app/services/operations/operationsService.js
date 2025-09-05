@@ -1,9 +1,8 @@
 // ===================== Imports =====================
-// Import DB connection for executing SQL queries
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { OPERATIONS_CONFIG, STATUS } = require("../../utils/constants");
-const OperationsProcessor = require("./operationsProcessor");
-const OperationsLogger = require("./operationsLogger");
+import { connectionDB } from "../../config/db/db.conf.js";
+import { OPERATIONS_CONFIG, STATUS } from "../../utils/constants.js";
+import OperationsProcessor from "./operationsProcessor.js";
+import OperationsLogger from "./operationsLogger.js";
 
 // ===================== Service =====================
 // OperationsService handles the business logic for fetching, resetting, and managing operation records.
@@ -21,7 +20,7 @@ class OperationsService {
     try {
       console.log("==========================================");
       console.log(
-        `🔄  Calling API Endpoint: {{LOCAL_HOST}}/api/fetchOperations`
+        `📩 Sending request to API Endpoint: {{LOCAL_HOST}}/api/fetchOperations`
       );
       console.log("==========================================\n");
 
@@ -41,7 +40,7 @@ class OperationsService {
   }
 
   /**
-   * Main entry point for fetching operations from APIs and storing them in the database.
+   * Main entry point for fetching operations from the API and storing them in the database.
    * - Resets the operations table before starting.
    * - Loops up to maxAttempts, fetching and processing data each time.
    * - Logs progress and metrics for each attempt.
@@ -144,7 +143,7 @@ class OperationsService {
   }
 
   /**
-   * Returns the current count of operation records in the database.
+   * Returns the current count of operations records in the database.
    * @returns {Promise<number>} - The total number of operations in the DB.
    */
   static async _getDatabaseCount() {
@@ -187,4 +186,4 @@ class OperationsService {
 }
 
 // ===================== Exports =====================
-module.exports = OperationsService;
+export default OperationsService;

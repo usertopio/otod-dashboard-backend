@@ -1,12 +1,8 @@
 // ===================== Imports =====================
-// Import DB connection for executing SQL queries
-const { connectionDB } = require("../../config/db/db.conf.js");
-// Import configuration constants and status enums
-const { DURIAN_GARDENS_CONFIG, STATUS } = require("../../utils/constants");
-// Import the processor for handling API data and DB upserts
-const DurianGardensProcessor = require("./durianGardensProcessor");
-// Import the logger for structured logging of the fetch process
-const DurianGardensLogger = require("./durianGardensLogger");
+import { connectionDB } from "../../config/db/db.conf.js";
+import { DURIAN_GARDENS_CONFIG, STATUS } from "../../utils/constants.js";
+import DurianGardensProcessor from "./durianGardensProcessor.js";
+import DurianGardensLogger from "./durianGardensLogger.js";
 
 // ===================== Service =====================
 // DurianGardensService handles the business logic for fetching, resetting, and managing durian garden records.
@@ -22,7 +18,6 @@ class DurianGardensService {
     const connection = connectionDB.promise();
 
     try {
-      // Log the start of the reset operation
       console.log("==========================================");
       console.log(
         `📩 Sending request to API Endpoint: {{LOCAL_HOST}}/api/fetchDurianGardens`
@@ -31,22 +26,14 @@ class DurianGardensService {
 
       console.log("🧹 Resetting ONLY durian_gardens table...");
 
-      // Disable foreign key checks to allow truncation
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
-
-      // Truncate the durian_gardens table (delete all records, reset auto-increment)
       await connection.query("TRUNCATE TABLE durian_gardens");
-
-      // Re-enable foreign key checks after truncation
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
 
-      // Log completion
       console.log("✅ Only durian_gardens table reset - next ID will be 1");
       return { success: true, message: "Only durian_gardens table reset" };
     } catch (error) {
-      // Always re-enable foreign key checks even if error occurs
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-      // Log the error
       console.error("❌ Error resetting durian_gardens table:", error);
       throw error;
     }
@@ -63,28 +50,21 @@ class DurianGardensService {
    * @param {number} maxAttempts - The maximum number of fetch attempts.
    */
   static async fetchDurianGardens(targetCount, maxAttempts) {
-    // Reset the durian_gardens table before fetching new data
     await this.resetOnlyDurianGardensTable();
 
     let attempt = 1;
     let currentCount = 0;
     let attemptsUsed = 0;
 
-    // Log the fetch target and attempt limit
     console.log(
-      `🌿 Target: ${targetCount} durian gardens (GetLands + GetLandGeoJSON), Max attempts: ${maxAttempts}`
+      `🎯 Target: ${targetCount} durian gardens, Max attempts: ${maxAttempts}`
     );
 
-    // Main fetch/process loop
     while (attempt <= maxAttempts) {
       DurianGardensLogger.logAttemptStart(attempt, maxAttempts);
 
       currentCount = await this._getDatabaseCount();
-      DurianGardensLogger.logCurrentStatus(
-        currentCount,
-        targetCount,
-        "durian gardens (from both APIs)"
-      );
+      DurianGardensLogger.logCurrentStatus(currentCount, targetCount);
 
       attemptsUsed++;
       const result = await DurianGardensProcessor.fetchAndProcessData();
@@ -209,5 +189,4 @@ class DurianGardensService {
 }
 
 // ===================== Exports =====================
-// Export the DurianGardensService class for use in controllers and routes
-module.exports = DurianGardensService;
+export default DurianGardensService;

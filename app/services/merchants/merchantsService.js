@@ -1,12 +1,8 @@
 // ===================== Imports =====================
-// Import DB connection for executing SQL queries
-const { connectionDB } = require("../../config/db/db.conf.js");
-// Import configuration constants and status enums
-const { MERCHANTS_CONFIG, STATUS } = require("../../utils/constants");
-// Import the processor for handling API data and DB upserts
-const MerchantsProcessor = require("./merchantsProcessor");
-// Import the logger for structured logging of the fetch process
-const MerchantsLogger = require("./merchantsLogger");
+import { connectionDB } from "../../config/db/db.conf.js";
+import { MERCHANTS_CONFIG, STATUS } from "../../utils/constants.js";
+import MerchantsProcessor from "./merchantsProcessor.js";
+import MerchantsLogger from "./merchantsLogger.js";
 
 // ===================== Service =====================
 // MerchantsService handles the business logic for fetching, resetting, and managing merchant records.
@@ -22,7 +18,6 @@ class MerchantsService {
     const connection = connectionDB.promise();
 
     try {
-      // Log the start of the reset operation
       console.log("==========================================");
       console.log(
         `📩 Sending request to API Endpoint: {{LOCAL_HOST}}/api/fetchMerchants`
@@ -31,27 +26,21 @@ class MerchantsService {
 
       console.log("🧹 Resetting ONLY merchants table...");
 
-      // Disable foreign key checks to allow truncation
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
-      // Truncate the merchants table (delete all records, reset auto-increment)
       await connection.query("TRUNCATE TABLE merchants");
-      // Re-enable foreign key checks after truncation
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
 
-      // Log completion
       console.log("✅ Only merchants table reset - next ID will be 1");
       return { success: true, message: "Only merchants table reset" };
     } catch (error) {
-      // Always re-enable foreign key checks even if error occurs
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-      // Log the error
       console.error("❌ Error resetting merchants table:", error);
       throw error;
     }
   }
 
   /**
-   * Main entry point for fetching merchants from APIs and storing them in the database.
+   * Main entry point for fetching merchants from the API and storing them in the database.
    * - Resets the merchants table before starting.
    * - Loops up to maxAttempts, fetching and processing data each time.
    * - Logs progress and metrics for each attempt.
@@ -67,7 +56,6 @@ class MerchantsService {
     let currentCount = 0;
     let attemptsUsed = 0;
 
-    // Log the fetch target and attempt limit
     console.log(
       `🎯 Target: ${targetCount} merchants, Max attempts: ${maxAttempts}`
     );
@@ -112,7 +100,7 @@ class MerchantsService {
     let totalErrors = 0;
     let hasMoreData = true;
 
-    console.log(`🛒 Fetching ALL merchants, Max attempts: ${maxAttempts}`);
+    console.log(`🏪 Fetching ALL merchants, Max attempts: ${maxAttempts}`);
 
     while (attempt <= maxAttempts && hasMoreData) {
       MerchantsLogger.logAttemptStart(attempt, maxAttempts);
@@ -155,7 +143,7 @@ class MerchantsService {
   }
 
   /**
-   * Returns the current count of merchant records in the database.
+   * Returns the current count of merchants records in the database.
    * @returns {Promise<number>} - The total number of merchants in the DB.
    */
   static async _getDatabaseCount() {
@@ -198,5 +186,4 @@ class MerchantsService {
 }
 
 // ===================== Exports =====================
-// Export the MerchantsService class for use in controllers and routes
-module.exports = MerchantsService;
+export default MerchantsService;
