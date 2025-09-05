@@ -1,5 +1,3 @@
-// db/cropsDb.js (ESM)
-
 // ===================== Imports =====================
 // Import DB connection for executing SQL queries
 import { connectionDB } from "../../config/db/db.conf.js";

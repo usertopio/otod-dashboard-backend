@@ -1,5 +1,3 @@
-// db/gapDb.js (ESM)
-
 // ===================== Imports =====================
 import { connectionDB } from "../../config/db/db.conf.js";
 import { OPERATIONS } from "../../utils/constants.js";

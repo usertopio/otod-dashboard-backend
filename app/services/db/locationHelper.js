@@ -1,5 +1,3 @@
-// app/services/db/locationHelper.js (ESM)
-
 import { connectionDB } from "../../config/db/db.conf.js";
 
 /**
