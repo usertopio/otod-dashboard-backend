@@ -1,4 +1,4 @@
-// farmersProcessor.js (ESM)
+// app/services/farmers/farmersProcessor.js (ESM)
 
 // ===================== Imports =====================
 // Import API client for fetching farmers data
@@ -14,7 +14,7 @@ import FarmersLogger from "./farmersLogger.js";
 
 // ===================== Processor =====================
 // FarmersProcessor handles fetching, deduplication, and DB upserts for farmers.
-class FarmersProcessor {
+export default class FarmersProcessor {
   /**
    * Fetches all farmer data from the API, deduplicates, and upserts into DB.
    * Returns a result object with metrics and tracking info.
@@ -104,7 +104,8 @@ class FarmersProcessor {
 
   /**
    * Upserts each unique farmer into the DB and updates metrics.
-   * (Unused in the current flow, but kept for parity with other processors.)
+   * @param {Array} uniqueFarmers - Array of unique farmers.
+   * @param {object} metrics - Metrics object to update.
    */
   static async _processUniqueFarmers(uniqueFarmers, metrics) {
     for (const farmer of uniqueFarmers) {
@@ -142,7 +143,10 @@ class FarmersProcessor {
 
   /**
    * Builds a detailed result object with metrics and insights.
-   * (Retained for compatibility with your other processors.)
+   * @param {object} metrics - Metrics object.
+   * @param {number} dbCountBefore - DB count before processing.
+   * @param {number} dbCountAfter - DB count after processing.
+   * @returns {object} - Result summary.
    */
   static _buildResult(metrics, dbCountBefore, dbCountAfter) {
     return {
@@ -181,6 +185,3 @@ class FarmersProcessor {
     };
   }
 }
-
-// ===================== Exports =====================
-export default FarmersProcessor;
