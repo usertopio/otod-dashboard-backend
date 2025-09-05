@@ -2,9 +2,9 @@
   "name": "otod-durian-lab1",
   "version": "2.2.0",
   "private": true,
-  "description": "",
-  "type": "commonjs",
-  "main": "index.js",
+  "description": "OTOD Durian Lab Testing Project - Data fetching and processing system",
+  "type": "module",
+  "main": "server.js",
   "scripts": {
     "start": "nodemon server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
@@ -41,5 +41,9 @@
     "commitizen": {
       "path": "cz-conventional-changelog"
     }
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
   }
 }
