@@ -1,15 +1,13 @@
-const express = require("express");
-const morgan = require("morgan");
-const cors = require("cors");
-const CronService = require("./app/services/scheduler/cronService");
+import express from "express";
+import morgan from "morgan";
+import cors from "cors";
+import { readdirSync } from "fs";
+import { config } from "dotenv";
+import CronService from "./app/services/scheduler/cronService.js";
 
-const { readdirSync } = require("fs");
+config();
 
-require("dotenv").config();
-
-// Import app AFTER environment variables are loaded
 const app = express();
-
 const PORT = process.env.PORT || 5000;
 
 CronService.init();
@@ -18,9 +16,12 @@ app.use(express.json());
 app.use(cors());
 app.use(morgan("dev"));
 
-readdirSync("./app/routes").map((r) => {
-  app.use("/api", require("./app/routes/" + r));
-});
+// Dynamic route loading with ES modules
+const routeFiles = readdirSync("./app/routes");
+for (const routeFile of routeFiles) {
+  const route = await import(`./app/routes/${routeFile}`);
+  app.use("/api", route.default);
+}
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT} 🎉`);
