@@ -1,11 +1,11 @@
 // ===================== Imports =====================
 // Import the CommunitiesService for business logic
-const CommunitiesService = require("../services/communities/communitiesService");
-const { COMMUNITIES_CONFIG } = require("../utils/constants");
+import CommunitiesService from "../services/communities/communitiesService.js";
+import { COMMUNITIES_CONFIG } from "../utils/constants.js";
 
 // ===================== Controller =====================
 // Handles HTTP requests for community-related operations
-const fetchCommunities = async (req, res) => {
+export const fetchCommunities = async (req, res) => {
   try {
     // Get maxAttempts from request body or use default
     const maxAttempts =
@@ -24,10 +24,4 @@ const fetchCommunities = async (req, res) => {
       details: error.message,
     });
   }
-};
-
-// ===================== Exports =====================
-// Export the fetchCommunities controller method
-module.exports = {
-  fetchCommunities,
 };

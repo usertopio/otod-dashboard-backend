@@ -1,6 +1,6 @@
 // ===================== Imports =====================
-const FarmersService = require("../services/farmers/farmersService");
-const { FARMERS_CONFIG } = require("../utils/constants");
+import FarmersService from "../services/farmers/farmersService.js";
+import { FARMERS_CONFIG } from "../utils/constants.js";
 
 // ===================== Controller =====================
 // Handles HTTP requests for farmer-related operations
@@ -37,6 +37,4 @@ class FarmersController {
 }
 
 // ===================== Exports =====================
-module.exports = {
-  fetchFarmers: FarmersController.fetchFarmers,
-};
+export const fetchFarmers = FarmersController.fetchFarmers;

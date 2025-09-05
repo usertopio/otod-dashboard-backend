@@ -1,11 +1,11 @@
 // ===================== Imports =====================
 // Import the WaterService for business logic
-const WaterService = require("../services/water/waterService");
-const { WATER_CONFIG } = require("../utils/constants");
+import WaterService from "../services/water/waterService.js";
+import { WATER_CONFIG } from "../utils/constants.js";
 
 // ===================== Controller =====================
 // Handles HTTP requests for water-related operations
-const fetchWater = async (req, res) => {
+export const fetchWater = async (req, res) => {
   try {
     // Get maxAttempts from request body or use default
     const maxAttempts =
@@ -24,9 +24,4 @@ const fetchWater = async (req, res) => {
       error: err.message,
     });
   }
-};
-
-// ===================== Exports =====================
-module.exports = {
-  fetchWater,
 };

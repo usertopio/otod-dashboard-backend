@@ -1,11 +1,11 @@
 // ===================== Imports =====================
 // Import the OperationsService for business logic
-const OperationsService = require("../services/operations/operationsService");
-const { OPERATIONS_CONFIG } = require("../utils/constants");
+import OperationsService from "../services/operations/operationsService.js";
+import { OPERATIONS_CONFIG } from "../utils/constants.js";
 
 // ===================== Controller =====================
 // Handles HTTP requests for operation-related actions
-const fetchOperations = async (req, res) => {
+export const fetchOperations = async (req, res) => {
   try {
     // Get maxAttempts from request body or use default
     const maxAttempts =
@@ -24,10 +24,4 @@ const fetchOperations = async (req, res) => {
       details: error.message,
     });
   }
-};
-
-// ===================== Exports =====================
-// Export the fetchOperations controller method
-module.exports = {
-  fetchOperations,
 };
