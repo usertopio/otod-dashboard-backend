@@ -103,25 +103,24 @@ class DurianGardensService {
     console.log(`🌿 Fetching ALL durian gardens, Max attempts: ${maxAttempts}`);
 
     while (attempt <= maxAttempts && hasMoreData) {
-      DurianGardensLogger.logAttemptStart(attempt, maxAttempts);
-
-      // Get count before processing
       const countBefore = await this._getDatabaseCount();
-
       const result = await DurianGardensProcessor.fetchAndProcessData();
-
-      // Get count after processing
       const countAfter = await this._getDatabaseCount();
 
-      // Calculate ACTUAL new records based on database counts
       const actualNewRecords = countAfter - countBefore;
 
-      // Override the result with correct counts
-      result.inserted = actualNewRecords;
-      result.updated = Math.max(
-        0,
-        (result.totalProcessed || 0) - actualNewRecords
-      );
+      // ✅ FIXED: Trust the bulk operation's results
+      const actualInserted = actualNewRecords;
+      const actualUpdated = result.updated || 0;  // Trust bulk operation
+      const actualErrors = result.errors || 0;
+
+      // ❌ REMOVE THIS LINE:
+      // result.updated = Math.max(0, (result.totalProcessed || 0) - actualNewRecords);
+
+      // ✅ CORRECT: Use bulk operation values directly
+      result.inserted = actualInserted;
+      result.updated = actualUpdated;  // Don't override this!
+      result.errors = actualErrors;
 
       DurianGardensLogger.logAttemptResults(attempt, result);
 
