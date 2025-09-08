@@ -4,7 +4,9 @@ services:
   app:
     build:
       context: .
-      dockerfile: dockerFile # <-- move under build
+      dockerfile: dockerFile # (make sure the filename matches exactly: "Dockerfile")
+    image: otod-dashboard-backend:1.0 # optional: tag the built image
+    container_name: otod-backend-backend
     ports:
       - "5000:5000"
     env_file: .env
