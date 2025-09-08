@@ -105,7 +105,23 @@ class DurianGardensService {
     while (attempt <= maxAttempts && hasMoreData) {
       DurianGardensLogger.logAttemptStart(attempt, maxAttempts);
 
+      // Get count before processing
+      const countBefore = await this._getDatabaseCount();
+
       const result = await DurianGardensProcessor.fetchAndProcessData();
+
+      // Get count after processing
+      const countAfter = await this._getDatabaseCount();
+
+      // Calculate ACTUAL new records based on database counts
+      const actualNewRecords = countAfter - countBefore;
+
+      // Override the result with correct counts
+      result.inserted = actualNewRecords;
+      result.updated = Math.max(
+        0,
+        (result.totalProcessed || 0) - actualNewRecords
+      );
 
       DurianGardensLogger.logAttemptResults(attempt, result);
 
@@ -113,8 +129,13 @@ class DurianGardensService {
       totalUpdated += result.updated || 0;
       totalErrors += result.errors || 0;
 
-      // Only continue if new records were inserted in this attempt
-      hasMoreData = (result.inserted || 0) > 0;
+      // Stop if no actual new records in database
+      hasMoreData = actualNewRecords > 0;
+
+      console.log(
+        `🔍 Attempt ${attempt}: DB grew by ${actualNewRecords}, Continue: ${hasMoreData}`
+      );
+
       attempt++;
     }
 
