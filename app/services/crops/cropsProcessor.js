@@ -97,10 +97,6 @@ class CropsProcessor {
           pageSize: CROPS_CONFIG.DEFAULT_PAGE_SIZE,
         };
 
-        // const customHeaders = {
-        //   Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-        // };
-
         const crops = await getCrops(requestBody);
         const cropsCurPage = crops.data || [];
         metrics.allCropsFromGetCrops =
@@ -111,6 +107,16 @@ class CropsProcessor {
 
         if (cropsCurPage.length === 0) hasMore = false;
         page++;
+
+        // ✅ ADD: Small delay to prevent rate limiting
+        if (hasMore) {
+          await new Promise((resolve) => setTimeout(resolve, 300)); // 300ms (was 100ms)
+        }
+      }
+
+      // ✅ INCREASE: Bigger delay between years
+      if (year < CROPS_CONFIG.END_YEAR) {
+        await new Promise((resolve) => setTimeout(resolve, 500)); // 500ms (was 200ms)
       }
     }
   }

@@ -122,19 +122,45 @@ class CropsService {
         (result.totalProcessed || 0) - (result.skipped || 0) - actualNewRecords
       );
 
+      // ❌ REMOVE THIS WRONG CALCULATION:
+      // result.updated = Math.max(
+      //   0,
+      //   (result.totalProcessed || 0) - (result.skipped || 0) - actualNewRecords
+      // );
+
+      // ✅ FIXED: Trust the bulk operation results
+      // Override the result with ACTUAL database changes
+      result.inserted = actualNewRecords; // DB growth = actual inserts
+      // Don't override result.updated - trust bulk operation value
+
       CropsLogger.logAttemptResults(attempt, result);
 
       totalInserted += result.inserted || 0;
-      totalUpdated += result.updated || 0;
+      totalUpdated += result.updated || 0; // This will now show correct value
       totalErrors += result.errors || 0;
       totalSkipped += result.skipped || 0;
 
       // Stop if no actual new records in database
       hasMoreData = actualNewRecords > 0;
 
+      // ✅ FIXED: Use standard termination logic like other modules
+      hasMoreData = (result.inserted || 0) > 0;
+
+      // ✅ ADD: Stop immediately after successful first attempt
+      if (
+        attempt === 1 &&
+        (result.inserted || 0) > 0 &&
+        (result.skipped || 0) === 0
+      ) {
+        console.log(
+          `✅ First attempt successful with ${result.inserted} records - stopping`
+        );
+        hasMoreData = false;
+      }
+
       console.log(
-        `🔍 Attempt ${attempt}: DB grew by ${actualNewRecords}, Skipped: ${
-          result.skipped || 0
+        `🔍 Attempt ${attempt}: Inserted ${
+          result.inserted || 0
         }, Continue: ${hasMoreData}`
       );
 
