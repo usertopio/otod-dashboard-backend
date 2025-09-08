@@ -105,6 +105,7 @@ class DurianGardensService {
     while (attempt <= maxAttempts && hasMoreData) {
       DurianGardensLogger.logAttemptStart(attempt, maxAttempts);
 
+      // ✅ SIMPLIFIED: Follow farmers pattern
       const result = await DurianGardensProcessor.fetchAndProcessData();
 
       DurianGardensLogger.logAttemptResults(attempt, result);
@@ -113,32 +114,27 @@ class DurianGardensService {
       totalUpdated += result.updated || 0;
       totalErrors += result.errors || 0;
 
-      // Only continue if new records were inserted in this attempt
-      hasMoreData = (result.inserted || 0) > 0;
+      // ✅ STANDARD TERMINATION: Same as farmers
+      const hasNewData = (result.inserted || 0) > 0;
+      hasMoreData = hasNewData;
+
+      console.log(
+        `🔍 Attempt ${attempt}: Inserted ${result.inserted}, Continue: ${hasMoreData}`
+      );
+
       attempt++;
     }
 
-    const finalCount = await this._getDatabaseCount();
-
-    DurianGardensLogger.logFinalResults(
-      "ALL",
-      finalCount,
-      attempt - 1,
-      maxAttempts,
-      STATUS.SUCCESS
-    );
-
+    // Return standard result format
     return {
-      message: `Fetch loop completed - ALL records fetched`,
-      achieved: finalCount,
+      message: "Fetch loop completed - ALL records fetched",
+      achieved: totalInserted,
       attemptsUsed: attempt - 1,
       maxAttempts: maxAttempts,
       inserted: totalInserted,
       updated: totalUpdated,
       errors: totalErrors,
       status: STATUS.SUCCESS,
-      reachedTarget: true,
-      apis: ["GetLands", "GetLandGeoJSON"],
       table: "durian_gardens",
     };
   }

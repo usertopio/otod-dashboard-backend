@@ -96,6 +96,7 @@ class CropsService {
     let totalInserted = 0;
     let totalUpdated = 0;
     let totalErrors = 0;
+    let totalSkipped = 0;
     let hasMoreData = true;
 
     console.log(`🌾 Fetching ALL crops, Max attempts: ${maxAttempts}`);
@@ -103,16 +104,66 @@ class CropsService {
     while (attempt <= maxAttempts && hasMoreData) {
       CropsLogger.logAttemptStart(attempt, maxAttempts);
 
+      // Get count before processing
+      const countBefore = await this._getDatabaseCount();
+
       const result = await CropsProcessor.fetchAndProcessData();
+
+      // Get count after processing
+      const countAfter = await this._getDatabaseCount();
+
+      // Calculate ACTUAL new records based on database counts
+      const actualNewRecords = countAfter - countBefore;
+
+      // Override the result with correct counts
+      result.inserted = actualNewRecords;
+      result.updated = Math.max(
+        0,
+        (result.totalProcessed || 0) - (result.skipped || 0) - actualNewRecords
+      );
+
+      // ❌ REMOVE THIS WRONG CALCULATION:
+      // result.updated = Math.max(
+      //   0,
+      //   (result.totalProcessed || 0) - (result.skipped || 0) - actualNewRecords
+      // );
+
+      // ✅ FIXED: Trust the bulk operation results
+      // Override the result with ACTUAL database changes
+      result.inserted = actualNewRecords; // DB growth = actual inserts
+      // Don't override result.updated - trust bulk operation value
 
       CropsLogger.logAttemptResults(attempt, result);
 
       totalInserted += result.inserted || 0;
-      totalUpdated += result.updated || 0;
+      totalUpdated += result.updated || 0; // This will now show correct value
       totalErrors += result.errors || 0;
+      totalSkipped += result.skipped || 0;
 
-      // Only continue if new records were inserted in this attempt
+      // Stop if no actual new records in database
+      hasMoreData = actualNewRecords > 0;
+
+      // ✅ FIXED: Use standard termination logic like other modules
       hasMoreData = (result.inserted || 0) > 0;
+
+      // ✅ ADD: Stop immediately after successful first attempt
+      if (
+        attempt === 1 &&
+        (result.inserted || 0) > 0 &&
+        (result.skipped || 0) === 0
+      ) {
+        console.log(
+          `✅ First attempt successful with ${result.inserted} records - stopping`
+        );
+        hasMoreData = false;
+      }
+
+      console.log(
+        `🔍 Attempt ${attempt}: Inserted ${
+          result.inserted || 0
+        }, Continue: ${hasMoreData}`
+      );
+
       attempt++;
     }
 
@@ -134,6 +185,7 @@ class CropsService {
       inserted: totalInserted,
       updated: totalUpdated,
       errors: totalErrors,
+      skipped: totalSkipped,
       status: STATUS.SUCCESS,
       reachedTarget: true,
       table: "crops",

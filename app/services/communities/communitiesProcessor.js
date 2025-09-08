@@ -4,7 +4,7 @@
 // Import API client for fetching communities data
 import { getCommunities } from "../api/communities.js";
 // Import DB helper for upserting community records
-import { insertOrUpdateCommunity } from "../db/communitiesDb.js";
+import { bulkInsertOrUpdateCommunities } from "../db/communitiesDb.js";
 // Import DB connection for direct queries
 import { connectionDB } from "../../config/db/db.conf.js";
 // Import config constants and operation enums
@@ -47,14 +47,26 @@ class CommunitiesProcessor {
       uniqueCommunities.length
     );
 
-    // Upsert each unique community into the DB and update metrics
-    await this._processUniqueCommunities(uniqueCommunities, metrics);
+    // ✅ BULK PROCESSING: Process all communities at once
+    console.log(
+      `🚀 Processing ${uniqueCommunities.length} unique communities using BULK operations...`
+    );
+
+    const bulkResult = await bulkInsertOrUpdateCommunities(uniqueCommunities);
 
     // Get DB count after processing
     const dbCountAfter = await this._getDatabaseCount();
 
-    // Build and return a detailed result object
-    return this._buildResult(metrics, dbCountBefore, dbCountAfter);
+    // Return simplified result compatible with service
+    return {
+      inserted: bulkResult.inserted || 0,
+      updated: bulkResult.updated || 0,
+      errors: bulkResult.errors || 0,
+      totalProcessed: uniqueCommunities.length,
+      totalBefore: dbCountBefore,
+      totalAfter: dbCountAfter,
+      growth: dbCountAfter - dbCountBefore,
+    };
   }
 
   /**
@@ -107,34 +119,6 @@ class CommunitiesProcessor {
   }
 
   /**
-   * Upserts each unique community into the DB and updates metrics.
-   * @param {Array} uniqueCommunities - Array of unique communities.
-   * @param {object} metrics - Metrics object to update.
-   */
-  static async _processUniqueCommunities(uniqueCommunities, metrics) {
-    for (const community of uniqueCommunities) {
-      const result = await insertOrUpdateCommunity(community);
-
-      switch (result.operation) {
-        case OPERATIONS.INSERT:
-          metrics.insertCount++;
-          metrics.newRecIds.push(community.recId);
-          break;
-        case OPERATIONS.UPDATE:
-          metrics.updateCount++;
-          metrics.updatedRecIds.push(community.recId);
-          break;
-        case OPERATIONS.ERROR:
-          metrics.errorCount++;
-          metrics.errorRecIds.push(community.recId);
-          break;
-      }
-
-      metrics.processedRecIds.add(community.recId);
-    }
-  }
-
-  /**
    * Gets the current count of communities in the DB.
    * @returns {Promise<number>} - Total number of communities.
    */
@@ -143,50 +127,6 @@ class CommunitiesProcessor {
       .promise()
       .query("SELECT COUNT(*) as total FROM communities");
     return result[0].total;
-  }
-
-  /**
-   * Builds a detailed result object with metrics and insights.
-   * @param {object} metrics - Metrics object.
-   * @param {number} dbCountBefore - DB count before processing.
-   * @param {number} dbCountAfter - DB count after processing.
-   * @returns {object} - Result summary.
-   */
-  static _buildResult(metrics, dbCountBefore, dbCountAfter) {
-    return {
-      // Database metrics
-      totalBefore: dbCountBefore,
-      totalAfter: dbCountAfter,
-      inserted: metrics.insertCount,
-      updated: metrics.updateCount,
-      errors: metrics.errorCount,
-      growth: dbCountAfter - dbCountBefore,
-
-      // API metrics
-      totalFromAPI: metrics.allCommunitiesAllPages.length,
-      uniqueFromAPI: metrics.allCommunitiesAllPages.filter(
-        (community, index, self) =>
-          index === self.findIndex((c) => c.recId === community.recId)
-      ).length,
-      duplicatedDataAmount:
-        metrics.allCommunitiesAllPages.length -
-        metrics.insertCount -
-        metrics.updateCount,
-
-      // Record tracking
-      newRecIds: metrics.newRecIds,
-      updatedRecIds: metrics.updatedRecIds,
-      errorRecIds: metrics.errorRecIds,
-      processedRecIds: Array.from(metrics.processedRecIds),
-
-      // Additional insights
-      recordsInDbNotInAPI: dbCountBefore - metrics.updateCount,
-      totalProcessingOperations:
-        metrics.insertCount + metrics.updateCount + metrics.errorCount,
-
-      // For compatibility
-      allCommunitiesAllPages: metrics.allCommunitiesAllPages,
-    };
   }
 }
 
