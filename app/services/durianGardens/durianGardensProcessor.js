@@ -36,8 +36,8 @@ class DurianGardensProcessor {
     // Fetch from GetLandGeoJSON API (single call, no pagination)
     await this._fetchGetLandGeoJSON(metrics);
 
-    // Merge data from both APIs based on landId
-    const mergedGardens = this._mergeGardenData(
+    // ✅ FIXED: Use the correct method name
+    const mergedGardens = this._mergeRecordsFromBothAPIs(
       metrics.allGardensFromGetLands,
       metrics.allGardensFromGetLandGeoJSON
     );

@@ -46,10 +46,11 @@ async function bulkProcessReferenceCodes(gardens) {
         subdistricts,
         "GSUBDIST"
       ),
+      // ✅ FIXED: Use the correct column names for land types
       bulkEnsureRefCodes(
         "ref_land_types",
-        "land_type_name",
-        "land_type_code",
+        "land_type",
+        "land_type_id",
         landTypes,
         "GLTYPE"
       ),
@@ -146,8 +147,8 @@ export async function bulkInsertOrUpdateDurianGardens(gardens) {
       .query("SELECT COUNT(*) as count FROM durian_gardens");
     const beforeCount = countBefore[0].count;
 
-    // Prepare garden data (now much faster - no individual queries)
-    const processedGardens = gardens.map((garden) => {
+    // Prepare garden data with rec_id generation
+    const processedGardens = gardens.map((garden, index) => {
       // Handle GeoJSON parsing
       let geoJsonValue = null;
       if (garden.geojson) {
@@ -165,8 +166,12 @@ export async function bulkInsertOrUpdateDurianGardens(gardens) {
         }
       }
 
+      // ✅ FIXED: Generate rec_id if missing (prevents NULL error)
+      const recId =
+        garden.recId || garden.landId || `DG_${beforeCount + index + 1}`;
+
       return [
-        garden.recId, // rec_id
+        recId, // rec_id - NOW GUARANTEED NOT NULL
         garden.farmerId, // farmer_id
         garden.landId, // land_id
         provinceCodes[garden.province] || "UNKNOWN", // garden_province_code
