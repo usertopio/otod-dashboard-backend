@@ -96,6 +96,7 @@ class CropsService {
     let totalInserted = 0;
     let totalUpdated = 0;
     let totalErrors = 0;
+    let totalSkipped = 0;
     let hasMoreData = true;
 
     console.log(`🌾 Fetching ALL crops, Max attempts: ${maxAttempts}`);
@@ -103,16 +104,40 @@ class CropsService {
     while (attempt <= maxAttempts && hasMoreData) {
       CropsLogger.logAttemptStart(attempt, maxAttempts);
 
+      // Get count before processing
+      const countBefore = await this._getDatabaseCount();
+
       const result = await CropsProcessor.fetchAndProcessData();
+
+      // Get count after processing
+      const countAfter = await this._getDatabaseCount();
+
+      // Calculate ACTUAL new records based on database counts
+      const actualNewRecords = countAfter - countBefore;
+
+      // Override the result with correct counts
+      result.inserted = actualNewRecords;
+      result.updated = Math.max(
+        0,
+        (result.totalProcessed || 0) - (result.skipped || 0) - actualNewRecords
+      );
 
       CropsLogger.logAttemptResults(attempt, result);
 
       totalInserted += result.inserted || 0;
       totalUpdated += result.updated || 0;
       totalErrors += result.errors || 0;
+      totalSkipped += result.skipped || 0;
 
-      // Only continue if new records were inserted in this attempt
-      hasMoreData = (result.inserted || 0) > 0;
+      // Stop if no actual new records in database
+      hasMoreData = actualNewRecords > 0;
+
+      console.log(
+        `🔍 Attempt ${attempt}: DB grew by ${actualNewRecords}, Skipped: ${
+          result.skipped || 0
+        }, Continue: ${hasMoreData}`
+      );
+
       attempt++;
     }
 
@@ -134,6 +159,7 @@ class CropsService {
       inserted: totalInserted,
       updated: totalUpdated,
       errors: totalErrors,
+      skipped: totalSkipped,
       status: STATUS.SUCCESS,
       reachedTarget: true,
       table: "crops",
