@@ -113,8 +113,25 @@ class MerchantsService {
       totalUpdated += result.updated || 0;
       totalErrors += result.errors || 0;
 
-      // Only continue if new records were inserted in this attempt
+      // ✅ STANDARD TERMINATION: Same as other modules
       hasMoreData = (result.inserted || 0) > 0;
+
+      // ✅ ADD: Early termination for efficiency
+      if (
+        attempt === 1 &&
+        (result.inserted || 0) > 0 &&
+        (result.errors || 0) === 0
+      ) {
+        console.log(
+          `✅ First attempt successful with ${result.inserted} records - stopping`
+        );
+        hasMoreData = false;
+      }
+
+      console.log(
+        `🔍 Attempt ${attempt}: Inserted ${result.inserted}, Continue: ${hasMoreData}`
+      );
+
       attempt++;
     }
 
