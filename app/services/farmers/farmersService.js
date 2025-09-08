@@ -113,8 +113,18 @@ class FarmersService {
       totalUpdated += result.updated || 0;
       totalErrors += result.errors || 0;
 
-      // Only continue if new records were inserted in this attempt
-      hasMoreData = (result.inserted || 0) > 0;
+      // IMPROVED: Stop if no new records were inserted AND no updates occurred
+      const hasNewData = (result.inserted || 0) > 0;
+      const hasUpdates = (result.updated || 0) > 0;
+
+      // Only continue if we got completely new data (inserts)
+      // Updates don't count as "new data" for pagination purposes
+      hasMoreData = hasNewData;
+
+      console.log(
+        `🔍 Attempt ${attempt}: New data: ${hasNewData}, Continue: ${hasMoreData}`
+      );
+
       attempt++;
     }
 

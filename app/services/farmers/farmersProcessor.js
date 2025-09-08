@@ -4,7 +4,10 @@
 // Import API client for fetching farmers data
 import { getFarmers } from "../api/farmers.js";
 // Import DB helper for upserting farmer records
-import { insertOrUpdateFarmer } from "../db/farmersDb.js";
+import {
+  insertOrUpdateFarmer,
+  bulkInsertOrUpdateFarmers,
+} from "../db/farmersDb.js";
 // Import DB connection for direct queries
 import { connectionDB } from "../../config/db/db.conf.js";
 // Import config constants and operation enums
@@ -38,30 +41,23 @@ export default class FarmersProcessor {
     // Deduplicate across all pages
     const uniqueFarmers = this._getUniqueFarmers(allFarmers);
 
-    let inserted = 0;
-    let updated = 0;
-    let errors = 0;
+    console.log(
+      `🚀 Processing ${uniqueFarmers.length} unique farmers using BULK operations...`
+    );
 
-    // Upsert each unique farmer
-    for (const farmer of uniqueFarmers) {
-      const result = await insertOrUpdateFarmer(farmer);
-      switch (result.operation) {
-        case OPERATIONS.INSERT:
-          inserted++;
-          break;
-        case OPERATIONS.UPDATE:
-          updated++;
-          break;
-        case OPERATIONS.ERROR:
-          errors++;
-          break;
-      }
-    }
+    // BULK PROCESSING - Single operation for all farmers
+    const result = await bulkInsertOrUpdateFarmers(uniqueFarmers);
 
     // Get DB count after processing
     const dbCountAfter = await this._getDatabaseCount();
 
-    return { inserted, updated, errors, totalAfter: dbCountAfter };
+    return {
+      inserted: result.inserted,
+      updated: result.updated,
+      errors: result.errors,
+      totalAfter: dbCountAfter,
+      processingMethod: "BULK_UPSERT",
+    };
   }
 
   /**

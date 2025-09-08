@@ -237,3 +237,149 @@ export async function insertOrUpdateFarmer(farmer) {
     return { operation: "ERROR", recId: farmer.recId, error: err.message };
   }
 }
+
+/**
+ * Bulk insert or update farmers using INSERT ... ON DUPLICATE KEY UPDATE
+ * @param {Array} farmers - Array of farmer objects
+ * @returns {Promise<object>} - Bulk operation result
+ */
+export async function bulkInsertOrUpdateFarmers(farmers) {
+  if (!farmers || farmers.length === 0) {
+    return { inserted: 0, updated: 0, errors: 0 };
+  }
+
+  try {
+    // Get current count before operation
+    const [countBefore] = await connectionDB
+      .promise()
+      .query("SELECT COUNT(*) as count FROM farmers");
+    const beforeCount = countBefore[0].count;
+
+    // Prepare all farmer data with reference code mapping
+    const processedFarmers = [];
+    for (const farmer of farmers) {
+      // Map reference codes (same as before)
+      const provinceCode = await ensureRefCode(
+        "ref_provinces",
+        "province_name_th",
+        "province_code",
+        farmer.province,
+        "GPROV"
+      );
+
+      const districtCode = await ensureRefCode(
+        "ref_districts",
+        "district_name_th",
+        "district_code",
+        farmer.amphur,
+        "GDIST"
+      );
+
+      const subdistrictCode = await ensureRefCode(
+        "ref_subdistricts",
+        "subdistrict_name_th",
+        "subdistrict_code",
+        farmer.tambon,
+        "GSUBDIST"
+      );
+
+      processedFarmers.push([
+        farmer.recId, // rec_id
+        provinceCode, // farmer_province_code
+        districtCode, // farmer_district_code
+        subdistrictCode, // farmer_subdistrict_code
+        farmer.farmerId, // farmer_id
+        farmer.title, // title
+        farmer.firstName, // first_name
+        farmer.lastName, // last_name
+        farmer.gender, // gender
+        farmer.dateOfBirth || null, // date_of_birth
+        farmer.idCard, // id_card
+        farmer.idCardExpiryDate || null, // id_card_expiry_date
+        farmer.addr, // address
+        farmer.postCode, // post_code
+        farmer.email, // email
+        farmer.mobileNo, // mobile_no
+        farmer.lineId, // line_id
+        farmer.farmerRegistNumber, // farmer_regist_number
+        farmer.farmerRegistType, // farmer_regist_type
+        farmer.companyId, // company_id
+        farmer.createdTime, // created_at
+        farmer.updatedTime, // updated_at
+        new Date(), // fetch_at
+      ]);
+    }
+
+    // Execute bulk insert with ON DUPLICATE KEY UPDATE
+    const query = `
+      INSERT INTO farmers (
+        rec_id, farmer_province_code, farmer_district_code, farmer_subdistrict_code, 
+        farmer_id, title, first_name, last_name, gender, date_of_birth, id_card, 
+        id_card_expiry_date, address, post_code, email, mobile_no, line_id, 
+        farmer_regist_number, farmer_regist_type, company_id, created_at, updated_at, fetch_at
+      ) VALUES ? 
+      ON DUPLICATE KEY UPDATE
+        farmer_province_code = VALUES(farmer_province_code),
+        farmer_district_code = VALUES(farmer_district_code), 
+        farmer_subdistrict_code = VALUES(farmer_subdistrict_code),
+        farmer_id = VALUES(farmer_id),
+        title = VALUES(title),
+        first_name = VALUES(first_name),
+        last_name = VALUES(last_name), 
+        gender = VALUES(gender),
+        date_of_birth = VALUES(date_of_birth),
+        id_card = VALUES(id_card),
+        id_card_expiry_date = VALUES(id_card_expiry_date),
+        address = VALUES(address),
+        post_code = VALUES(post_code),
+        email = VALUES(email),
+        mobile_no = VALUES(mobile_no),
+        line_id = VALUES(line_id),
+        farmer_regist_number = VALUES(farmer_regist_number),
+        farmer_regist_type = VALUES(farmer_regist_type),
+        company_id = VALUES(company_id),
+        updated_at = VALUES(updated_at),
+        fetch_at = VALUES(fetch_at)
+    `;
+
+    const [result] = await connectionDB
+      .promise()
+      .query(query, [processedFarmers]);
+
+    // Get count after operation
+    const [countAfter] = await connectionDB
+      .promise()
+      .query("SELECT COUNT(*) as count FROM farmers");
+    const afterCount = countAfter[0].count;
+
+    // CORRECT calculation based on actual database counts
+    const actualInserts = afterCount - beforeCount;
+    const actualUpdates = farmers.length - actualInserts;
+
+    console.log(
+      `📊 Bulk operation: ${actualInserts} inserted, ${actualUpdates} updated`
+    );
+    console.log(
+      `📊 Database: ${beforeCount} → ${afterCount} (${
+        actualInserts > 0 ? "+" + actualInserts : "no change"
+      })`
+    );
+
+    return {
+      operation: "BULK_UPSERT",
+      inserted: actualInserts,
+      updated: Math.max(0, actualUpdates),
+      errors: 0,
+      totalProcessed: farmers.length,
+    };
+  } catch (err) {
+    console.error("Bulk farmer insert/update error:", err);
+    return {
+      operation: "BULK_ERROR",
+      inserted: 0,
+      updated: 0,
+      errors: farmers.length,
+      error: err.message,
+    };
+  }
+}
