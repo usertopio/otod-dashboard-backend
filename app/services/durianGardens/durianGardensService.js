@@ -103,24 +103,10 @@ class DurianGardensService {
     console.log(`🌿 Fetching ALL durian gardens, Max attempts: ${maxAttempts}`);
 
     while (attempt <= maxAttempts && hasMoreData) {
-      const countBefore = await this._getDatabaseCount();
+      DurianGardensLogger.logAttemptStart(attempt, maxAttempts);
+
+      // ✅ SIMPLIFIED: Follow farmers pattern
       const result = await DurianGardensProcessor.fetchAndProcessData();
-      const countAfter = await this._getDatabaseCount();
-
-      const actualNewRecords = countAfter - countBefore;
-
-      // ✅ FIXED: Trust the bulk operation's results
-      const actualInserted = actualNewRecords;
-      const actualUpdated = result.updated || 0;  // Trust bulk operation
-      const actualErrors = result.errors || 0;
-
-      // ❌ REMOVE THIS LINE:
-      // result.updated = Math.max(0, (result.totalProcessed || 0) - actualNewRecords);
-
-      // ✅ CORRECT: Use bulk operation values directly
-      result.inserted = actualInserted;
-      result.updated = actualUpdated;  // Don't override this!
-      result.errors = actualErrors;
 
       DurianGardensLogger.logAttemptResults(attempt, result);
 
@@ -128,37 +114,27 @@ class DurianGardensService {
       totalUpdated += result.updated || 0;
       totalErrors += result.errors || 0;
 
-      // Stop if no actual new records in database
-      hasMoreData = actualNewRecords > 0;
+      // ✅ STANDARD TERMINATION: Same as farmers
+      const hasNewData = (result.inserted || 0) > 0;
+      hasMoreData = hasNewData;
 
       console.log(
-        `🔍 Attempt ${attempt}: DB grew by ${actualNewRecords}, Continue: ${hasMoreData}`
+        `🔍 Attempt ${attempt}: Inserted ${result.inserted}, Continue: ${hasMoreData}`
       );
 
       attempt++;
     }
 
-    const finalCount = await this._getDatabaseCount();
-
-    DurianGardensLogger.logFinalResults(
-      "ALL",
-      finalCount,
-      attempt - 1,
-      maxAttempts,
-      STATUS.SUCCESS
-    );
-
+    // Return standard result format
     return {
-      message: `Fetch loop completed - ALL records fetched`,
-      achieved: finalCount,
+      message: "Fetch loop completed - ALL records fetched",
+      achieved: totalInserted,
       attemptsUsed: attempt - 1,
       maxAttempts: maxAttempts,
       inserted: totalInserted,
       updated: totalUpdated,
       errors: totalErrors,
       status: STATUS.SUCCESS,
-      reachedTarget: true,
-      apis: ["GetLands", "GetLandGeoJSON"],
       table: "durian_gardens",
     };
   }
