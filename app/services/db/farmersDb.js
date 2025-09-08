@@ -239,6 +239,109 @@ export async function insertOrUpdateFarmer(farmer) {
 }
 
 /**
+ * Bulk process reference codes for all farmers at once
+ */
+async function bulkProcessReferenceCodes(farmers) {
+  // Get unique values
+  const provinces = [
+    ...new Set(farmers.map((f) => f.province).filter(Boolean)),
+  ];
+  const districts = [...new Set(farmers.map((f) => f.amphur).filter(Boolean))];
+  const subdistricts = [
+    ...new Set(farmers.map((f) => f.tambon).filter(Boolean)),
+  ];
+
+  // Bulk lookup/create all reference codes
+  const [provinceCodes, districtCodes, subdistrictCodes] = await Promise.all([
+    bulkEnsureRefCodes(
+      "ref_provinces",
+      "province_name_th",
+      "province_code",
+      provinces,
+      "GPROV"
+    ),
+    bulkEnsureRefCodes(
+      "ref_districts",
+      "district_name_th",
+      "district_code",
+      districts,
+      "GDIST"
+    ),
+    bulkEnsureRefCodes(
+      "ref_subdistricts",
+      "subdistrict_name_th",
+      "subdistrict_code",
+      subdistricts,
+      "GSUBDIST"
+    ),
+  ]);
+
+  return { provinceCodes, districtCodes, subdistrictCodes };
+}
+
+/**
+ * Bulk ensure reference codes for a list of names
+ */
+async function bulkEnsureRefCodes(
+  table,
+  nameColumn,
+  codeColumn,
+  names,
+  prefix
+) {
+  if (!names.length) return {};
+
+  // Get existing codes in one query
+  const [existing] = await connectionDB
+    .promise()
+    .query(
+      `SELECT ${nameColumn}, ${codeColumn} FROM ${table} WHERE ${nameColumn} IN (?)`,
+      [names]
+    );
+
+  const codeMap = {};
+  existing.forEach((row) => {
+    codeMap[row[nameColumn]] = row[codeColumn];
+  });
+
+  // Find missing names
+  const missingNames = names.filter((name) => !codeMap[name]);
+
+  if (missingNames.length > 0) {
+    // Generate codes for missing names
+    const [maxResult] = await connectionDB
+      .promise()
+      .query(
+        `SELECT ${codeColumn} FROM ${table} WHERE ${codeColumn} LIKE '${prefix}%' ORDER BY ${codeColumn} DESC LIMIT 1`
+      );
+
+    let nextNumber = 1;
+    if (maxResult.length > 0) {
+      const lastCode = maxResult[0][codeColumn];
+      nextNumber = parseInt(lastCode.replace(prefix, "")) + 1;
+    }
+
+    // Bulk insert missing codes
+    const insertData = missingNames.map((name, index) => {
+      const code = `${prefix}${String(nextNumber + index).padStart(3, "0")}`;
+      codeMap[name] = code;
+      return [code, name, "generated"];
+    });
+
+    await connectionDB
+      .promise()
+      .query(
+        `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES ?`,
+        [insertData]
+      );
+
+    console.log(`🆕 Created ${insertData.length} new ${table} codes`);
+  }
+
+  return codeMap;
+}
+
+/**
  * Bulk insert or update farmers using INSERT ... ON DUPLICATE KEY UPDATE
  * @param {Array} farmers - Array of farmer objects
  * @returns {Promise<object>} - Bulk operation result
@@ -249,66 +352,50 @@ export async function bulkInsertOrUpdateFarmers(farmers) {
   }
 
   try {
+    console.time("⏱️ Reference codes processing");
+
+    // BULK process all reference codes at once
+    const { provinceCodes, districtCodes, subdistrictCodes } =
+      await bulkProcessReferenceCodes(farmers);
+
+    console.timeEnd("⏱️ Reference codes processing");
+    console.time("⏱️ Data preparation");
+
     // Get current count before operation
     const [countBefore] = await connectionDB
       .promise()
       .query("SELECT COUNT(*) as count FROM farmers");
     const beforeCount = countBefore[0].count;
 
-    // Prepare all farmer data with reference code mapping
-    const processedFarmers = [];
-    for (const farmer of farmers) {
-      // Map reference codes (same as before)
-      const provinceCode = await ensureRefCode(
-        "ref_provinces",
-        "province_name_th",
-        "province_code",
-        farmer.province,
-        "GPROV"
-      );
+    // Prepare farmer data (now much faster - no individual queries)
+    const processedFarmers = farmers.map((farmer) => [
+      farmer.recId,
+      provinceCodes[farmer.province] || null,
+      districtCodes[farmer.amphur] || null,
+      subdistrictCodes[farmer.tambon] || null,
+      farmer.farmerId,
+      farmer.title,
+      farmer.firstName,
+      farmer.lastName,
+      farmer.gender,
+      farmer.dateOfBirth || null,
+      farmer.idCard,
+      farmer.idCardExpiryDate || null,
+      farmer.addr,
+      farmer.postCode,
+      farmer.email,
+      farmer.mobileNo,
+      farmer.lineId,
+      farmer.farmerRegistNumber,
+      farmer.farmerRegistType,
+      farmer.companyId,
+      farmer.createdTime,
+      farmer.updatedTime,
+      new Date(),
+    ]);
 
-      const districtCode = await ensureRefCode(
-        "ref_districts",
-        "district_name_th",
-        "district_code",
-        farmer.amphur,
-        "GDIST"
-      );
-
-      const subdistrictCode = await ensureRefCode(
-        "ref_subdistricts",
-        "subdistrict_name_th",
-        "subdistrict_code",
-        farmer.tambon,
-        "GSUBDIST"
-      );
-
-      processedFarmers.push([
-        farmer.recId, // rec_id
-        provinceCode, // farmer_province_code
-        districtCode, // farmer_district_code
-        subdistrictCode, // farmer_subdistrict_code
-        farmer.farmerId, // farmer_id
-        farmer.title, // title
-        farmer.firstName, // first_name
-        farmer.lastName, // last_name
-        farmer.gender, // gender
-        farmer.dateOfBirth || null, // date_of_birth
-        farmer.idCard, // id_card
-        farmer.idCardExpiryDate || null, // id_card_expiry_date
-        farmer.addr, // address
-        farmer.postCode, // post_code
-        farmer.email, // email
-        farmer.mobileNo, // mobile_no
-        farmer.lineId, // line_id
-        farmer.farmerRegistNumber, // farmer_regist_number
-        farmer.farmerRegistType, // farmer_regist_type
-        farmer.companyId, // company_id
-        farmer.createdTime, // created_at
-        farmer.updatedTime, // updated_at
-        new Date(), // fetch_at
-      ]);
-    }
+    console.timeEnd("⏱️ Data preparation");
+    console.time("⏱️ Bulk database operation");
 
     // Execute bulk insert with ON DUPLICATE KEY UPDATE
     const query = `
@@ -346,13 +433,14 @@ export async function bulkInsertOrUpdateFarmers(farmers) {
       .promise()
       .query(query, [processedFarmers]);
 
+    console.timeEnd("⏱️ Bulk database operation");
+
     // Get count after operation
     const [countAfter] = await connectionDB
       .promise()
       .query("SELECT COUNT(*) as count FROM farmers");
     const afterCount = countAfter[0].count;
 
-    // CORRECT calculation based on actual database counts
     const actualInserts = afterCount - beforeCount;
     const actualUpdates = farmers.length - actualInserts;
 
