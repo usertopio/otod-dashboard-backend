@@ -40,50 +40,6 @@ class CommunitiesService {
   }
 
   /**
-   * Main entry point for fetching communities from the API and storing them in the database.
-   * - Resets the communities table before starting.
-   * - Loops up to maxAttempts, fetching and processing data each time.
-   * - Logs progress and metrics for each attempt.
-   * - Stops early if the target number of communities is reached.
-   * - Returns a summary result object.
-   * @param {number} targetCount - The number of communities to fetch and store.
-   * @param {number} maxAttempts - The maximum number of fetch attempts.
-   */
-  static async fetchCommunities(targetCount, maxAttempts) {
-    await this.resetOnlyCommunitiesTable();
-
-    let attempt = 1;
-    let currentCount = 0;
-    let attemptsUsed = 0;
-
-    console.log(
-      `🎯 Target: ${targetCount} communities, Max attempts: ${maxAttempts}`
-    );
-
-    while (attempt <= maxAttempts) {
-      CommunitiesLogger.logAttemptStart(attempt, maxAttempts);
-
-      currentCount = await this._getDatabaseCount();
-      CommunitiesLogger.logCurrentStatus(currentCount, targetCount);
-
-      attemptsUsed++;
-      const result = await CommunitiesProcessor.fetchAndProcessData();
-
-      CommunitiesLogger.logAttemptResults(attempt, result);
-
-      currentCount = result.totalAfter;
-      attempt++;
-
-      if (currentCount >= targetCount) {
-        CommunitiesLogger.logTargetReached(targetCount, attemptsUsed);
-        break;
-      }
-    }
-
-    return this._buildFinalResult(targetCount, attemptsUsed, maxAttempts);
-  }
-
-  /**
    * Fetches ALL communities from the API and stores them in the database.
    * Loops up to maxAttempts, stops early if no new records are inserted.
    * Returns a summary result object.

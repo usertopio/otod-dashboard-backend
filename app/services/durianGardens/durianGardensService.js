@@ -40,50 +40,6 @@ class DurianGardensService {
   }
 
   /**
-   * Main entry point for fetching durian gardens from APIs and storing them in the database.
-   * - Resets the durian_gardens table before starting.
-   * - Loops up to maxAttempts, fetching and processing data each time.
-   * - Logs progress and metrics for each attempt.
-   * - Stops early if the target number of gardens is reached.
-   * - Returns a summary result object.
-   * @param {number} targetCount - The number of gardens to fetch and store.
-   * @param {number} maxAttempts - The maximum number of fetch attempts.
-   */
-  static async fetchDurianGardens(targetCount, maxAttempts) {
-    await this.resetOnlyDurianGardensTable();
-
-    let attempt = 1;
-    let currentCount = 0;
-    let attemptsUsed = 0;
-
-    console.log(
-      `🎯 Target: ${targetCount} durian gardens, Max attempts: ${maxAttempts}`
-    );
-
-    while (attempt <= maxAttempts) {
-      DurianGardensLogger.logAttemptStart(attempt, maxAttempts);
-
-      currentCount = await this._getDatabaseCount();
-      DurianGardensLogger.logCurrentStatus(currentCount, targetCount);
-
-      attemptsUsed++;
-      const result = await DurianGardensProcessor.fetchAndProcessData();
-
-      DurianGardensLogger.logAttemptResults(attempt, result);
-
-      currentCount = result.totalAfter;
-      attempt++;
-
-      if (currentCount >= targetCount) {
-        DurianGardensLogger.logTargetReached(targetCount, attemptsUsed);
-        break;
-      }
-    }
-
-    return this._buildFinalResult(targetCount, attemptsUsed, maxAttempts);
-  }
-
-  /**
    * Fetches ALL durian gardens from both APIs and stores them in the database.
    * Loops up to maxAttempts, stops early if no new records are inserted.
    * Returns a summary result object.
@@ -125,18 +81,15 @@ class DurianGardensService {
       attempt++;
     }
 
-    // Return standard result format
-    return {
-      message: "Fetch loop completed - ALL records fetched",
-      achieved: totalInserted,
-      attemptsUsed: attempt - 1,
-      maxAttempts: maxAttempts,
-      inserted: totalInserted,
-      updated: totalUpdated,
-      errors: totalErrors,
-      status: STATUS.SUCCESS,
-      table: "durian_gardens",
-    };
+    // ✅ FIX: Pass the actual final count, not "ALL"
+    const finalCount = await this._getDatabaseCount();
+    const result = await this._buildFinalResult(
+      finalCount, // ← Pass the actual number like other modules
+      attempt - 1,
+      maxAttempts
+    );
+
+    return result; // ← Return the result from _buildFinalResult
   }
 
   /**
@@ -159,6 +112,7 @@ class DurianGardensService {
    */
   static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
     const finalCount = await this._getDatabaseCount();
+
     const status =
       finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
 

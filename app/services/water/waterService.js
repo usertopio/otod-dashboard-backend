@@ -41,50 +41,6 @@ class WaterService {
   }
 
   /**
-   * Main entry point for fetching water usage summary from the API and storing it in the database.
-   * - Resets the water table before starting.
-   * - Loops up to maxAttempts, fetching and processing data each time.
-   * - Logs progress and metrics for each attempt.
-   * - Stops early if the target number of records is reached.
-   * - Returns a summary result object.
-   * @param {number} targetCount - The number of records to fetch and store.
-   * @param {number} maxAttempts - The maximum number of fetch attempts.
-   */
-  static async fetchWater(targetCount, maxAttempts) {
-    await this.resetOnlyWaterTable();
-
-    let attempt = 1;
-    let currentCount = 0;
-    let attemptsUsed = 0;
-
-    console.log(
-      `🎯 Target: ${targetCount} water records, Max attempts: ${maxAttempts}`
-    );
-
-    while (attempt <= maxAttempts) {
-      WaterLogger.logAttemptStart(attempt, maxAttempts);
-
-      currentCount = await this._getDatabaseCount();
-      WaterLogger.logCurrentStatus(currentCount, targetCount);
-
-      attemptsUsed++;
-      const result = await WaterProcessor.fetchAndProcessData();
-
-      WaterLogger.logAttemptResults(attempt, result);
-
-      currentCount = result.totalAfter;
-      attempt++;
-
-      if (currentCount >= targetCount) {
-        WaterLogger.logTargetReached(targetCount, attemptsUsed);
-        break;
-      }
-    }
-
-    return this._buildFinalResult(targetCount, attemptsUsed, maxAttempts);
-  }
-
-  /**
    * Main entry point for fetching ALL water usage summary from the API and storing it in the database.
    * - Resets the water table before starting.
    * - Loops up to maxAttempts, fetching and processing data each time.

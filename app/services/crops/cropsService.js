@@ -40,50 +40,6 @@ class CropsService {
   }
 
   /**
-   * Main entry point for fetching crops from APIs and storing them in the database.
-   * - Resets the crops table before starting.
-   * - Loops up to maxAttempts, fetching and processing data each time.
-   * - Logs progress and metrics for each attempt.
-   * - Stops early if the target number of crops is reached.
-   * - Returns a summary result object.
-   * @param {number} targetCount - The number of crops to fetch and store.
-   * @param {number} maxAttempts - The maximum number of fetch attempts.
-   */
-  static async fetchCrops(targetCount, maxAttempts) {
-    await this.resetOnlyCropsTable();
-
-    let attempt = 1;
-    let currentCount = 0;
-    let attemptsUsed = 0;
-
-    console.log(
-      `🎯 Target: ${targetCount} crops, Max attempts: ${maxAttempts}`
-    );
-
-    while (attempt <= maxAttempts) {
-      CropsLogger.logAttemptStart(attempt, maxAttempts);
-
-      currentCount = await this._getDatabaseCount();
-      CropsLogger.logCurrentStatus(currentCount, targetCount);
-
-      attemptsUsed++;
-      const result = await CropsProcessor.fetchAndProcessData();
-
-      CropsLogger.logAttemptResults(attempt, result);
-
-      currentCount = result.totalAfter;
-      attempt++;
-
-      if (currentCount >= targetCount) {
-        CropsLogger.logTargetReached(targetCount, attemptsUsed);
-        break;
-      }
-    }
-
-    return this._buildFinalResult(targetCount, attemptsUsed, maxAttempts);
-  }
-
-  /**
    * Fetches ALL crops from APIs and stores them in the database.
    * Loops up to maxAttempts, stops early if no new records are inserted.
    * Returns a summary result object.
@@ -96,7 +52,6 @@ class CropsService {
     let totalInserted = 0;
     let totalUpdated = 0;
     let totalErrors = 0;
-    let totalSkipped = 0;
     let hasMoreData = true;
 
     console.log(`🌾 Fetching ALL crops, Max attempts: ${maxAttempts}`);
@@ -104,92 +59,26 @@ class CropsService {
     while (attempt <= maxAttempts && hasMoreData) {
       CropsLogger.logAttemptStart(attempt, maxAttempts);
 
-      // Get count before processing
-      const countBefore = await this._getDatabaseCount();
-
       const result = await CropsProcessor.fetchAndProcessData();
-
-      // Get count after processing
-      const countAfter = await this._getDatabaseCount();
-
-      // Calculate ACTUAL new records based on database counts
-      const actualNewRecords = countAfter - countBefore;
-
-      // Override the result with correct counts
-      result.inserted = actualNewRecords;
-      result.updated = Math.max(
-        0,
-        (result.totalProcessed || 0) - (result.skipped || 0) - actualNewRecords
-      );
-
-      // ❌ REMOVE THIS WRONG CALCULATION:
-      // result.updated = Math.max(
-      //   0,
-      //   (result.totalProcessed || 0) - (result.skipped || 0) - actualNewRecords
-      // );
-
-      // ✅ FIXED: Trust the bulk operation results
-      // Override the result with ACTUAL database changes
-      result.inserted = actualNewRecords; // DB growth = actual inserts
-      // Don't override result.updated - trust bulk operation value
 
       CropsLogger.logAttemptResults(attempt, result);
 
       totalInserted += result.inserted || 0;
-      totalUpdated += result.updated || 0; // This will now show correct value
+      totalUpdated += result.updated || 0;
       totalErrors += result.errors || 0;
-      totalSkipped += result.skipped || 0;
 
-      // Stop if no actual new records in database
-      hasMoreData = actualNewRecords > 0;
-
-      // ✅ FIXED: Use standard termination logic like other modules
-      hasMoreData = (result.inserted || 0) > 0;
-
-      // ✅ ADD: Stop immediately after successful first attempt
-      if (
-        attempt === 1 &&
-        (result.inserted || 0) > 0 &&
-        (result.skipped || 0) === 0
-      ) {
-        console.log(
-          `✅ First attempt successful with ${result.inserted} records - stopping`
-        );
-        hasMoreData = false;
-      }
+      const hasNewData = (result.inserted || 0) > 0;
+      hasMoreData = hasNewData;
 
       console.log(
-        `🔍 Attempt ${attempt}: Inserted ${
-          result.inserted || 0
-        }, Continue: ${hasMoreData}`
+        `🔍 Attempt ${attempt}: Inserted ${result.inserted}, Continue: ${hasMoreData}`
       );
 
       attempt++;
     }
 
-    const finalCount = await this._getDatabaseCount();
-
-    CropsLogger.logFinalResults(
-      "ALL",
-      finalCount,
-      attempt - 1,
-      maxAttempts,
-      STATUS.SUCCESS
-    );
-
-    return {
-      message: `Fetch loop completed - ALL records fetched`,
-      achieved: finalCount,
-      attemptsUsed: attempt - 1,
-      maxAttempts: maxAttempts,
-      inserted: totalInserted,
-      updated: totalUpdated,
-      errors: totalErrors,
-      skipped: totalSkipped,
-      status: STATUS.SUCCESS,
-      reachedTarget: true,
-      table: "crops",
-    };
+    // ✅ Use _buildFinalResult like durian gardens
+    return this._buildFinalResult("ALL", attempt - 1, maxAttempts);
   }
 
   /**

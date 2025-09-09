@@ -40,48 +40,6 @@ class NewsService {
   }
 
   /**
-   * Main entry point for fetching news from APIs and storing them in the database.
-   * - Resets the news table before starting.
-   * - Loops up to maxAttempts, fetching and processing data each time.
-   * - Logs progress and metrics for each attempt.
-   * - Stops early if the target number of news is reached.
-   * - Returns a summary result object.
-   * @param {number} targetCount - The number of news to fetch and store.
-   * @param {number} maxAttempts - The maximum number of fetch attempts.
-   */
-  static async fetchNews(targetCount, maxAttempts) {
-    await this.resetOnlyNewsTable();
-
-    let attempt = 1;
-    let currentCount = 0;
-    let attemptsUsed = 0;
-
-    console.log(`🎯 Target: ${targetCount} news, Max attempts: ${maxAttempts}`);
-
-    while (attempt <= maxAttempts) {
-      NewsLogger.logAttemptStart(attempt, maxAttempts);
-
-      currentCount = await this._getDatabaseCount();
-      NewsLogger.logCurrentStatus(currentCount, targetCount);
-
-      attemptsUsed++;
-      const result = await NewsProcessor.fetchAndProcessData();
-
-      NewsLogger.logAttemptResults(attempt, result);
-
-      currentCount = result.totalAfter;
-      attempt++;
-
-      if (currentCount >= targetCount) {
-        NewsLogger.logTargetReached(targetCount, attemptsUsed);
-        break;
-      }
-    }
-
-    return this._buildFinalResult(targetCount, attemptsUsed, maxAttempts);
-  }
-
-  /**
    * Fetches ALL news from the API and stores them in the database.
    * Loops up to maxAttempts, stops early if no new records are inserted.
    * Returns a summary result object.
