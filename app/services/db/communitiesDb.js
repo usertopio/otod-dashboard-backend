@@ -68,7 +68,7 @@ const bulkEnsureRefCodes = async (
 /**
  * Processes reference codes in bulk for all communities
  */
-const bulkProcessReferenceCodes = async (communities) => {
+export async function bulkProcessReferenceCodes(communities) {
   console.time("Reference codes processing");
 
   try {
@@ -113,12 +113,12 @@ const bulkProcessReferenceCodes = async (communities) => {
     console.timeEnd("Reference codes processing");
     return [new Map(), new Map(), new Map()];
   }
-};
+}
 
 /**
  * Bulk insert or update communities in the database
  */
-const bulkInsertOrUpdateCommunities = async (communities) => {
+export async function bulkInsertOrUpdateCommunities(communities) {
   const connection = connectionDB.promise();
 
   try {
@@ -213,45 +213,4 @@ const bulkInsertOrUpdateCommunities = async (communities) => {
       error: error.message,
     };
   }
-};
-
-/**
- * Get the current count of communities in the database
- */
-const getCommunitiesCount = async () => {
-  try {
-    const [result] = await connectionDB
-      .promise()
-      .query("SELECT COUNT(*) as total FROM communities");
-    return result[0].total;
-  } catch (error) {
-    console.error("❌ Error getting communities count:", error);
-    return 0;
-  }
-};
-
-/**
- * Reset the communities table
- */
-const resetCommunitiesTable = async () => {
-  const connection = connectionDB.promise();
-
-  try {
-    await connection.query("SET FOREIGN_KEY_CHECKS = 0");
-    await connection.query("TRUNCATE TABLE communities");
-    await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-
-    return { success: true, message: "Communities table reset successfully" };
-  } catch (error) {
-    await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-    console.error("❌ Error resetting communities table:", error);
-    throw error;
-  }
-};
-
-// ✅ Single export block at the bottom (Pattern 1 - remove utility functions)
-export {
-  bulkInsertOrUpdateCommunities,
-  bulkProcessReferenceCodes,
-  bulkEnsureRefCodes,
-};
+}
