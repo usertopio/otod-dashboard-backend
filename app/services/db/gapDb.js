@@ -130,70 +130,49 @@ export async function bulkInsertOrUpdateGap(gapCertificates) {
     return { inserted: 0, updated: 0, errors: 0, skipped: 0 };
   }
 
+  const connection = connectionDB.promise();
+
   try {
-    console.time("⏱️ Reference codes processing");
-
-    // BULK process all reference codes at once
-    const { provinceCodes, districtCodes, subdistrictCodes } =
-      await bulkProcessReferenceCodes(gapCertificates);
-
-    console.timeEnd("⏱️ Reference codes processing");
-    console.time("⏱️ Land validation");
+    console.time("Land validation");
 
     // Get all valid land_ids from durian_gardens table
     const validLandIds = await getValidLandIds();
 
-    console.timeEnd("⏱️ Land validation");
-    console.time("⏱️ Data preparation");
-
-    // Get current count before operation
-    const [countBefore] = await connectionDB
-      .promise()
-      .query("SELECT COUNT(*) as count FROM gap");
-    const beforeCount = countBefore[0].count;
+    console.timeEnd("Land validation");
+    console.time("Data preparation");
 
     // Filter GAP certificates with valid land_ids and prepare data
     const validGapCertificates = [];
     const skippedGapCertificates = [];
 
     for (const gap of gapCertificates) {
-      // ✅ VALIDATE: Check if land_id exists in durian_gardens table
+      // Skip if gapCertNumber is empty (no GAP certificate)
+      if (!gap.gapCertNumber || gap.gapCertNumber.trim() === "") {
+        skippedGapCertificates.push({
+          landId: gap.landId,
+          reason: "empty_gap_cert_number",
+        });
+        continue;
+      }
+
+      // Validate if land_id exists in durian_gardens table
       if (!validLandIds.has(gap.landId)) {
         skippedGapCertificates.push({
-          recId: gap.recId,
           landId: gap.landId,
           reason: "missing_land_reference",
         });
         continue;
       }
 
-      // Get reference codes
-      const provinceCode = provinceCodes.get(gap.province) || null;
-      const districtCode = districtCodes.get(gap.district) || null;
-      const subdistrictCode = subdistrictCodes.get(gap.subdistrict) || null;
-
-      if (!provinceCode || !districtCode || !subdistrictCode) {
-        skippedGapCertificates.push({
-          recId: gap.recId,
-          landId: gap.landId,
-          reason: "missing_location_codes",
-        });
-        continue;
-      }
-
+      // ✅ SIMPLE MAPPING: Only map the fields that exist in the table
       validGapCertificates.push([
-        gap.recId, // rec_id
-        provinceCode, // gap_province_code
-        districtCode, // gap_district_code
-        subdistrictCode, // gap_subdistrict_code
-        gap.landId, // land_id
-        gap.gapId, // gap_id
-        gap.issuedDate, // issued_date
-        gap.expiredDate, // expired_date
-        gap.createdTime, // created_at
-        gap.updatedTime, // updated_at
-        gap.companyId, // company_id
-        new Date(), // fetch_at
+        gap.gapCertNumber, // gap_cert_number (required)
+        gap.gapCertType || null, // gap_cert_type (optional)
+        gap.gapIssuedDate || null, // gap_issued_date (optional)
+        gap.gapExpiryDate || null, // gap_expiry_date (optional)
+        gap.farmerId, // farmer_id (required)
+        gap.landId, // land_id (required)
+        new Date(), // fetch_at (timestamp)
       ]);
     }
 
@@ -201,93 +180,75 @@ export async function bulkInsertOrUpdateGap(gapCertificates) {
       `📊 Validation: ${validGapCertificates.length} valid, ${skippedGapCertificates.length} skipped GAP certificates`
     );
 
-    if (skippedGapCertificates.length > 0) {
-      console.warn(
-        `⚠️  Skipped ${skippedGapCertificates.length} GAP certificates with missing references`
-      );
-      // Log first few examples
-      skippedGapCertificates.slice(0, 5).forEach((skip) => {
-        console.warn(
-          `   - GAP ${skip.recId}: ${skip.reason} (land_id: '${skip.landId}')`
-        );
-      });
+    if (validGapCertificates.length === 0) {
+      console.log("⚠️  No valid GAP certificates to process");
+      console.timeEnd("Data preparation");
+      return {
+        inserted: 0,
+        updated: 0,
+        errors: 0,
+        skipped: skippedGapCertificates.length,
+      };
     }
 
-    let actualInserts = 0;
-    let actualUpdates = 0;
+    console.timeEnd("Data preparation");
+    console.time("Bulk database operation");
 
-    if (validGapCertificates.length > 0) {
-      console.timeEnd("⏱️ Data preparation");
-      console.time("⏱️ Bulk database operation");
-
-      // Execute bulk insert with ON DUPLICATE KEY UPDATE
-      const query = `
-        INSERT INTO gap (
-          rec_id, gap_province_code, gap_district_code, gap_subdistrict_code,
-          land_id, gap_id, issued_date, expired_date,
-          created_at, updated_at, company_id, fetch_at
-        ) VALUES ? 
-        ON DUPLICATE KEY UPDATE
-          gap_province_code = VALUES(gap_province_code),
-          gap_district_code = VALUES(gap_district_code),
-          gap_subdistrict_code = VALUES(gap_subdistrict_code),
-          land_id = VALUES(land_id),
-          gap_id = VALUES(gap_id),
-          issued_date = VALUES(issued_date),
-          expired_date = VALUES(expired_date),
-          updated_at = VALUES(updated_at),
-          company_id = VALUES(company_id),
-          fetch_at = VALUES(fetch_at)
-      `;
-
-      const [result] = await connectionDB
-        .promise()
-        .query(query, [validGapCertificates]);
-
-      console.timeEnd("⏱️ Bulk database operation");
-
-      // Get count after operation
-      const [countAfter] = await connectionDB
-        .promise()
-        .query("SELECT COUNT(*) as count FROM gap");
-      const afterCount = countAfter[0].count;
-
-      actualInserts = afterCount - beforeCount;
-      actualUpdates = validGapCertificates.length - actualInserts;
-    } else {
-      console.timeEnd("⏱️ Data preparation");
-      console.log(
-        "⚠️  No valid GAP certificates to process - all skipped due to missing references"
-      );
-    }
-
-    console.log(
-      `📊 Bulk operation: ${actualInserts} inserted, ${actualUpdates} updated, ${skippedGapCertificates.length} skipped`
+    // Get count before operation
+    const [countBefore] = await connection.query(
+      "SELECT COUNT(*) as count FROM gap"
     );
+    const beforeCount = countBefore[0].count;
+
+    // ✅ SIMPLE SQL: No reference codes needed
+    const sql = `
+      INSERT INTO gap (
+        gap_cert_number, gap_cert_type, gap_issued_date, gap_expiry_date,
+        farmer_id, land_id, fetch_at
+      ) VALUES ?
+      ON DUPLICATE KEY UPDATE
+        gap_cert_type = VALUES(gap_cert_type),
+        gap_issued_date = VALUES(gap_issued_date),
+        gap_expiry_date = VALUES(gap_expiry_date),
+        farmer_id = VALUES(farmer_id),
+        land_id = VALUES(land_id),
+        fetch_at = NOW()
+    `;
+
+    const [result] = await connection.query(sql, [validGapCertificates]);
+
+    console.timeEnd("Bulk database operation");
+
+    // Get count after operation
+    const [countAfter] = await connection.query(
+      "SELECT COUNT(*) as count FROM gap"
+    );
+    const afterCount = countAfter[0].count;
+
+    const actualInserts = afterCount - beforeCount;
+    const actualUpdates = validGapCertificates.length - actualInserts;
+
     console.log(
-      `📊 Database: ${beforeCount} → ${beforeCount + actualInserts} (${
-        actualInserts > 0 ? "+" + actualInserts : "no change"
-      })`
+      `📊 Bulk operation: ${actualInserts} inserted, ${actualUpdates} updated`
     );
 
     return {
-      operation: "BULK_UPSERT",
       inserted: actualInserts,
-      updated: Math.max(0, actualUpdates),
+      updated: actualUpdates,
       errors: 0,
       skipped: skippedGapCertificates.length,
       totalProcessed: gapCertificates.length,
-      skippedDetails: skippedGapCertificates.slice(0, 10), // First 10 for debugging
+      affectedRows: result.affectedRows,
     };
-  } catch (err) {
-    console.error("Bulk GAP insert/update error:", err);
+  } catch (error) {
+    console.error("❌ Bulk GAP insert/update error:", error);
     return {
-      operation: "BULK_ERROR",
       inserted: 0,
       updated: 0,
       errors: gapCertificates.length,
       skipped: 0,
-      error: err.message,
+      totalProcessed: gapCertificates.length,
+      error: error.message,
     };
   }
 }
