@@ -138,27 +138,27 @@ export async function bulkInsertOrUpdateFarmers(farmers) {
     const processedFarmers = farmers.map((farmer) => [
       farmer.recId,
       provinceCodes[farmer.province] || null,
-      districtCodes[farmer.amphur] || null,
+      districtCodes[farmer.amphur] || null, 
       subdistrictCodes[farmer.tambon] || null,
       farmer.farmerId,
-      farmer.title,
-      farmer.firstName,
-      farmer.lastName,
-      farmer.gender,
-      farmer.dateOfBirth || null,
-      farmer.idCard,
-      farmer.idCardExpiryDate || null,
-      farmer.addr,
-      farmer.postCode,
-      farmer.email,
-      farmer.mobileNo,
-      farmer.lineId,
-      farmer.farmerRegistNumber,
-      farmer.farmerRegistType,
+      farmer.title || null,              // ✅ "" → NULL
+      farmer.firstName,                  // Required field, keep as is
+      farmer.lastName,                   // Required field, keep as is
+      farmer.gender || null,             // Could be empty
+      farmer.dateOfBirth || null,        // Could be empty
+      farmer.idCard,                     // Required field, keep as is
+      farmer.idCardExpiryDate || null,   // Could be empty
+      farmer.addr || null,               // Could be empty
+      farmer.postCode,                   // Required field, keep as is
+      farmer.email || null,              // ✅ "" → NULL
+      farmer.mobileNo,                   // Required field, keep as is
+      farmer.lineId || null,             // ✅ "" → NULL
+      farmer.farmerRegistNumber || null, // Could be empty
+      farmer.farmerRegistType || null,   // Could be empty
       farmer.companyId,
       farmer.createdTime,
       farmer.updatedTime,
-      new Date(),
+      new Date(), // fetch_at
     ]);
 
     console.timeEnd("⏱️ Data preparation");
