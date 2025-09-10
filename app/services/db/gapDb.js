@@ -3,66 +3,6 @@ import { connectionDB } from "../../config/db/db.conf.js";
 import { OPERATIONS } from "../../utils/constants.js";
 
 /**
- * Bulk ensure reference codes for a list of names
- */
-async function bulkEnsureRefCodes(
-  table,
-  nameColumn,
-  codeColumn,
-  names,
-  prefix
-) {
-  if (!names || names.length === 0) {
-    return new Map();
-  }
-
-  try {
-    // Get existing codes
-    const placeholders = names.map(() => "?").join(",");
-    const selectQuery = `SELECT ${nameColumn}, ${codeColumn} FROM ${table} WHERE ${nameColumn} IN (${placeholders})`;
-    const [existing] = await connectionDB.promise().query(selectQuery, names);
-
-    const codeMap = new Map();
-    const existingNames = new Set();
-
-    existing.forEach((row) => {
-      codeMap.set(row[nameColumn], row[codeColumn]);
-      existingNames.add(row[nameColumn]);
-    });
-
-    // Find missing names
-    const missingNames = names.filter((name) => !existingNames.has(name));
-
-    if (missingNames.length > 0) {
-      // Get next available code number
-      const maxQuery = `SELECT MAX(CAST(SUBSTRING(${codeColumn}, ${
-        prefix.length + 1
-      }) AS UNSIGNED)) as maxNum FROM ${table} WHERE ${codeColumn} LIKE '${prefix}%'`;
-      const [maxResult] = await connectionDB.promise().query(maxQuery);
-      let nextNum = (maxResult[0]?.maxNum || 0) + 1;
-
-      // Insert missing codes
-      const insertData = missingNames.map((name) => {
-        const newCode = `${prefix}${nextNum.toString().padStart(3, "0")}`;
-        codeMap.set(name, newCode);
-        nextNum++;
-        return [newCode, name];
-      });
-
-      const insertQuery = `INSERT INTO ${table} (${codeColumn}, ${nameColumn}) VALUES ?`;
-      await connectionDB.promise().query(insertQuery, [insertData]);
-
-      console.log(`🆕 Created ${insertData.length} new ${table} codes`);
-    }
-
-    return codeMap;
-  } catch (err) {
-    console.error(`Bulk ${table} lookup error:`, err);
-    return new Map();
-  }
-}
-
-/**
  * Get all existing land_ids from durian_gardens table for validation
  */
 async function getValidLandIds() {
@@ -75,49 +15,6 @@ async function getValidLandIds() {
     console.error("Error fetching valid land IDs:", err);
     return new Set();
   }
-}
-
-/**
- * Bulk process reference codes for all GAP certificates at once
- */
-async function bulkProcessReferenceCodes(gapCertificates) {
-  // Get unique values
-  const provinces = [
-    ...new Set(gapCertificates.map((g) => g.province).filter(Boolean)),
-  ];
-  const districts = [
-    ...new Set(gapCertificates.map((g) => g.district).filter(Boolean)),
-  ];
-  const subdistricts = [
-    ...new Set(gapCertificates.map((g) => g.subdistrict).filter(Boolean)),
-  ];
-
-  // Bulk lookup/create all reference codes
-  const [provinceCodes, districtCodes, subdistrictCodes] = await Promise.all([
-    bulkEnsureRefCodes(
-      "ref_provinces",
-      "province_name_th",
-      "province_code",
-      provinces,
-      "GPROV"
-    ),
-    bulkEnsureRefCodes(
-      "ref_districts",
-      "district_name_th",
-      "district_code",
-      districts,
-      "GDIST"
-    ),
-    bulkEnsureRefCodes(
-      "ref_subdistricts",
-      "subdistrict_name_th",
-      "subdistrict_code",
-      subdistricts,
-      "GSUBDIST"
-    ),
-  ]);
-
-  return { provinceCodes, districtCodes, subdistrictCodes };
 }
 
 /**
@@ -172,6 +69,7 @@ export async function bulkInsertOrUpdateGap(gapCertificates) {
         gap.gapExpiryDate || null, // gap_expiry_date (optional)
         gap.farmerId, // farmer_id (required)
         gap.landId, // land_id (required)
+        gap.cropId, // crop_id (required) ✅ ADD THIS LINE
         new Date(), // fetch_at (timestamp)
       ]);
     }
@@ -200,11 +98,11 @@ export async function bulkInsertOrUpdateGap(gapCertificates) {
     );
     const beforeCount = countBefore[0].count;
 
-    // ✅ SIMPLE SQL: No reference codes needed
+    // ✅ SIMPLE SQL: Add crop_id column
     const sql = `
       INSERT INTO gap (
         gap_cert_number, gap_cert_type, gap_issued_date, gap_expiry_date,
-        farmer_id, land_id, fetch_at
+        farmer_id, land_id, crop_id, fetch_at
       ) VALUES ?
       ON DUPLICATE KEY UPDATE
         gap_cert_type = VALUES(gap_cert_type),
@@ -212,6 +110,7 @@ export async function bulkInsertOrUpdateGap(gapCertificates) {
         gap_expiry_date = VALUES(gap_expiry_date),
         farmer_id = VALUES(farmer_id),
         land_id = VALUES(land_id),
+        crop_id = VALUES(crop_id),
         fetch_at = NOW()
     `;
 
