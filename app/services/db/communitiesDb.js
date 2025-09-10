@@ -5,7 +5,7 @@ import { connectionDB } from "../../config/db/db.conf.js";
 /**
  * Bulk ensure reference codes for a list of names
  */
-export const bulkEnsureRefCodes = async (
+const bulkEnsureRefCodes = async (
   table,
   nameColumn,
   codeColumn,
@@ -68,7 +68,7 @@ export const bulkEnsureRefCodes = async (
 /**
  * Processes reference codes in bulk for all communities
  */
-export const bulkProcessReferenceCodes = async (communities) => {
+const bulkProcessReferenceCodes = async (communities) => {
   console.time("Reference codes processing");
 
   try {
@@ -118,7 +118,7 @@ export const bulkProcessReferenceCodes = async (communities) => {
 /**
  * Bulk insert or update communities in the database
  */
-export const bulkInsertOrUpdateCommunities = async (communities) => {
+const bulkInsertOrUpdateCommunities = async (communities) => {
   const connection = connectionDB.promise();
 
   try {
@@ -218,7 +218,7 @@ export const bulkInsertOrUpdateCommunities = async (communities) => {
 /**
  * Get the current count of communities in the database
  */
-export const getCommunitiesCount = async () => {
+const getCommunitiesCount = async () => {
   try {
     const [result] = await connectionDB
       .promise()
@@ -233,7 +233,7 @@ export const getCommunitiesCount = async () => {
 /**
  * Reset the communities table
  */
-export const resetCommunitiesTable = async () => {
+const resetCommunitiesTable = async () => {
   const connection = connectionDB.promise();
 
   try {
@@ -247,4 +247,11 @@ export const resetCommunitiesTable = async () => {
     console.error("❌ Error resetting communities table:", error);
     throw error;
   }
+};
+
+// ✅ Single export block at the bottom (Pattern 1 - remove utility functions)
+export {
+  bulkInsertOrUpdateCommunities,
+  bulkProcessReferenceCodes,
+  bulkEnsureRefCodes,
 };

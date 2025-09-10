@@ -77,19 +77,31 @@ class CropsService {
       attempt++;
     }
 
-    // ✅ Use _buildFinalResult like durian gardens
     return this._buildFinalResult("ALL", attempt - 1, maxAttempts);
   }
 
   /**
    * Returns the current count of crops records in the database.
-   * @returns {Promise<number>} - The total number of crops in the DB.
+   * ✅ Pattern 1: Direct database operation in service layer
+   */
+  static async getCount() {
+    try {
+      const [result] = await connectionDB
+        .promise()
+        .query("SELECT COUNT(*) as total FROM crops");
+      return result[0].total;
+    } catch (error) {
+      console.error("❌ Error getting crops count:", error);
+      return 0;
+    }
+  }
+
+  /**
+   * ✅ Pattern 1: Direct database operation in service layer (for consistency)
+   * @private
    */
   static async _getDatabaseCount() {
-    const [result] = await connectionDB
-      .promise()
-      .query("SELECT COUNT(*) as total FROM crops");
-    return result[0].total;
+    return await this.getCount();
   }
 
   /**
@@ -100,7 +112,7 @@ class CropsService {
    * @returns {object} - Summary of the fetch operation.
    */
   static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
-    const finalCount = await this._getDatabaseCount();
+    const finalCount = await this.getCount(); // ✅ Use service-level getCount()
     const status =
       finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
 

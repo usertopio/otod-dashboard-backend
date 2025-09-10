@@ -301,43 +301,6 @@ const bulkInsertOrUpdateCrops = async (crops) => {
 };
 
 /**
- * Get the current count of crops in the database
+ * Named exports (ESM style)
  */
-const getCropsCount = async () => {
-  try {
-    const [result] = await connectionDB
-      .promise()
-      .query("SELECT COUNT(*) as total FROM crops");
-    return result[0].total;
-  } catch (error) {
-    console.error("❌ Error getting crops count:", error);
-    return 0;
-  }
-};
-
-/**
- * Reset the crops table
- */
-const resetCropsTable = async () => {
-  const connection = connectionDB.promise();
-
-  try {
-    await connection.query("SET FOREIGN_KEY_CHECKS = 0");
-    await connection.query("TRUNCATE TABLE crops");
-    await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-
-    return { success: true, message: "Crops table reset successfully" };
-  } catch (error) {
-    await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-    console.error("❌ Error resetting crops table:", error);
-    throw error;
-  }
-};
-
-// Named exports (ESM style)
-export {
-  bulkInsertOrUpdateCrops,
-  getCropsCount,
-  resetCropsTable,
-  bulkProcessReferenceCodes,
-};
+export { bulkInsertOrUpdateCrops, bulkProcessReferenceCodes };
