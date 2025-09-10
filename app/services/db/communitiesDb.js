@@ -1,56 +1,58 @@
 // ===================== Imports =====================
 // Import DB connection for executing SQL queries
 import { connectionDB } from "../../config/db/db.conf.js";
-import { OPERATIONS } from "../../utils/constants.js";
 
 /**
  * Bulk ensure reference codes for a list of names
  */
-async function bulkEnsureRefCodes(
+export const bulkEnsureRefCodes = async (
   table,
   nameColumn,
   codeColumn,
   names,
   prefix
-) {
-  if (!names || names.length === 0) {
-    return new Map();
-  }
+) => {
+  if (!names.length) return new Map();
 
   try {
-    // Get existing codes
-    const placeholders = names.map(() => "?").join(",");
-    const selectQuery = `SELECT ${nameColumn}, ${codeColumn} FROM ${table} WHERE ${nameColumn} IN (${placeholders})`;
-    const [existing] = await connectionDB.promise().query(selectQuery, names);
+    // Get existing codes in one query
+    const [existing] = await connectionDB
+      .promise()
+      .query(
+        `SELECT ${nameColumn}, ${codeColumn} FROM ${table} WHERE ${nameColumn} IN (?)`,
+        [names]
+      );
 
     const codeMap = new Map();
-    const existingNames = new Set();
-
     existing.forEach((row) => {
       codeMap.set(row[nameColumn], row[codeColumn]);
-      existingNames.add(row[nameColumn]);
     });
 
     // Find missing names
-    const missingNames = names.filter((name) => !existingNames.has(name));
+    const missingNames = names.filter((name) => !codeMap.has(name));
 
     if (missingNames.length > 0) {
-      // Get next available code number
-      const maxQuery = `SELECT MAX(CAST(SUBSTRING(${codeColumn}, ${
-        prefix.length + 1
-      }) AS UNSIGNED)) as maxNum FROM ${table} WHERE ${codeColumn} LIKE '${prefix}%'`;
-      const [maxResult] = await connectionDB.promise().query(maxQuery);
-      let nextNum = (maxResult[0]?.maxNum || 0) + 1;
+      // Generate codes for missing names
+      const [maxResult] = await connectionDB
+        .promise()
+        .query(
+          `SELECT ${codeColumn} FROM ${table} WHERE ${codeColumn} LIKE '${prefix}%' ORDER BY ${codeColumn} DESC LIMIT 1`
+        );
 
-      // Insert missing codes
-      const insertData = missingNames.map((name) => {
-        const newCode = `${prefix}${nextNum.toString().padStart(3, "0")}`;
-        codeMap.set(name, newCode);
-        nextNum++;
-        return [newCode, name];
+      let nextNumber = 1;
+      if (maxResult.length > 0) {
+        const lastCode = maxResult[0][codeColumn];
+        nextNumber = parseInt(lastCode.replace(prefix, "")) + 1;
+      }
+
+      // Bulk insert missing codes
+      const insertData = missingNames.map((name, index) => {
+        const code = `${prefix}${String(nextNumber + index).padStart(3, "0")}`;
+        codeMap.set(name, code);
+        return [code, name, "generated"];
       });
 
-      const insertQuery = `INSERT INTO ${table} (${codeColumn}, ${nameColumn}) VALUES ?`;
+      const insertQuery = `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES ?`;
       await connectionDB.promise().query(insertQuery, [insertData]);
 
       console.log(`🆕 Created ${insertData.length} new ${table} codes`);
@@ -61,109 +63,102 @@ async function bulkEnsureRefCodes(
     console.error(`Bulk ${table} lookup error:`, err);
     return new Map();
   }
-}
+};
 
 /**
- * Bulk process reference codes for all communities at once
+ * Processes reference codes in bulk for all communities
  */
-async function bulkProcessReferenceCodes(communities) {
-  // Get unique values
-  const provinces = [
-    ...new Set(communities.map((c) => c.province).filter(Boolean)),
-  ];
-  const districts = [
-    ...new Set(communities.map((c) => c.district).filter(Boolean)),
-  ];
-  const subdistricts = [
-    ...new Set(communities.map((c) => c.subdistrict).filter(Boolean)),
-  ];
-
-  // Bulk lookup/create all reference codes
-  const [provinceCodes, districtCodes, subdistrictCodes] = await Promise.all([
-    bulkEnsureRefCodes(
-      "ref_provinces",
-      "province_name_th",
-      "province_code",
-      provinces,
-      "GPROV"
-    ),
-    bulkEnsureRefCodes(
-      "ref_districts",
-      "district_name",
-      "district_code",
-      districts,
-      "GDIST"
-    ),
-    bulkEnsureRefCodes(
-      "ref_subdistricts",
-      "subdistrict_name",
-      "subdistrict_code",
-      subdistricts,
-      "GSUBDIST"
-    ),
-  ]);
-
-  return { provinceCodes, districtCodes, subdistrictCodes };
-}
-
-/**
- * Bulk insert or update communities using INSERT ... ON DUPLICATE KEY UPDATE
- * @param {Array} communities - Array of community objects
- * @returns {Promise<object>} - Bulk operation result
- */
-export async function bulkInsertOrUpdateCommunities(communities) {
-  if (!communities || communities.length === 0) {
-    return { inserted: 0, updated: 0, errors: 0 };
-  }
+export const bulkProcessReferenceCodes = async (communities) => {
+  console.time("Reference codes processing");
 
   try {
-    console.time("⏱️ Reference codes processing");
+    const provinces = [
+      ...new Set(communities.map((c) => c.province).filter(Boolean)),
+    ];
+    const districts = [
+      ...new Set(communities.map((c) => c.amphur).filter(Boolean)),
+    ];
+    const subdistricts = [
+      ...new Set(communities.map((c) => c.tambon).filter(Boolean)),
+    ];
 
-    // BULK process all reference codes at once
-    const { provinceCodes, districtCodes, subdistrictCodes } =
-      await bulkProcessReferenceCodes(communities);
-
-    console.timeEnd("⏱️ Reference codes processing");
-    console.time("⏱️ Data preparation");
-
-    // Get current count before operation
-    const [countBefore] = await connectionDB
-      .promise()
-      .query("SELECT COUNT(*) as count FROM communities");
-    const beforeCount = countBefore[0].count;
-
-    // ✅ FIXED: Prepare community data matching actual schema
-    const communityData = communities.map((community) => [
-      community.recId, // rec_id
-      provinceCodes.get(community.province) || null, // community_province_code
-      districtCodes.get(community.district) || null, // community_district_code
-      subdistrictCodes.get(community.subdistrict) || null, // community_subdistrict_code
-      community.postCode || null, // post_code
-      community.commId || community.communityId || null, // comm_id
-      community.communityName || community.commName || null, // comm_name
-      community.totalMembers || null, // total_members
-      community.noOfRais || null, // no_of_rais
-      community.noOfTrees || null, // no_of_trees
-      community.forecastYield || null, // forecast_yield
-      community.createdTime || community.createdAt, // created_at
-      community.updatedTime || community.updatedAt, // updated_at
-      new Date(), // fetch_at
+    const [provinceCodes, districtCodes, subdistrictCodes] = await Promise.all([
+      bulkEnsureRefCodes(
+        "ref_provinces",
+        "province_name_th",
+        "province_code",
+        provinces,
+        "GPROV"
+      ),
+      bulkEnsureRefCodes(
+        "ref_districts",
+        "district_name_th",
+        "district_code",
+        districts,
+        "GDIST"
+      ),
+      bulkEnsureRefCodes(
+        "ref_subdistricts",
+        "subdistrict_name_th",
+        "subdistrict_code",
+        subdistricts,
+        "GSUBDIST"
+      ),
     ]);
 
-    console.timeEnd("⏱️ Data preparation");
-    console.time("⏱️ Bulk database operation");
+    console.timeEnd("Reference codes processing");
+    return [provinceCodes, districtCodes, subdistrictCodes];
+  } catch (error) {
+    console.error("❌ Error in bulkProcessReferenceCodes:", error);
+    console.timeEnd("Reference codes processing");
+    return [new Map(), new Map(), new Map()];
+  }
+};
 
-    // ✅ FIXED: SQL query matching actual table schema
-    const insertQuery = `
+/**
+ * Bulk insert or update communities in the database
+ */
+export const bulkInsertOrUpdateCommunities = async (communities) => {
+  const connection = connectionDB.promise();
+
+  try {
+    const [provinceCodes, districtCodes, subdistrictCodes] =
+      await bulkProcessReferenceCodes(communities);
+
+    console.time("Data preparation");
+
+    const communityData = communities.map((community) => [
+      community.recId,
+      community.postCode,
+      community.commId,
+      community.commName,
+      community.totalMembers,
+      community.noOfRais,
+      community.noOfTrees,
+      community.forecastYield,
+      community.createdTime,
+      community.updatedTime,
+      provinceCodes.get(community.province) || null,
+      districtCodes.get(community.amphur) || null,
+      subdistrictCodes.get(community.tambon) || null,
+    ]);
+
+    console.timeEnd("Data preparation");
+    console.time("Bulk database operation");
+
+    const [beforeResult] = await connection.query(
+      "SELECT COUNT(*) as count FROM communities"
+    );
+    const countBefore = beforeResult[0].count;
+
+    const sql = `
       INSERT INTO communities (
-        rec_id, community_province_code, community_district_code, community_subdistrict_code,
-        post_code, comm_id, comm_name, total_members, no_of_rais, no_of_trees,
-        forecast_yield, created_at, updated_at, fetch_at
-      ) VALUES ? 
+        rec_id, post_code, comm_id, comm_name, total_members, no_of_rais, no_of_trees,
+        forecast_yield, created_at, updated_at,
+        community_province_code, community_district_code, community_subdistrict_code,
+        fetch_at
+      ) VALUES ?
       ON DUPLICATE KEY UPDATE
-        community_province_code = VALUES(community_province_code),
-        community_district_code = VALUES(community_district_code),
-        community_subdistrict_code = VALUES(community_subdistrict_code),
         post_code = VALUES(post_code),
         comm_id = VALUES(comm_id),
         comm_name = VALUES(comm_name),
@@ -173,55 +168,83 @@ export async function bulkInsertOrUpdateCommunities(communities) {
         forecast_yield = VALUES(forecast_yield),
         created_at = VALUES(created_at),
         updated_at = VALUES(updated_at),
-        fetch_at = VALUES(fetch_at)
+        community_province_code = VALUES(community_province_code),
+        community_district_code = VALUES(community_district_code),
+        community_subdistrict_code = VALUES(community_subdistrict_code),
+        fetch_at = NOW()
     `;
 
-    // Execute bulk operation
-    const [result] = await connectionDB
-      .promise()
-      .query(insertQuery, [communityData]);
+    const dataWithTimestamp = communityData.map((row) => [...row, new Date()]);
+    const [result] = await connection.query(sql, [dataWithTimestamp]);
 
-    console.timeEnd("⏱️ Bulk database operation");
+    const [afterResult] = await connection.query(
+      "SELECT COUNT(*) as count FROM communities"
+    );
+    const countAfter = afterResult[0].count;
 
-    // Get count after operation
-    const [countAfter] = await connectionDB
-      .promise()
-      .query("SELECT COUNT(*) as count FROM communities");
-    const afterCount = countAfter[0].count;
+    console.timeEnd("Bulk database operation");
 
-    // Calculate actual inserts and updates
-    const actualInserts = afterCount - beforeCount;
-    const actualUpdates = communities.length - actualInserts;
+    const actualInserted = countAfter - countBefore;
+    const actualUpdated = communities.length - actualInserted;
 
     console.log(
-      `📊 Bulk operation: ${actualInserts} inserted, ${actualUpdates} updated`
+      `📊 Bulk operation: ${actualInserted} inserted, ${actualUpdated} updated`
     );
     console.log(
-      `📊 Database: ${beforeCount} → ${afterCount} (${
-        actualInserts > 0 ? "+" + actualInserts : "no change"
-      })`
+      `📊 Database: ${countBefore} → ${countAfter} (+${actualInserted})`
     );
 
     return {
-      operation: "BULK_UPSERT",
-      inserted: actualInserts,
-      updated: Math.max(0, actualUpdates),
+      inserted: actualInserted,
+      updated: actualUpdated,
       errors: 0,
+      affectedRows: result.affectedRows,
       totalProcessed: communities.length,
     };
-  } catch (err) {
-    console.error("Bulk community insert/update error:", err);
+  } catch (error) {
+    console.error("❌ Bulk community insert/update error:", error);
+
     return {
-      operation: "BULK_ERROR",
       inserted: 0,
       updated: 0,
       errors: communities.length,
+      affectedRows: 0,
       totalProcessed: communities.length,
+      error: error.message,
     };
   }
-}
+};
 
-// Keep existing individual function for compatibility
-export async function insertOrUpdateCommunity(community) {
-  // ...existing individual processing code if needed...
-}
+/**
+ * Get the current count of communities in the database
+ */
+export const getCommunitiesCount = async () => {
+  try {
+    const [result] = await connectionDB
+      .promise()
+      .query("SELECT COUNT(*) as total FROM communities");
+    return result[0].total;
+  } catch (error) {
+    console.error("❌ Error getting communities count:", error);
+    return 0;
+  }
+};
+
+/**
+ * Reset the communities table
+ */
+export const resetCommunitiesTable = async () => {
+  const connection = connectionDB.promise();
+
+  try {
+    await connection.query("SET FOREIGN_KEY_CHECKS = 0");
+    await connection.query("TRUNCATE TABLE communities");
+    await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+
+    return { success: true, message: "Communities table reset successfully" };
+  } catch (error) {
+    await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+    console.error("❌ Error resetting communities table:", error);
+    throw error;
+  }
+};
