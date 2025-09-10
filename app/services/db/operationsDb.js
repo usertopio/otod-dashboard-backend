@@ -294,44 +294,4 @@ const bulkInsertOrUpdateOperations = async (operations) => {
   }
 };
 
-/**
- * Get the current count of operations in the database
- */
-const getOperationsCount = async () => {
-  try {
-    const [result] = await connectionDB
-      .promise()
-      .query("SELECT COUNT(*) as total FROM operations");
-    return result[0].total;
-  } catch (error) {
-    console.error("❌ Error getting operations count:", error);
-    return 0;
-  }
-};
-
-/**
- * Reset the operations table
- */
-const resetOperationsTable = async () => {
-  const connection = connectionDB.promise();
-
-  try {
-    await connection.query("SET FOREIGN_KEY_CHECKS = 0");
-    await connection.query("TRUNCATE TABLE operations");
-    await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-
-    return { success: true, message: "Operations table reset successfully" };
-  } catch (error) {
-    await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-    console.error("❌ Error resetting operations table:", error);
-    throw error;
-  }
-};
-
-// Named exports (ESM style)
-export {
-  bulkInsertOrUpdateOperations,
-  getOperationsCount,
-  resetOperationsTable,
-  bulkProcessReferenceCodes,
-};
+export { bulkInsertOrUpdateOperations, bulkProcessReferenceCodes };
