@@ -210,6 +210,7 @@ const bulkInsertOrUpdateOperations = async (operations) => {
 
     let actualInserts = 0;
     let actualUpdates = 0;
+    let result = null; // ✅ FIX: Declare result variable in proper scope
 
     if (validOperations.length > 0) {
       console.timeEnd("Data preparation");
@@ -244,7 +245,7 @@ const bulkInsertOrUpdateOperations = async (operations) => {
           fetch_at = NOW()
       `;
 
-      const [result] = await connection.query(sql, [dataWithTimestamp]);
+      [result] = await connection.query(sql, [dataWithTimestamp]); // ✅ FIX: Assign to declared variable
 
       console.timeEnd("Bulk database operation");
 
@@ -278,7 +279,7 @@ const bulkInsertOrUpdateOperations = async (operations) => {
       errors: 0,
       skipped: skippedOperations.length,
       totalProcessed: operations.length,
-      affectedRows: result?.affectedRows || 0,
+      affectedRows: result?.affectedRows || 0, // ✅ FIX: Safe access to result
     };
   } catch (error) {
     console.error("❌ Bulk operation insert/update error:", error);
