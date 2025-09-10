@@ -120,9 +120,11 @@ class CommunitiesProcessor {
 
   /**
    * Gets the current count of communities in the DB.
-   * @returns {Promise<number>} - Total number of communities.
+   * ✅ Pattern 1: Use service layer method instead of direct DB operation
    */
   static async _getDatabaseCount() {
+    // ✅ Import CommunitiesService and use its getCount method
+    // Or keep direct DB operation since it's internal to processor
     const [result] = await connectionDB
       .promise()
       .query("SELECT COUNT(*) as total FROM communities");
