@@ -195,19 +195,20 @@ const bulkInsertOrUpdateCrops = async (crops) => {
       crop.farmerId, // farmer_id
       crop.landId, // land_id
       crop.cropId, // crop_id
-      crop.cropYear || null, // crop_year
+      crop.cropYear ?? null, // crop_year
       crop.cropName || null, // crop_name
       // ✅ FIX: Use correct API field names for reference codes
       breedCodes.get(crop.breedName || crop.breed) || null, // breed_id
       crop.cropStartDate || null, // crop_start_date
       crop.cropEndDate || null, // crop_end_date
-      crop.totalTrees || null, // total_trees
-      crop.forecastKg || null, // forecast_kg
-      crop.forecastBaht || null, // forecast_baht
-      crop.forecastWorkerCost || null, // forecast_worker_cost
-      crop.forecastFertilizerCost || null, // forecast_fertilizer_cost
-      crop.forecastEquipmentCost || null, // forecast_equipment_cost
-      crop.forecastPetrolCost || null, // forecast_petrol_cost
+      // ✅ FIX: Use nullish coalescing (??) instead of logical OR (||) for numbers
+      crop.totalTrees ?? null, // total_trees - preserves 0
+      crop.forecastKg ?? null, // forecast_kg - preserves 0
+      crop.forecastBaht ?? null, // forecast_baht - preserves 0
+      crop.forecastWorkerCost ?? null, // forecast_worker_cost - preserves 0
+      crop.forecastFertilizerCost ?? null, // forecast_fertilizer_cost - preserves 0
+      crop.forecastEquipmentCost ?? null, // forecast_equipment_cost - preserves 0
+      crop.forecastPetrolCost ?? null, // forecast_petrol_cost - preserves 0
       durianStageCodes.get(crop.durianStageName || crop.durianStage) || null, // durian_stage_id
       crop.lotNumber || null, // lot_number
       crop.createdTime || null, // created_at
