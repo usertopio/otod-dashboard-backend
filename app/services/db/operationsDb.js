@@ -1,56 +1,60 @@
 // ===================== Imports =====================
 // Import DB connection for executing SQL queries
 import { connectionDB } from "../../config/db/db.conf.js";
-import { OPERATIONS } from "../../utils/constants.js";
 
 /**
  * Bulk ensure reference codes for a list of names
  */
-async function bulkEnsureRefCodes(
+const bulkEnsureRefCodes = async (
   table,
   nameColumn,
   codeColumn,
   names,
   prefix
-) {
+) => {
   if (!names || names.length === 0) {
     return new Map();
   }
 
   try {
-    // Get existing codes
-    const placeholders = names.map(() => "?").join(",");
-    const selectQuery = `SELECT ${nameColumn}, ${codeColumn} FROM ${table} WHERE ${nameColumn} IN (${placeholders})`;
-    const [existing] = await connectionDB.promise().query(selectQuery, names);
+    // Get existing codes in one query
+    const [existing] = await connectionDB
+      .promise()
+      .query(
+        `SELECT ${nameColumn}, ${codeColumn} FROM ${table} WHERE ${nameColumn} IN (?)`,
+        [names]
+      );
 
     const codeMap = new Map();
-    const existingNames = new Set();
-
     existing.forEach((row) => {
       codeMap.set(row[nameColumn], row[codeColumn]);
-      existingNames.add(row[nameColumn]);
     });
 
     // Find missing names
-    const missingNames = names.filter((name) => !existingNames.has(name));
+    const missingNames = names.filter((name) => !codeMap.has(name));
 
     if (missingNames.length > 0) {
-      // Get next available code number
-      const maxQuery = `SELECT MAX(CAST(SUBSTRING(${codeColumn}, ${
-        prefix.length + 1
-      }) AS UNSIGNED)) as maxNum FROM ${table} WHERE ${codeColumn} LIKE '${prefix}%'`;
-      const [maxResult] = await connectionDB.promise().query(maxQuery);
-      let nextNum = (maxResult[0]?.maxNum || 0) + 1;
+      // Generate codes for missing names
+      const [maxResult] = await connectionDB
+        .promise()
+        .query(
+          `SELECT ${codeColumn} FROM ${table} WHERE ${codeColumn} LIKE '${prefix}%' ORDER BY ${codeColumn} DESC LIMIT 1`
+        );
 
-      // Insert missing codes
-      const insertData = missingNames.map((name) => {
-        const newCode = `${prefix}${nextNum.toString().padStart(3, "0")}`;
-        codeMap.set(name, newCode);
-        nextNum++;
-        return [newCode, name];
+      let nextNumber = 1;
+      if (maxResult.length > 0) {
+        const lastCode = maxResult[0][codeColumn];
+        nextNumber = parseInt(lastCode.replace(prefix, "")) + 1;
+      }
+
+      // Bulk insert missing codes
+      const insertData = missingNames.map((name, index) => {
+        const code = `${prefix}${String(nextNumber + index).padStart(3, "0")}`;
+        codeMap.set(name, code);
+        return [code, name, "generated"];
       });
 
-      const insertQuery = `INSERT INTO ${table} (${codeColumn}, ${nameColumn}) VALUES ?`;
+      const insertQuery = `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES ?`;
       await connectionDB.promise().query(insertQuery, [insertData]);
 
       console.log(`🆕 Created ${insertData.length} new ${table} codes`);
@@ -61,12 +65,12 @@ async function bulkEnsureRefCodes(
     console.error(`Bulk ${table} lookup error:`, err);
     return new Map();
   }
-}
+};
 
 /**
  * Get all existing crop_ids from crops table for validation
  */
-async function getValidCropIds() {
+const getValidCropIds = async () => {
   try {
     const [rows] = await connectionDB
       .promise()
@@ -76,71 +80,77 @@ async function getValidCropIds() {
     console.error("Error fetching valid crop IDs:", err);
     return new Set();
   }
-}
+};
 
 /**
  * Bulk process reference codes for all operations at once
  */
-async function bulkProcessReferenceCodes(operations) {
-  // Get unique values
-  const provinceNames = [
-    ...new Set(operations.map((op) => op.provinceName).filter(Boolean)),
-  ];
-  const operationTypes = [
-    ...new Set(operations.map((op) => op.operType).filter(Boolean)),
-  ];
+const bulkProcessReferenceCodes = async (operations) => {
+  console.time("Reference codes processing");
 
-  // Bulk lookup/create all reference codes
-  const [provinceCodes, operationTypeCodes] = await Promise.all([
-    bulkEnsureRefCodes(
-      "ref_provinces",
-      "province_name_th",
-      "province_code",
-      provinceNames,
-      "GPROV"
-    ),
-    bulkEnsureRefCodes(
-      "ref_operation_types",
-      "operation_type_name",
-      "operation_type_id",
-      operationTypes,
-      "OT"
-    ),
-  ]);
+  try {
+    // Get unique values
+    const provinceNames = [
+      ...new Set(operations.map((op) => op.provinceName).filter(Boolean)),
+    ];
+    const operationTypes = [
+      ...new Set(operations.map((op) => op.operType).filter(Boolean)),
+    ];
 
-  return { provinceCodes, operationTypeCodes };
-}
+    // Bulk lookup/create all reference codes
+    const [provinceCodes, operationTypeCodes] = await Promise.all([
+      bulkEnsureRefCodes(
+        "ref_provinces",
+        "province_name_th",
+        "province_code",
+        provinceNames,
+        "GPROV"
+      ),
+      // ✅ FIX: Use correct column names for ref_operation_types table
+      bulkEnsureRefCodes(
+        "ref_operation_types",
+        "operation_type_name",
+        "operation_type_id",
+        operationTypes,
+        "GOPER"
+      ),
+    ]);
+
+    console.timeEnd("Reference codes processing");
+    return { provinceCodes, operationTypeCodes };
+  } catch (error) {
+    console.error("❌ Error in bulkProcessReferenceCodes:", error);
+    console.timeEnd("Reference codes processing");
+    return { provinceCodes: new Map(), operationTypeCodes: new Map() };
+  }
+};
 
 /**
  * Bulk insert or update operations using INSERT ... ON DUPLICATE KEY UPDATE
- * @param {Array} operations - Array of operation objects
- * @returns {Promise<object>} - Bulk operation result
  */
-export async function bulkInsertOrUpdateOperations(operations) {
+const bulkInsertOrUpdateOperations = async (operations) => {
   if (!operations || operations.length === 0) {
     return { inserted: 0, updated: 0, errors: 0, skipped: 0 };
   }
 
-  try {
-    console.time("⏱️ Reference codes processing");
+  const connection = connectionDB.promise();
 
-    // BULK process all reference codes at once
+  try {
+    // Process reference codes
     const { provinceCodes, operationTypeCodes } =
       await bulkProcessReferenceCodes(operations);
 
-    console.timeEnd("⏱️ Reference codes processing");
-    console.time("⏱️ Crop validation");
-
+    console.time("Crop validation");
     // Get all valid crop_ids from crops table
     const validCropIds = await getValidCropIds();
+    console.timeEnd("Crop validation");
 
-    console.timeEnd("⏱️ Crop validation");
-    console.time("⏱️ Data preparation");
+    console.time("Data preparation");
 
     // Get current count before operation
-    const [countBefore] = await connectionDB
-      .promise()
-      .query("SELECT COUNT(*) as count FROM operations");
+    const [countBefore] = await connection.query(
+      "SELECT COUNT(*) as count FROM operations"
+    );
     const beforeCount = countBefore[0].count;
 
     // Filter operations with valid crop_ids and prepare data
@@ -148,7 +158,7 @@ export async function bulkInsertOrUpdateOperations(operations) {
     const skippedOperations = [];
 
     for (const operation of operations) {
-      // ✅ VALIDATE: Check if crop_id exists in crops table
+      // Validate if crop_id exists in crops table
       if (!validCropIds.has(operation.cropId)) {
         skippedOperations.push({
           recId: operation.recId,
@@ -158,38 +168,27 @@ export async function bulkInsertOrUpdateOperations(operations) {
         continue;
       }
 
-      // Get province code and operation type ID
+      // Get reference codes
       const provinceCode = provinceCodes.get(operation.provinceName) || null;
-      const operationTypeId =
+      const operationTypeCode =
         operationTypeCodes.get(operation.operType) || null;
-
-      if (!provinceCode || !operationTypeId) {
-        skippedOperations.push({
-          recId: operation.recId,
-          cropId: operation.cropId,
-          reason: !provinceCode
-            ? "missing_province_code"
-            : "missing_operation_type",
-        });
-        continue;
-      }
 
       validOperations.push([
         operation.recId, // rec_id
         provinceCode, // operation_province_code
-        operation.cropYear || null, // crop_year
+        // ✅ FIX: Use ?? to preserve 0 values for numeric fields
+        operation.cropYear ?? null, // crop_year - preserves 0
         operation.operId, // oper_id
         operation.cropId, // crop_id
-        operationTypeId, // operation_type_id
-        operation.operDate, // oper_date
-        operation.noOfWorkers, // no_of_workers
-        operation.workerCost, // worker_cost
-        operation.fertilizerCost, // fertilizer_cost
-        operation.equipmentCost, // equipment_cost
-        operation.createdTime, // created_at
-        operation.updatedTime, // updated_at
-        operation.fetchAt, // fetch_at
-        operation.companyId, // company_id
+        operationTypeCode, // operation_type_id (matches schema)
+        operation.operDate || null, // oper_date
+        operation.noOfWorkers ?? null, // no_of_workers - preserves 0
+        operation.workerCost ?? null, // worker_cost - preserves 0
+        operation.fertilizerCost ?? null, // fertilizer_cost - preserves 0
+        operation.equipmentCost ?? null, // equipment_cost - preserves 0
+        operation.createdTime || null, // created_at
+        operation.updatedTime || null, // updated_at
+        operation.companyId ?? null, // company_id
       ]);
     }
 
@@ -213,15 +212,21 @@ export async function bulkInsertOrUpdateOperations(operations) {
     let actualUpdates = 0;
 
     if (validOperations.length > 0) {
-      console.timeEnd("⏱️ Data preparation");
-      console.time("⏱️ Bulk database operation");
+      console.timeEnd("Data preparation");
+      console.time("Bulk database operation");
+
+      // ✅ FIX: Add fetch_at timestamp to each row
+      const dataWithTimestamp = validOperations.map((row) => [
+        ...row,
+        new Date(),
+      ]);
 
       // Execute bulk insert with ON DUPLICATE KEY UPDATE
-      const query = `
+      const sql = `
         INSERT INTO operations (
           rec_id, operation_province_code, crop_year, oper_id, crop_id, operation_type_id, 
           oper_date, no_of_workers, worker_cost, fertilizer_cost, equipment_cost,
-          created_at, updated_at, fetch_at, company_id
+          created_at, updated_at, company_id, fetch_at
         ) VALUES ? 
         ON DUPLICATE KEY UPDATE
           operation_province_code = VALUES(operation_province_code),
@@ -235,25 +240,24 @@ export async function bulkInsertOrUpdateOperations(operations) {
           fertilizer_cost = VALUES(fertilizer_cost),
           equipment_cost = VALUES(equipment_cost),
           updated_at = VALUES(updated_at),
-          fetch_at = VALUES(fetch_at)
+          company_id = VALUES(company_id),
+          fetch_at = NOW()
       `;
 
-      const [result] = await connectionDB
-        .promise()
-        .query(query, [validOperations]);
+      const [result] = await connection.query(sql, [dataWithTimestamp]);
 
-      console.timeEnd("⏱️ Bulk database operation");
+      console.timeEnd("Bulk database operation");
 
       // Get count after operation
-      const [countAfter] = await connectionDB
-        .promise()
-        .query("SELECT COUNT(*) as count FROM operations");
+      const [countAfter] = await connection.query(
+        "SELECT COUNT(*) as count FROM operations"
+      );
       const afterCount = countAfter[0].count;
 
       actualInserts = afterCount - beforeCount;
       actualUpdates = validOperations.length - actualInserts;
     } else {
-      console.timeEnd("⏱️ Data preparation");
+      console.timeEnd("Data preparation");
       console.log(
         "⚠️  No valid operations to process - all skipped due to missing references"
       );
@@ -269,23 +273,64 @@ export async function bulkInsertOrUpdateOperations(operations) {
     );
 
     return {
-      operation: "BULK_UPSERT",
       inserted: actualInserts,
       updated: Math.max(0, actualUpdates),
       errors: 0,
       skipped: skippedOperations.length,
       totalProcessed: operations.length,
-      skippedDetails: skippedOperations.slice(0, 10), // First 10 for debugging
+      affectedRows: result?.affectedRows || 0,
     };
-  } catch (err) {
-    console.error("Bulk operation insert/update error:", err);
+  } catch (error) {
+    console.error("❌ Bulk operation insert/update error:", error);
     return {
-      operation: "BULK_ERROR",
       inserted: 0,
       updated: 0,
       errors: operations.length,
       skipped: 0,
-      error: err.message,
+      totalProcessed: operations.length,
+      error: error.message,
     };
   }
-}
+};
+
+/**
+ * Get the current count of operations in the database
+ */
+const getOperationsCount = async () => {
+  try {
+    const [result] = await connectionDB
+      .promise()
+      .query("SELECT COUNT(*) as total FROM operations");
+    return result[0].total;
+  } catch (error) {
+    console.error("❌ Error getting operations count:", error);
+    return 0;
+  }
+};
+
+/**
+ * Reset the operations table
+ */
+const resetOperationsTable = async () => {
+  const connection = connectionDB.promise();
+
+  try {
+    await connection.query("SET FOREIGN_KEY_CHECKS = 0");
+    await connection.query("TRUNCATE TABLE operations");
+    await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+
+    return { success: true, message: "Operations table reset successfully" };
+  } catch (error) {
+    await connection.query("SET FOREIGN_KEY_CHECKS = 1");
+    console.error("❌ Error resetting operations table:", error);
+    throw error;
+  }
+};
+
+// Named exports (ESM style)
+export {
+  bulkInsertOrUpdateOperations,
+  getOperationsCount,
+  resetOperationsTable,
+  bulkProcessReferenceCodes,
+};
