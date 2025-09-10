@@ -66,7 +66,7 @@ async function bulkEnsureRefCodes(
 /**
  * Bulk process reference codes for all substances at once
  */
-async function bulkProcessReferenceCodes(substances) {
+export async function bulkProcessReferenceCodes(substances) {
   // Get unique province names
   const provinceNames = [
     ...new Set(substances.map((s) => s.provinceName).filter(Boolean)),

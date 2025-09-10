@@ -66,7 +66,7 @@ async function bulkEnsureRefCodes(
 /**
  * Bulk process reference codes for all water records at once
  */
-async function bulkProcessReferenceCodes(waterRecords) {
+export async function bulkProcessReferenceCodes(waterRecords) {
   // Get unique province names
   const provinceNames = [
     ...new Set(waterRecords.map((w) => w.provinceName).filter(Boolean)),

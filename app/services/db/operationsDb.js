@@ -85,7 +85,7 @@ const getValidCropIds = async () => {
 /**
  * Bulk process reference codes for all operations at once
  */
-const bulkProcessReferenceCodes = async (operations) => {
+export async function bulkProcessReferenceCodes(operations) {
   console.time("Reference codes processing");
 
   try {
@@ -123,12 +123,12 @@ const bulkProcessReferenceCodes = async (operations) => {
     console.timeEnd("Reference codes processing");
     return { provinceCodes: new Map(), operationTypeCodes: new Map() };
   }
-};
+}
 
 /**
  * Bulk insert or update operations using INSERT ... ON DUPLICATE KEY UPDATE
  */
-const bulkInsertOrUpdateOperations = async (operations) => {
+export async function bulkInsertOrUpdateOperations(operations) {
   if (!operations || operations.length === 0) {
     return { inserted: 0, updated: 0, errors: 0, skipped: 0 };
   }
@@ -292,6 +292,4 @@ const bulkInsertOrUpdateOperations = async (operations) => {
       error: error.message,
     };
   }
-};
-
-export { bulkInsertOrUpdateOperations, bulkProcessReferenceCodes };
+}
