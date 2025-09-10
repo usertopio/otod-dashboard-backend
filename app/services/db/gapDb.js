@@ -103,14 +103,14 @@ async function bulkProcessReferenceCodes(gapCertificates) {
     ),
     bulkEnsureRefCodes(
       "ref_districts",
-      "district_name",
+      "district_name_th",
       "district_code",
       districts,
       "GDIST"
     ),
     bulkEnsureRefCodes(
       "ref_subdistricts",
-      "subdistrict_name",
+      "subdistrict_name_th",
       "subdistrict_code",
       subdistricts,
       "GSUBDIST"
