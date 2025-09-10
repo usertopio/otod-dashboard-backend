@@ -66,7 +66,7 @@ async function bulkEnsureRefCodes(
 /**
  * Bulk process reference codes for all merchants at once
  */
-async function bulkProcessReferenceCodes(merchants) {
+export async function bulkProcessReferenceCodes(merchants) {
   // Get unique values
   const provinces = [
     ...new Set(merchants.map((m) => m.province).filter(Boolean)),

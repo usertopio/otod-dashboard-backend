@@ -6,47 +6,6 @@ import { connectionDB } from "../../config/db/db.conf.js";
 // Provides helper functions for reference code lookup and upserting farmers
 
 /**
- * Bulk process reference codes for all farmers at once
- */
-async function bulkProcessReferenceCodes(farmers) {
-  // Get unique values
-  const provinces = [
-    ...new Set(farmers.map((f) => f.province).filter(Boolean)),
-  ];
-  const districts = [...new Set(farmers.map((f) => f.amphur).filter(Boolean))];
-  const subdistricts = [
-    ...new Set(farmers.map((f) => f.tambon).filter(Boolean)),
-  ];
-
-  // Bulk lookup/create all reference codes
-  const [provinceCodes, districtCodes, subdistrictCodes] = await Promise.all([
-    bulkEnsureRefCodes(
-      "ref_provinces",
-      "province_name_th",
-      "province_code",
-      provinces,
-      "GPROV"
-    ),
-    bulkEnsureRefCodes(
-      "ref_districts",
-      "district_name_th",
-      "district_code",
-      districts,
-      "GDIST"
-    ),
-    bulkEnsureRefCodes(
-      "ref_subdistricts",
-      "subdistrict_name_th",
-      "subdistrict_code",
-      subdistricts,
-      "GSUBDIST"
-    ),
-  ]);
-
-  return { provinceCodes, districtCodes, subdistrictCodes };
-}
-
-/**
  * Bulk ensure reference codes for a list of names
  */
 async function bulkEnsureRefCodes(
@@ -109,6 +68,47 @@ async function bulkEnsureRefCodes(
 }
 
 /**
+ * Bulk process reference codes for all farmers at once
+ */
+export async function bulkProcessReferenceCodes(farmers) {
+  // Get unique values
+  const provinces = [
+    ...new Set(farmers.map((f) => f.province).filter(Boolean)),
+  ];
+  const districts = [...new Set(farmers.map((f) => f.amphur).filter(Boolean))];
+  const subdistricts = [
+    ...new Set(farmers.map((f) => f.tambon).filter(Boolean)),
+  ];
+
+  // Bulk lookup/create all reference codes
+  const [provinceCodes, districtCodes, subdistrictCodes] = await Promise.all([
+    bulkEnsureRefCodes(
+      "ref_provinces",
+      "province_name_th",
+      "province_code",
+      provinces,
+      "GPROV"
+    ),
+    bulkEnsureRefCodes(
+      "ref_districts",
+      "district_name_th",
+      "district_code",
+      districts,
+      "GDIST"
+    ),
+    bulkEnsureRefCodes(
+      "ref_subdistricts",
+      "subdistrict_name_th",
+      "subdistrict_code",
+      subdistricts,
+      "GSUBDIST"
+    ),
+  ]);
+
+  return { provinceCodes, districtCodes, subdistrictCodes };
+}
+
+/**
  * Bulk insert or update farmers using INSERT ... ON DUPLICATE KEY UPDATE
  * @param {Array} farmers - Array of farmer objects
  * @returns {Promise<object>} - Bulk operation result
@@ -138,23 +138,23 @@ export async function bulkInsertOrUpdateFarmers(farmers) {
     const processedFarmers = farmers.map((farmer) => [
       farmer.recId,
       provinceCodes[farmer.province] || null,
-      districtCodes[farmer.amphur] || null, 
+      districtCodes[farmer.amphur] || null,
       subdistrictCodes[farmer.tambon] || null,
       farmer.farmerId,
-      farmer.title || null,              // ✅ "" → NULL
-      farmer.firstName,                  // Required field, keep as is
-      farmer.lastName,                   // Required field, keep as is
-      farmer.gender || null,             // Could be empty
-      farmer.dateOfBirth || null,        // Could be empty
-      farmer.idCard,                     // Required field, keep as is
-      farmer.idCardExpiryDate || null,   // Could be empty
-      farmer.addr || null,               // Could be empty
-      farmer.postCode,                   // Required field, keep as is
-      farmer.email || null,              // ✅ "" → NULL
-      farmer.mobileNo,                   // Required field, keep as is
-      farmer.lineId || null,             // ✅ "" → NULL
+      farmer.title || null, // ✅ "" → NULL
+      farmer.firstName, // Required field, keep as is
+      farmer.lastName, // Required field, keep as is
+      farmer.gender || null, // Could be empty
+      farmer.dateOfBirth || null, // Could be empty
+      farmer.idCard, // Required field, keep as is
+      farmer.idCardExpiryDate || null, // Could be empty
+      farmer.addr || null, // Could be empty
+      farmer.postCode, // Required field, keep as is
+      farmer.email || null, // ✅ "" → NULL
+      farmer.mobileNo, // Required field, keep as is
+      farmer.lineId || null, // ✅ "" → NULL
       farmer.farmerRegistNumber || null, // Could be empty
-      farmer.farmerRegistType || null,   // Could be empty
+      farmer.farmerRegistType || null, // Could be empty
       farmer.companyId,
       farmer.createdTime,
       farmer.updatedTime,

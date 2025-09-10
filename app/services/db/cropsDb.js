@@ -66,50 +66,6 @@ const bulkEnsureRefCodes = async (
 };
 
 /**
- * Bulk process reference codes for crops
- */
-const bulkProcessReferenceCodes = async (crops) => {
-  console.time("Reference codes processing");
-
-  try {
-    const breeds = [
-      ...new Set(crops.map((c) => c.breedName || c.breed).filter(Boolean)),
-    ];
-    const durianStages = [
-      ...new Set(
-        crops.map((c) => c.durianStageName || c.durianStage).filter(Boolean)
-      ),
-    ];
-
-    const [breedCodes, durianStageCodes] = await Promise.all([
-      // ✅ FIX: ref_breeds uses breed_name (no _th suffix)
-      bulkEnsureRefCodes(
-        "ref_breeds",
-        "breed_name",
-        "breed_id",
-        breeds,
-        "GBREED"
-      ),
-      // ✅ FIX: ref_durian_stages uses stage_name_th (with _th suffix)
-      bulkEnsureRefCodes(
-        "ref_durian_stages",
-        "stage_name_th",
-        "stage_id",
-        durianStages,
-        "GSTAGE"
-      ),
-    ]);
-
-    console.timeEnd("Reference codes processing");
-    return { breedCodes, durianStageCodes };
-  } catch (error) {
-    console.error("❌ Error in bulkProcessReferenceCodes:", error);
-    console.timeEnd("Reference codes processing");
-    return { breedCodes: new Map(), durianStageCodes: new Map() };
-  }
-};
-
-/**
  * Validate land ownership for crops
  */
 const validateLandOwnership = async (crops) => {
@@ -164,9 +120,53 @@ const validateLandOwnership = async (crops) => {
 };
 
 /**
+ * Bulk process reference codes for crops
+ */
+export async function bulkProcessReferenceCodes(crops) {
+  console.time("Reference codes processing");
+
+  try {
+    const breeds = [
+      ...new Set(crops.map((c) => c.breedName || c.breed).filter(Boolean)),
+    ];
+    const durianStages = [
+      ...new Set(
+        crops.map((c) => c.durianStageName || c.durianStage).filter(Boolean)
+      ),
+    ];
+
+    const [breedCodes, durianStageCodes] = await Promise.all([
+      // ✅ FIX: ref_breeds uses breed_name (no _th suffix)
+      bulkEnsureRefCodes(
+        "ref_breeds",
+        "breed_name",
+        "breed_id",
+        breeds,
+        "GBREED"
+      ),
+      // ✅ FIX: ref_durian_stages uses stage_name_th (with _th suffix)
+      bulkEnsureRefCodes(
+        "ref_durian_stages",
+        "stage_name_th",
+        "stage_id",
+        durianStages,
+        "GSTAGE"
+      ),
+    ]);
+
+    console.timeEnd("Reference codes processing");
+    return { breedCodes, durianStageCodes };
+  } catch (error) {
+    console.error("❌ Error in bulkProcessReferenceCodes:", error);
+    console.timeEnd("Reference codes processing");
+    return { breedCodes: new Map(), durianStageCodes: new Map() };
+  }
+}
+
+/**
  * Bulk insert or update crops in the database
  */
-const bulkInsertOrUpdateCrops = async (crops) => {
+export async function bulkInsertOrUpdateCrops(crops) {
   if (!crops || crops.length === 0) {
     return { inserted: 0, updated: 0, errors: 0, skipped: 0 };
   }
@@ -298,9 +298,4 @@ const bulkInsertOrUpdateCrops = async (crops) => {
       error: error.message,
     };
   }
-};
-
-/**
- * Named exports (ESM style)
- */
-export { bulkInsertOrUpdateCrops, bulkProcessReferenceCodes };
+}
