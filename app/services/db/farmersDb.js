@@ -2,6 +2,18 @@
 // Import DB connection for executing SQL queries
 import { connectionDB } from "../../config/db/db.conf.js";
 
+/**
+ * Get Bangkok timezone timestamp as MySQL-compatible string
+ */
+const getBangkokTime = () => {
+  // ✅ FIX: Proper format for MySQL
+  return new Date()
+    .toLocaleString("sv-SE", {
+      timeZone: "Asia/Bangkok",
+    })
+    .replace(" ", "T");
+};
+
 // ===================== DB Utilities =====================
 // Provides helper functions for reference code lookup and upserting farmers
 
@@ -15,117 +27,124 @@ async function bulkEnsureRefCodes(
   names,
   prefix
 ) {
-  if (!names.length) return {};
+  if (!names || names.length === 0) return {};
 
-  // Get existing codes in one query
-  const [existing] = await connectionDB
-    .promise()
-    .query(
-      `SELECT ${nameColumn}, ${codeColumn} FROM ${table} WHERE ${nameColumn} IN (?)`,
-      [names]
-    );
-
-  const codeMap = {};
-  existing.forEach((row) => {
-    codeMap[row[nameColumn]] = row[codeColumn];
-  });
-
-  // Find missing names
-  const missingNames = names.filter((name) => !codeMap[name]);
-
-  if (missingNames.length > 0) {
-    // Generate codes for missing names
-    const [maxResult] = await connectionDB
+  try {
+    // Get existing codes in one query
+    const [existing] = await connectionDB
       .promise()
       .query(
-        `SELECT ${codeColumn} FROM ${table} WHERE ${codeColumn} LIKE '${prefix}%' ORDER BY ${codeColumn} DESC LIMIT 1`
+        `SELECT ${nameColumn}, ${codeColumn} FROM ${table} WHERE ${nameColumn} IN (?)`,
+        [names]
       );
 
-    let nextNumber = 1;
-    if (maxResult.length > 0) {
-      const lastCode = maxResult[0][codeColumn];
-      nextNumber = parseInt(lastCode.replace(prefix, "")) + 1;
-    }
-
-    // Bulk insert missing codes
-    const insertData = missingNames.map((name, index) => {
-      const code = `${prefix}${String(nextNumber + index).padStart(3, "0")}`;
-      codeMap[name] = code;
-      return [code, name, "generated"];
+    const codeMap = {};
+    existing.forEach((row) => {
+      codeMap[row[nameColumn]] = row[codeColumn];
     });
 
-    await connectionDB
-      .promise()
-      .query(
-        `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES ?`,
-        [insertData]
-      );
+    // Find missing names
+    const missingNames = names.filter((name) => !codeMap[name]);
 
-    console.log(`🆕 Created ${insertData.length} new ${table} codes`);
+    if (missingNames.length > 0) {
+      // Generate codes for missing names
+      const [maxResult] = await connectionDB
+        .promise()
+        .query(
+          `SELECT ${codeColumn} FROM ${table} WHERE ${codeColumn} LIKE '${prefix}%' ORDER BY ${codeColumn} DESC LIMIT 1`
+        );
+
+      let nextNumber = 1;
+      if (maxResult.length > 0) {
+        const lastCode = maxResult[0][codeColumn];
+        nextNumber = parseInt(lastCode.replace(prefix, "")) + 1;
+      }
+
+      // Bulk insert missing codes
+      const insertData = missingNames.map((name, index) => {
+        const code = `${prefix}${String(nextNumber + index).padStart(3, "0")}`;
+        codeMap[name] = code;
+        return [code, name, "generated"];
+      });
+
+      const insertQuery = `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES ?`;
+      await connectionDB.promise().query(insertQuery, [insertData]);
+
+      console.log(`🆕 Created ${insertData.length} new ${table} codes`);
+    }
+
+    return codeMap;
+  } catch (err) {
+    console.error(`Bulk ${table} lookup error:`, err);
+    return {};
   }
-
-  return codeMap;
 }
 
 /**
  * Bulk process reference codes for all farmers at once
  */
-export async function bulkProcessReferenceCodes(farmers) {
-  // Get unique values
-  const provinces = [
-    ...new Set(farmers.map((f) => f.province).filter(Boolean)),
-  ];
-  const districts = [...new Set(farmers.map((f) => f.amphur).filter(Boolean))];
-  const subdistricts = [
-    ...new Set(farmers.map((f) => f.tambon).filter(Boolean)),
-  ];
+const bulkProcessReferenceCodes = async (farmers) => {
+  console.time("⏱️ Reference codes processing");
 
-  // Bulk lookup/create all reference codes
-  const [provinceCodes, districtCodes, subdistrictCodes] = await Promise.all([
-    bulkEnsureRefCodes(
-      "ref_provinces",
-      "province_name_th",
-      "province_code",
-      provinces,
-      "GPROV"
-    ),
-    bulkEnsureRefCodes(
-      "ref_districts",
-      "district_name_th",
-      "district_code",
-      districts,
-      "GDIST"
-    ),
-    bulkEnsureRefCodes(
-      "ref_subdistricts",
-      "subdistrict_name_th",
-      "subdistrict_code",
-      subdistricts,
-      "GSUBDIST"
-    ),
-  ]);
+  try {
+    const provinces = [
+      ...new Set(farmers.map((f) => f.province).filter(Boolean)),
+    ];
+    const districts = [
+      ...new Set(farmers.map((f) => f.amphur).filter(Boolean)),
+    ];
+    const subdistricts = [
+      ...new Set(farmers.map((f) => f.tambon).filter(Boolean)),
+    ];
 
-  return { provinceCodes, districtCodes, subdistrictCodes };
-}
+    const [provinceCodes, districtCodes, subdistrictCodes] = await Promise.all([
+      bulkEnsureRefCodes(
+        "ref_provinces",
+        "province_name_th",
+        "province_code",
+        provinces,
+        "GPROV"
+      ),
+      bulkEnsureRefCodes(
+        "ref_districts",
+        "district_name_th",
+        "district_code",
+        districts,
+        "GDIST"
+      ),
+      bulkEnsureRefCodes(
+        "ref_subdistricts",
+        "subdistrict_name_th",
+        "subdistrict_code",
+        subdistricts,
+        "GSUBDIST"
+      ),
+    ]);
+
+    console.timeEnd("⏱️ Reference codes processing");
+    return { provinceCodes, districtCodes, subdistrictCodes };
+  } catch (error) {
+    console.error("❌ Error in bulkProcessReferenceCodes:", error);
+    console.timeEnd("⏱️ Reference codes processing");
+    return { provinceCodes: {}, districtCodes: {}, subdistrictCodes: {} };
+  }
+};
 
 /**
  * Bulk insert or update farmers using INSERT ... ON DUPLICATE KEY UPDATE
  * @param {Array} farmers - Array of farmer objects
  * @returns {Promise<object>} - Bulk operation result
  */
-export async function bulkInsertOrUpdateFarmers(farmers) {
+const bulkInsertOrUpdateFarmers = async (farmers) => {
   if (!farmers || farmers.length === 0) {
     return { inserted: 0, updated: 0, errors: 0 };
   }
 
   try {
-    console.time("⏱️ Reference codes processing");
-
     // BULK process all reference codes at once
     const { provinceCodes, districtCodes, subdistrictCodes } =
       await bulkProcessReferenceCodes(farmers);
 
-    console.timeEnd("⏱️ Reference codes processing");
     console.time("⏱️ Data preparation");
 
     // Get current count before operation
@@ -133,6 +152,9 @@ export async function bulkInsertOrUpdateFarmers(farmers) {
       .promise()
       .query("SELECT COUNT(*) as count FROM farmers");
     const beforeCount = countBefore[0].count;
+
+    // ✅ FIX: Use Bangkok timezone for fetch_at
+    const bangkokTime = getBangkokTime();
 
     // Prepare farmer data (now much faster - no individual queries)
     const processedFarmers = farmers.map((farmer) => [
@@ -158,13 +180,13 @@ export async function bulkInsertOrUpdateFarmers(farmers) {
       farmer.companyId,
       farmer.createdTime,
       farmer.updatedTime,
-      new Date(),
+      bangkokTime, // ✅ Bangkok timezone for fetch_at
     ]);
 
     console.timeEnd("⏱️ Data preparation");
     console.time("⏱️ Bulk database operation");
 
-    // Execute bulk insert with ON DUPLICATE KEY UPDATE
+    // ✅ FIX: Updated SQL with Bangkok timezone conversion
     const query = `
       INSERT INTO farmers (
         rec_id, farmer_province_code, farmer_district_code, farmer_subdistrict_code, 
@@ -193,7 +215,7 @@ export async function bulkInsertOrUpdateFarmers(farmers) {
         farmer_regist_type = VALUES(farmer_regist_type),
         company_id = VALUES(company_id),
         updated_at = VALUES(updated_at),
-        fetch_at = VALUES(fetch_at)
+        fetch_at = VALUES(fetch_at)  -- ✅ No conversion needed - already Bangkok time
     `;
 
     const [result] = await connectionDB
@@ -234,7 +256,11 @@ export async function bulkInsertOrUpdateFarmers(farmers) {
       inserted: 0,
       updated: 0,
       errors: farmers.length,
+      totalProcessed: farmers.length,
       error: err.message,
     };
   }
-}
+};
+
+// ✅ Pattern 1: Single export block at bottom (ESM style)
+export { bulkInsertOrUpdateFarmers, bulkProcessReferenceCodes };
