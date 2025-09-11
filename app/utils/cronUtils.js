@@ -1,6 +1,4 @@
 export const SCHEDULES_CONFIG = {
-  // Loop at specific times in Asia/Bangkok timezone
-  // SCHEDULE_1: "0 0,13 9 * * *", // 9:00 AM, 9:09 AM
-  // Loop at every minute
-  SCHEDULE_2: "0 */1 * * * *", // Every 2 minutes at second 0
+  // Every 90 seconds
+  SCHEDULE_1_5: "*/90 * * * * *",
 };
