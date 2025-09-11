@@ -3,6 +3,17 @@
 import { connectionDB } from "../../config/db/db.conf.js";
 
 /**
+ * Get Bangkok timezone timestamp as MySQL-compatible string
+ */
+const getBangkokTime = () => {
+  return new Date()
+    .toLocaleString("sv-SE", {
+      timeZone: "Asia/Bangkok",
+    })
+    .replace(" ", "T");
+};
+
+/**
  * Bulk ensure reference codes for a list of names
  */
 const bulkEnsureRefCodes = async (
@@ -127,6 +138,9 @@ export async function bulkInsertOrUpdateCommunities(communities) {
 
     console.time("Data preparation");
 
+    // ✅ ADD: Get Bangkok time (same as farmers)
+    const bangkokTime = getBangkokTime();
+
     const communityData = communities.map((community) => [
       community.recId,
       community.postCode,
@@ -141,6 +155,7 @@ export async function bulkInsertOrUpdateCommunities(communities) {
       provinceCodes.get(community.province) || null,
       districtCodes.get(community.amphur) || null,
       subdistrictCodes.get(community.tambon) || null,
+      bangkokTime, // ✅ CHANGED: Use bangkokTime instead of new Date()
     ]);
 
     console.timeEnd("Data preparation");
@@ -171,11 +186,11 @@ export async function bulkInsertOrUpdateCommunities(communities) {
         community_province_code = VALUES(community_province_code),
         community_district_code = VALUES(community_district_code),
         community_subdistrict_code = VALUES(community_subdistrict_code),
-        fetch_at = NOW()
+        fetch_at = VALUES(fetch_at)  -- ✅ CHANGED: Use VALUES(fetch_at) like farmers
     `;
 
-    const dataWithTimestamp = communityData.map((row) => [...row, new Date()]);
-    const [result] = await connection.query(sql, [dataWithTimestamp]);
+    // ✅ CHANGED: Use communityData directly (no dataWithTimestamp mapping needed)
+    const [result] = await connection.query(sql, [communityData]);
 
     const [afterResult] = await connection.query(
       "SELECT COUNT(*) as count FROM communities"
