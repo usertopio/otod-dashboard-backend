@@ -1,8 +1,8 @@
 // ===================== Imports =====================
 // Import DB connection for executing SQL queries
 import { connectionDB } from "../../config/db/db.conf.js";
-import { OPERATIONS } from "../../utils/constants.js";
 
+// ===================== DB Utilities =====================
 /**
  * Bulk ensure reference codes for a list of names
  */
@@ -134,18 +134,18 @@ export async function bulkInsertOrUpdateMerchants(merchants) {
 
     // Prepare merchant data
     const merchantData = merchants.map((merchant) => [
-      merchant.recId, // rec_id
-      merchant.merchantName, // merchant_name
-      provinceCodes.get(merchant.province) || null, // province_code
-      districtCodes.get(merchant.district) || null, // district_code
-      subdistrictCodes.get(merchant.subdistrict) || null, // subdistrict_code
-      merchant.lat, // lat
-      merchant.lon, // lon
-      merchant.createdTime, // created_time
-      merchant.updatedTime, // updated_time
-      merchant.companyId, // company_id
-      merchant.companyName, // company_name
-      new Date(), // fetch_at
+      merchant.recId,
+      merchant.merchantName,
+      provinceCodes.get(merchant.province) || null,
+      districtCodes.get(merchant.district) || null,
+      subdistrictCodes.get(merchant.subdistrict) || null,
+      merchant.lat,
+      merchant.lon,
+      merchant.createdTime,
+      merchant.updatedTime,
+      merchant.companyId,
+      merchant.companyName,
+      new Date(),
     ]);
 
     console.timeEnd("⏱️ Data preparation");

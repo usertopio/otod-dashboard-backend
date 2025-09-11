@@ -1,7 +1,6 @@
 // ===================== Imports =====================
 // Import DB connection for executing SQL queries
 import { connectionDB } from "../../config/db/db.conf.js";
-import { OPERATIONS } from "../../utils/constants.js";
 
 // ===================== DB Utilities =====================
 // Provides helper functions for reference code lookup and upserting durian gardens

@@ -132,19 +132,19 @@ export async function bulkInsertOrUpdateNews(newsRecords) {
 
     // Prepare news data matching actual schema
     const validNews = newsRecords.map((news) => [
-      news.recId, // rec_id
-      provinceCodes.get(news.province) || null, // news_province_code
+      news.recId,
+      provinceCodes.get(news.province) || null,
       news.newsId, // news_id
-      news.announceDate || null, // announce_date
-      newsGroupCodes.get(news.newsGroup) || null, // news_group_id
-      news.newsTopic || news.newsTitle || null, // news_topic
-      news.newsDetail || news.newsContent || null, // news_detail
-      news.noOfLike || 0, // no_of_like
-      news.noOfComments || 0, // no_of_comments
-      news.createdTime || news.createdAt, // created_at
-      news.updatedTime || news.updatedAt, // updated_at
-      news.companyId, // company_id
-      new Date(), // fetch_at
+      news.announceDate || null,
+      newsGroupCodes.get(news.newsGroup) || null,
+      news.newsTopic || news.newsTitle || null,
+      news.newsDetail || news.newsContent || null,
+      news.noOfLike || 0,
+      news.noOfComments || 0,
+      news.createdTime || news.createdAt,
+      news.updatedTime || news.updatedAt,
+      news.companyId,
+      new Date(),
     ]);
 
     console.log(

@@ -106,7 +106,6 @@ export async function bulkProcessReferenceCodes(operations) {
         provinceNames,
         "GPROV"
       ),
-      // ✅ FIX: Use correct column names for ref_operation_types table
       bulkEnsureRefCodes(
         "ref_operation_types",
         "operation_type_name",
@@ -174,21 +173,20 @@ export async function bulkInsertOrUpdateOperations(operations) {
         operationTypeCodes.get(operation.operType) || null;
 
       validOperations.push([
-        operation.recId, // rec_id
-        provinceCode, // operation_province_code
-        // ✅ FIX: Use ?? to preserve 0 values for numeric fields
-        operation.cropYear ?? null, // crop_year - preserves 0
-        operation.operId, // oper_id
-        operation.cropId, // crop_id
-        operationTypeCode, // operation_type_id (matches schema)
-        operation.operDate || null, // oper_date
-        operation.noOfWorkers ?? null, // no_of_workers - preserves 0
-        operation.workerCost ?? null, // worker_cost - preserves 0
-        operation.fertilizerCost ?? null, // fertilizer_cost - preserves 0
-        operation.equipmentCost ?? null, // equipment_cost - preserves 0
-        operation.createdTime || null, // created_at
-        operation.updatedTime || null, // updated_at
-        operation.companyId ?? null, // company_id
+        operation.recId,
+        provinceCode,
+        operation.cropYear ?? null,
+        operation.operId,
+        operation.cropId,
+        operationTypeCode,
+        operation.operDate || null,
+        operation.noOfWorkers ?? null,
+        operation.workerCost ?? null,
+        operation.fertilizerCost ?? null,
+        operation.equipmentCost ?? null,
+        operation.createdTime || null,
+        operation.updatedTime || null,
+        operation.companyId ?? null,
       ]);
     }
 
@@ -216,7 +214,7 @@ export async function bulkInsertOrUpdateOperations(operations) {
       console.timeEnd("Data preparation");
       console.time("Bulk database operation");
 
-      // ✅ FIX: Add fetch_at timestamp to each row
+      // Add fetch_at timestamp to each row
       const dataWithTimestamp = validOperations.map((row) => [
         ...row,
         new Date(),
@@ -245,7 +243,7 @@ export async function bulkInsertOrUpdateOperations(operations) {
           fetch_at = NOW()
       `;
 
-      [result] = await connection.query(sql, [dataWithTimestamp]); // ✅ FIX: Assign to declared variable
+      [result] = await connection.query(sql, [dataWithTimestamp]);
 
       console.timeEnd("Bulk database operation");
 
@@ -279,7 +277,7 @@ export async function bulkInsertOrUpdateOperations(operations) {
       errors: 0,
       skipped: skippedOperations.length,
       totalProcessed: operations.length,
-      affectedRows: result?.affectedRows || 0, // ✅ FIX: Safe access to result
+      affectedRows: result?.affectedRows || 0,
     };
   } catch (error) {
     console.error("❌ Bulk operation insert/update error:", error);

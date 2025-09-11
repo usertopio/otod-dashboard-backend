@@ -141,24 +141,24 @@ export async function bulkInsertOrUpdateFarmers(farmers) {
       districtCodes[farmer.amphur] || null,
       subdistrictCodes[farmer.tambon] || null,
       farmer.farmerId,
-      farmer.title || null, // ✅ "" → NULL
-      farmer.firstName, // Required field, keep as is
-      farmer.lastName, // Required field, keep as is
-      farmer.gender || null, // Could be empty
-      farmer.dateOfBirth || null, // Could be empty
-      farmer.idCard, // Required field, keep as is
-      farmer.idCardExpiryDate || null, // Could be empty
-      farmer.addr || null, // Could be empty
-      farmer.postCode, // Required field, keep as is
-      farmer.email || null, // ✅ "" → NULL
-      farmer.mobileNo, // Required field, keep as is
-      farmer.lineId || null, // ✅ "" → NULL
-      farmer.farmerRegistNumber || null, // Could be empty
-      farmer.farmerRegistType || null, // Could be empty
+      farmer.title || null,
+      farmer.firstName,
+      farmer.lastName,
+      farmer.gender || null,
+      farmer.dateOfBirth || null,
+      farmer.idCard,
+      farmer.idCardExpiryDate || null,
+      farmer.addr || null,
+      farmer.postCode,
+      farmer.email || null,
+      farmer.mobileNo,
+      farmer.lineId || null,
+      farmer.farmerRegistNumber || null,
+      farmer.farmerRegistType || null,
       farmer.companyId,
       farmer.createdTime,
       farmer.updatedTime,
-      new Date(), // fetch_at
+      new Date(),
     ]);
 
     console.timeEnd("⏱️ Data preparation");

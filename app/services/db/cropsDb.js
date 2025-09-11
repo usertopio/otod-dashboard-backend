@@ -191,27 +191,26 @@ export async function bulkInsertOrUpdateCrops(crops) {
 
     // Prepare data for bulk insert
     const cropData = validCrops.map((crop) => [
-      crop.recId, // rec_id
-      crop.farmerId, // farmer_id
-      crop.landId, // land_id
-      crop.cropId, // crop_id
-      crop.cropYear ?? null, // crop_year
-      crop.cropName || null, // ✅ crop_name - "" becomes NULL (recommended)
-      breedCodes.get(crop.breedName || crop.breed) || null, // breed_id
-      crop.cropStartDate || null, // crop_start_date
-      crop.cropEndDate || null, // crop_end_date
-      // Numbers - use ?? to preserve 0 values
-      crop.totalTrees ?? null, // total_trees
-      crop.forecastKg ?? null, // forecast_kg
-      crop.forecastBaht ?? null, // forecast_baht
-      crop.forecastWorkerCost ?? null, // forecast_worker_cost
-      crop.forecastFertilizerCost ?? null, // forecast_fertilizer_cost
-      crop.forecastEquipmentCost ?? null, // forecast_equipment_cost
-      crop.forecastPetrolCost ?? null, // forecast_petrol_cost
-      durianStageCodes.get(crop.durianStageName || crop.durianStage) || null, // durian_stage_id
-      crop.lotNumber || null, // lot_number
-      crop.createdTime || null, // created_at
-      crop.updatedTime || null, // updated_at
+      crop.recId,
+      crop.farmerId,
+      crop.landId,
+      crop.cropId,
+      crop.cropYear ?? null,
+      crop.cropName || null,
+      breedCodes.get(crop.breedName || crop.breed) || null,
+      crop.cropStartDate || null,
+      crop.cropEndDate || null,
+      crop.totalTrees ?? null,
+      crop.forecastKg ?? null,
+      crop.forecastBaht ?? null,
+      crop.forecastWorkerCost ?? null,
+      crop.forecastFertilizerCost ?? null,
+      crop.forecastEquipmentCost ?? null,
+      crop.forecastPetrolCost ?? null,
+      durianStageCodes.get(crop.durianStageName || crop.durianStage) || null,
+      crop.lotNumber || null,
+      crop.createdTime || null,
+      crop.updatedTime || null,
     ]);
 
     console.timeEnd("Data preparation");

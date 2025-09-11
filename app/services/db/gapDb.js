@@ -1,6 +1,6 @@
 // ===================== Imports =====================
+// Import DB connection for executing SQL queries
 import { connectionDB } from "../../config/db/db.conf.js";
-import { OPERATIONS } from "../../utils/constants.js";
 
 /**
  * Get all existing land_ids from durian_gardens table for validation
@@ -61,16 +61,16 @@ export async function bulkInsertOrUpdateGap(gapCertificates) {
         continue;
       }
 
-      // ✅ SIMPLE MAPPING: Only map the fields that exist in the table
+      // Only map the fields that exist in the table
       validGapCertificates.push([
-        gap.gapCertNumber, // gap_cert_number (required)
-        gap.gapCertType || null, // gap_cert_type (optional)
-        gap.gapIssuedDate || null, // gap_issued_date (optional)
-        gap.gapExpiryDate || null, // gap_expiry_date (optional)
-        gap.farmerId, // farmer_id (required)
-        gap.landId, // land_id (required)
-        gap.cropId, // crop_id (required) ✅ ADD THIS LINE
-        new Date(), // fetch_at (timestamp)
+        gap.gapCertNumber,
+        gap.gapCertType || null,
+        gap.gapIssuedDate || null,
+        gap.gapExpiryDate || null,
+        gap.farmerId,
+        gap.landId,
+        gap.cropId,
+        new Date(),
       ]);
     }
 
