@@ -1,5 +1,3 @@
-// services/news/newsLogger.js (ESM)
-
 // ===================== Logger =====================
 // NewsLogger provides structured logging for the news fetch/process workflow.
 export default class NewsLogger {

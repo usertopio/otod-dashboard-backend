@@ -1,5 +1,3 @@
-// services/operations/operationsLogger.js (ESM)
-
 // ===================== Logger =====================
 // OperationsLogger provides structured logging for the operations fetch/process workflow.
 export default class OperationsLogger {

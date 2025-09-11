@@ -1,5 +1,3 @@
-// services/gap/gapLogger.js (ESM)
-
 // ===================== Logger =====================
 // GapLogger provides structured logging for the GAP fetch/process workflow.
 export default class GapLogger {

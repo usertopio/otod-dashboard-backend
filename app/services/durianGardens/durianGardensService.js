@@ -6,7 +6,7 @@ import DurianGardensLogger from "./durianGardensLogger.js";
 
 // ===================== Service =====================
 // DurianGardensService handles the business logic for fetching, resetting, and managing durian garden records.
-class DurianGardensService {
+export default class DurianGardensService {
   /**
    * Resets only the durian_gardens table in the database.
    * - Disables foreign key checks to allow truncation.
@@ -61,7 +61,6 @@ class DurianGardensService {
     while (attempt <= maxAttempts && hasMoreData) {
       DurianGardensLogger.logAttemptStart(attempt, maxAttempts);
 
-      // ✅ SIMPLIFIED: Follow farmers pattern
       const result = await DurianGardensProcessor.fetchAndProcessData();
 
       DurianGardensLogger.logAttemptResults(attempt, result);
@@ -70,7 +69,6 @@ class DurianGardensService {
       totalUpdated += result.updated || 0;
       totalErrors += result.errors || 0;
 
-      // ✅ STANDARD TERMINATION: Same as farmers
       const hasNewData = (result.inserted || 0) > 0;
       hasMoreData = hasNewData;
 
@@ -81,7 +79,7 @@ class DurianGardensService {
       attempt++;
     }
 
-    // ✅ FIX: Pass the actual final count, not "ALL"
+    // Pass the actual final count, not "ALL"
     const finalCount = await this._getDatabaseCount();
     const result = await this._buildFinalResult(
       finalCount, // ← Pass the actual number like other modules
@@ -113,8 +111,13 @@ class DurianGardensService {
   static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
     const finalCount = await this._getDatabaseCount();
 
-    const status =
-      finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    let status;
+    // All handle "ALL" target correctly
+    if (targetCount === "ALL") {
+      status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    } else {
+      status = finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    }
 
     DurianGardensLogger.logFinalResults(
       targetCount,
@@ -137,6 +140,3 @@ class DurianGardensService {
     };
   }
 }
-
-// ===================== Exports =====================
-export default DurianGardensService;

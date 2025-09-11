@@ -1,4 +1,3 @@
-// api/substance.js (ESM)
 import apiClient from "./apiClient.js";
 
 // Outsource doc: API Name: GetSubstanceUsageSummaryByMonth

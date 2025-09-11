@@ -1,5 +1,3 @@
-// durianGardensProcessor.js (ESM)
-
 // ===================== Imports =====================
 // Import API clients for fetching garden data
 import { getLands } from "../api/lands.js";
@@ -36,7 +34,6 @@ class DurianGardensProcessor {
     // Fetch from GetLandGeoJSON API (single call, no pagination)
     await this._fetchGetLandGeoJSON(metrics);
 
-    // ✅ FIXED: Use the correct method name
     const mergedGardens = this._mergeRecordsFromBothAPIs(
       metrics.allGardensFromGetLands,
       metrics.allGardensFromGetLandGeoJSON
@@ -73,7 +70,7 @@ class DurianGardensProcessor {
     };
   }
 
-  // 🌿 Fetch from GetLands API (paginated)
+  // Fetch from GetLands API (paginated)
   static async _fetchGetLandsPages(metrics) {
     console.log("");
     console.log("📞 Sending request to GetLands API (paginated)...");
@@ -109,7 +106,7 @@ class DurianGardensProcessor {
     }
   }
 
-  // 🌿 Fetch from GetLandGeoJSON API (single call, no pagination)
+  // Fetch from GetLandGeoJSON API (single call, no pagination)
   static async _fetchGetLandGeoJSON(metrics) {
     console.log("📞 Sending request to GetLandGeoJSON API (single call)...");
 
@@ -119,10 +116,6 @@ class DurianGardensProcessor {
       tambon: "",
       landType: "",
     };
-
-    // const customHeaders = {
-    //   Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-    // };
 
     const landGeoJSON = await getLandGeoJSON(requestBody);
 
@@ -152,7 +145,7 @@ class DurianGardensProcessor {
     DurianGardensLogger.logPageInfo(1, 1, flattenedLands);
   }
 
-  // 🌿 Merge records from both APIs by landId
+  // Merge records from both APIs by landId
   static _mergeRecordsFromBothAPIs(getLandsData, getLandGeoJSONData) {
     console.log(``);
     console.log("🔗 Merging records from both APIs...");
@@ -163,7 +156,6 @@ class DurianGardensProcessor {
     // Add all GetLands records
     getLandsData.forEach((land) => {
       mergedMap.set(land.landId, {
-        // 🌿 Map GetLands fields based on actual API response
         source: "GetLands",
         recId: land.recId,
         farmerId: land.farmerId,
@@ -251,7 +243,7 @@ class DurianGardensProcessor {
     return mergedArray;
   }
 
-  // 🌿 Get unique gardens (already unique by landId from merge)
+  // Get unique gardens (already unique by landId from merge)
   static _getUniqueGardens(allGardens) {
     return allGardens; // Already unique from merge process
   }
@@ -304,5 +296,4 @@ class DurianGardensProcessor {
   }
 }
 
-// ===================== Exports =====================
 export default DurianGardensProcessor;

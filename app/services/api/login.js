@@ -1,4 +1,3 @@
-// services/api/login.js (ESM)
 import axios from "axios";
 
 // Outsource doc: API Name: Login

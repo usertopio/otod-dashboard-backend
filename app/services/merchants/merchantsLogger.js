@@ -1,5 +1,3 @@
-// services/merchants/merchantsLogger.js (ESM)
-
 // ===================== Logger =====================
 // MerchantsLogger provides structured logging for the merchants fetch/process workflow.
 export default class MerchantsLogger {

@@ -66,50 +66,6 @@ const bulkEnsureRefCodes = async (
 };
 
 /**
- * Bulk process reference codes for crops
- */
-const bulkProcessReferenceCodes = async (crops) => {
-  console.time("Reference codes processing");
-
-  try {
-    const breeds = [
-      ...new Set(crops.map((c) => c.breedName || c.breed).filter(Boolean)),
-    ];
-    const durianStages = [
-      ...new Set(
-        crops.map((c) => c.durianStageName || c.durianStage).filter(Boolean)
-      ),
-    ];
-
-    const [breedCodes, durianStageCodes] = await Promise.all([
-      // ✅ FIX: ref_breeds uses breed_name (no _th suffix)
-      bulkEnsureRefCodes(
-        "ref_breeds",
-        "breed_name",
-        "breed_id",
-        breeds,
-        "GBREED"
-      ),
-      // ✅ FIX: ref_durian_stages uses stage_name_th (with _th suffix)
-      bulkEnsureRefCodes(
-        "ref_durian_stages",
-        "stage_name_th",
-        "stage_id",
-        durianStages,
-        "GSTAGE"
-      ),
-    ]);
-
-    console.timeEnd("Reference codes processing");
-    return { breedCodes, durianStageCodes };
-  } catch (error) {
-    console.error("❌ Error in bulkProcessReferenceCodes:", error);
-    console.timeEnd("Reference codes processing");
-    return { breedCodes: new Map(), durianStageCodes: new Map() };
-  }
-};
-
-/**
  * Validate land ownership for crops
  */
 const validateLandOwnership = async (crops) => {
@@ -164,9 +120,53 @@ const validateLandOwnership = async (crops) => {
 };
 
 /**
+ * Bulk process reference codes for crops
+ */
+export async function bulkProcessReferenceCodes(crops) {
+  console.time("Reference codes processing");
+
+  try {
+    const breeds = [
+      ...new Set(crops.map((c) => c.breedName || c.breed).filter(Boolean)),
+    ];
+    const durianStages = [
+      ...new Set(
+        crops.map((c) => c.durianStageName || c.durianStage).filter(Boolean)
+      ),
+    ];
+
+    const [breedCodes, durianStageCodes] = await Promise.all([
+      // ✅ FIX: ref_breeds uses breed_name (no _th suffix)
+      bulkEnsureRefCodes(
+        "ref_breeds",
+        "breed_name",
+        "breed_id",
+        breeds,
+        "GBREED"
+      ),
+      // ✅ FIX: ref_durian_stages uses stage_name_th (with _th suffix)
+      bulkEnsureRefCodes(
+        "ref_durian_stages",
+        "stage_name_th",
+        "stage_id",
+        durianStages,
+        "GSTAGE"
+      ),
+    ]);
+
+    console.timeEnd("Reference codes processing");
+    return { breedCodes, durianStageCodes };
+  } catch (error) {
+    console.error("❌ Error in bulkProcessReferenceCodes:", error);
+    console.timeEnd("Reference codes processing");
+    return { breedCodes: new Map(), durianStageCodes: new Map() };
+  }
+}
+
+/**
  * Bulk insert or update crops in the database
  */
-const bulkInsertOrUpdateCrops = async (crops) => {
+export async function bulkInsertOrUpdateCrops(crops) {
   if (!crops || crops.length === 0) {
     return { inserted: 0, updated: 0, errors: 0, skipped: 0 };
   }
@@ -191,27 +191,26 @@ const bulkInsertOrUpdateCrops = async (crops) => {
 
     // Prepare data for bulk insert
     const cropData = validCrops.map((crop) => [
-      crop.recId, // rec_id
-      crop.farmerId, // farmer_id
-      crop.landId, // land_id
-      crop.cropId, // crop_id
-      crop.cropYear ?? null, // crop_year
-      crop.cropName || null, // ✅ crop_name - "" becomes NULL (recommended)
-      breedCodes.get(crop.breedName || crop.breed) || null, // breed_id
-      crop.cropStartDate || null, // crop_start_date
-      crop.cropEndDate || null, // crop_end_date
-      // Numbers - use ?? to preserve 0 values
-      crop.totalTrees ?? null, // total_trees
-      crop.forecastKg ?? null, // forecast_kg
-      crop.forecastBaht ?? null, // forecast_baht
-      crop.forecastWorkerCost ?? null, // forecast_worker_cost
-      crop.forecastFertilizerCost ?? null, // forecast_fertilizer_cost
-      crop.forecastEquipmentCost ?? null, // forecast_equipment_cost
-      crop.forecastPetrolCost ?? null, // forecast_petrol_cost
-      durianStageCodes.get(crop.durianStageName || crop.durianStage) || null, // durian_stage_id
-      crop.lotNumber || null, // lot_number
-      crop.createdTime || null, // created_at
-      crop.updatedTime || null, // updated_at
+      crop.recId,
+      crop.farmerId,
+      crop.landId,
+      crop.cropId,
+      crop.cropYear ?? null,
+      crop.cropName || null,
+      breedCodes.get(crop.breedName || crop.breed) || null,
+      crop.cropStartDate || null,
+      crop.cropEndDate || null,
+      crop.totalTrees ?? null,
+      crop.forecastKg ?? null,
+      crop.forecastBaht ?? null,
+      crop.forecastWorkerCost ?? null,
+      crop.forecastFertilizerCost ?? null,
+      crop.forecastEquipmentCost ?? null,
+      crop.forecastPetrolCost ?? null,
+      durianStageCodes.get(crop.durianStageName || crop.durianStage) || null,
+      crop.lotNumber || null,
+      crop.createdTime || null,
+      crop.updatedTime || null,
     ]);
 
     console.timeEnd("Data preparation");
@@ -298,9 +297,4 @@ const bulkInsertOrUpdateCrops = async (crops) => {
       error: error.message,
     };
   }
-};
-
-/**
- * Named exports (ESM style)
- */
-export { bulkInsertOrUpdateCrops, bulkProcessReferenceCodes };
+}

@@ -1,4 +1,3 @@
-// api/crops.js (ESM)
 import apiClient from "./apiClient.js";
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));

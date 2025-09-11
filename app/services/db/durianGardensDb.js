@@ -1,63 +1,9 @@
 // ===================== Imports =====================
 // Import DB connection for executing SQL queries
 import { connectionDB } from "../../config/db/db.conf.js";
-import { OPERATIONS } from "../../utils/constants.js";
 
 // ===================== DB Utilities =====================
 // Provides helper functions for reference code lookup and upserting durian gardens
-
-/**
- * Bulk process reference codes for all durian gardens at once
- */
-async function bulkProcessReferenceCodes(gardens) {
-  // Get unique values
-  const provinces = [
-    ...new Set(gardens.map((g) => g.province).filter(Boolean)),
-  ];
-  const districts = [...new Set(gardens.map((g) => g.amphur).filter(Boolean))];
-  const subdistricts = [
-    ...new Set(gardens.map((g) => g.tambon).filter(Boolean)),
-  ];
-  const landTypes = [
-    ...new Set(gardens.map((g) => g.landType).filter(Boolean)),
-  ];
-
-  // Bulk lookup/create all reference codes
-  const [provinceCodes, districtCodes, subdistrictCodes, landTypeCodes] =
-    await Promise.all([
-      bulkEnsureRefCodes(
-        "ref_provinces",
-        "province_name_th",
-        "province_code",
-        provinces,
-        "GPROV"
-      ),
-      bulkEnsureRefCodes(
-        "ref_districts",
-        "district_name_th",
-        "district_code",
-        districts,
-        "GDIST"
-      ),
-      bulkEnsureRefCodes(
-        "ref_subdistricts",
-        "subdistrict_name_th",
-        "subdistrict_code",
-        subdistricts,
-        "GSUBDIST"
-      ),
-      // ✅ FIXED: Use the correct column names for land types
-      bulkEnsureRefCodes(
-        "ref_land_types",
-        "land_type",
-        "land_type_id",
-        landTypes,
-        "GLTYPE"
-      ),
-    ]);
-
-  return { provinceCodes, districtCodes, subdistrictCodes, landTypeCodes };
-}
 
 /**
  * Bulk ensure reference codes for a list of names
@@ -119,6 +65,59 @@ async function bulkEnsureRefCodes(
   }
 
   return codeMap;
+}
+
+/**
+ * Bulk process reference codes for all durian gardens at once
+ */
+export async function bulkProcessReferenceCodes(gardens) {
+  // Get unique values
+  const provinces = [
+    ...new Set(gardens.map((g) => g.province).filter(Boolean)),
+  ];
+  const districts = [...new Set(gardens.map((g) => g.amphur).filter(Boolean))];
+  const subdistricts = [
+    ...new Set(gardens.map((g) => g.tambon).filter(Boolean)),
+  ];
+  const landTypes = [
+    ...new Set(gardens.map((g) => g.landType).filter(Boolean)),
+  ];
+
+  // Bulk lookup/create all reference codes
+  const [provinceCodes, districtCodes, subdistrictCodes, landTypeCodes] =
+    await Promise.all([
+      bulkEnsureRefCodes(
+        "ref_provinces",
+        "province_name_th",
+        "province_code",
+        provinces,
+        "GPROV"
+      ),
+      bulkEnsureRefCodes(
+        "ref_districts",
+        "district_name_th",
+        "district_code",
+        districts,
+        "GDIST"
+      ),
+      bulkEnsureRefCodes(
+        "ref_subdistricts",
+        "subdistrict_name_th",
+        "subdistrict_code",
+        subdistricts,
+        "GSUBDIST"
+      ),
+      // ✅ FIXED: Use the correct column names for land types
+      bulkEnsureRefCodes(
+        "ref_land_types",
+        "land_type",
+        "land_type_id",
+        landTypes,
+        "GLTYPE"
+      ),
+    ]);
+
+  return { provinceCodes, districtCodes, subdistrictCodes, landTypeCodes };
 }
 
 /**

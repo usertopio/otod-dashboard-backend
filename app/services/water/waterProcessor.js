@@ -1,16 +1,14 @@
-// waterProcessor.js (ESM)
-
 // ===================== Imports =====================
 // Import API client for fetching water usage summary
 import { getWaterUsageSummaryByMonth } from "../api/water.js";
 import { bulkInsertOrUpdateWater } from "../db/waterDb.js";
 import { connectionDB } from "../../config/db/db.conf.js";
-import { WATER_CONFIG, OPERATIONS } from "../../utils/constants.js";
+import { WATER_CONFIG } from "../../utils/constants.js";
 import WaterLogger from "./waterLogger.js";
 
 // ===================== Processor =====================
 // WaterProcessor handles fetching, deduplication, and DB upserts for water usage summary.
-class WaterProcessor {
+export default class WaterProcessor {
   /**
    * Fetches all water usage summary data from the API, deduplicates, and upserts into DB.
    * Returns a result object with metrics and tracking info.
@@ -35,7 +33,7 @@ class WaterProcessor {
       uniqueWater.length
     );
 
-    // ✅ BULK PROCESSING: Process all water records at once
+    // Process all water records at once
     console.log(
       `🚀 Processing ${uniqueWater.length} unique water records using BULK operations...`
     );
@@ -115,6 +113,3 @@ class WaterProcessor {
     return result[0].total;
   }
 }
-
-// ===================== Exports =====================
-export default WaterProcessor;

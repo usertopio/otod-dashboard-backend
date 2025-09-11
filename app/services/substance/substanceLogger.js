@@ -1,5 +1,3 @@
-// services/substance/substanceLogger.js (ESM)
-
 // ===================== Logger =====================
 // SubstanceLogger provides structured logging for the substance fetch/process workflow.
 export default class SubstanceLogger {

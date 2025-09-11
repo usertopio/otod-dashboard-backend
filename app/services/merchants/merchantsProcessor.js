@@ -1,5 +1,3 @@
-// merchantsProcessor.js (ESM)
-
 // ===================== Imports =====================
 // Import API client for fetching merchants data
 import { getMerchants } from "../api/merchants.js";
@@ -47,7 +45,7 @@ class MerchantsProcessor {
       uniqueMerchants.length
     );
 
-    // ✅ BULK PROCESSING: Process all merchants at once
+    // Process all merchants at once
     console.log(
       `🚀 Processing ${uniqueMerchants.length} unique merchants using BULK operations...`
     );

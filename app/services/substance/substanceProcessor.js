@@ -1,5 +1,3 @@
-// substanceProcessor.js (ESM)
-
 // ===================== Imports =====================
 // Import API client for fetching substance usage summary
 import { getSubstanceUsageSummaryByMonth } from "../api/substance.js";
@@ -37,7 +35,7 @@ class SubstanceProcessor {
       uniqueSubstance.length
     );
 
-    // ✅ BULK PROCESSING: Process all substances at once
+    // Process all substances at once
     console.log(
       `🚀 Processing ${uniqueSubstance.length} unique substances using BULK operations...`
     );
@@ -78,10 +76,6 @@ class SubstanceProcessor {
         cropYear: year,
         provinceName: "",
       };
-
-      // const customHeaders = {
-      //   Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-      // };
 
       const substanceResponse = await getSubstanceUsageSummaryByMonth(
         requestBody
@@ -125,5 +119,4 @@ class SubstanceProcessor {
   }
 }
 
-// ===================== Exports =====================
 export default SubstanceProcessor;

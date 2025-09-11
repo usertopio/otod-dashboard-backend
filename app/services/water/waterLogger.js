@@ -1,5 +1,3 @@
-// services/water/waterLogger.js (ESM)
-
 // ===================== Logger =====================
 // WaterLogger provides structured logging for the water fetch/process workflow.
 export default class WaterLogger {

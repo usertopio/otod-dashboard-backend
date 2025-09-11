@@ -6,7 +6,7 @@ import CommunitiesLogger from "./communitiesLogger.js";
 
 // ===================== Service =====================
 // CommunitiesService handles the business logic for fetching, resetting, and managing community records.
-class CommunitiesService {
+export default class CommunitiesService {
   /**
    * Resets only the communities table in the database.
    * - Disables foreign key checks to allow truncation.
@@ -89,7 +89,7 @@ class CommunitiesService {
       attempt++;
     }
 
-    const finalCount = await this.getCount(); // ✅ Use service-level getCount()
+    const finalCount = await this.getCount();
 
     CommunitiesLogger.logFinalResults(
       "ALL",
@@ -115,7 +115,7 @@ class CommunitiesService {
 
   /**
    * Returns the current count of communities records in the database.
-   * ✅ Pattern 1: Direct database operation in service layer
+   * Direct database operation in service layer
    */
   static async getCount() {
     try {
@@ -130,7 +130,7 @@ class CommunitiesService {
   }
 
   /**
-   * ✅ Pattern 1: Direct database operation in service layer (for consistency)
+   * Direct database operation in service layer (for consistency)
    * @private
    */
   static async _getDatabaseCount() {
@@ -145,9 +145,15 @@ class CommunitiesService {
    * @returns {object} - Summary of the fetch operation.
    */
   static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
-    const finalCount = await this.getCount(); // ✅ Use service-level getCount()
-    const status =
-      finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    const finalCount = await this.getCount();
+    let status;
+
+    // ll handle "ALL" target correctly
+    if (targetCount === "ALL") {
+      status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    } else {
+      status = finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    }
 
     CommunitiesLogger.logFinalResults(
       targetCount,
@@ -168,6 +174,3 @@ class CommunitiesService {
     };
   }
 }
-
-// ===================== Exports =====================
-export default CommunitiesService;

@@ -1,7 +1,6 @@
 // ===================== Imports =====================
 // Import DB connection for executing SQL queries
 import { connectionDB } from "../../config/db/db.conf.js";
-import { OPERATIONS } from "../../utils/constants.js";
 
 /**
  * Bulk ensure reference codes for a list of names
@@ -66,7 +65,7 @@ async function bulkEnsureRefCodes(
 /**
  * Bulk process reference codes for all water records at once
  */
-async function bulkProcessReferenceCodes(waterRecords) {
+export async function bulkProcessReferenceCodes(waterRecords) {
   // Get unique province names
   const provinceNames = [
     ...new Set(waterRecords.map((w) => w.provinceName).filter(Boolean)),

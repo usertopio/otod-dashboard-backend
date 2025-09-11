@@ -6,7 +6,7 @@ import OperationsLogger from "./operationsLogger.js";
 
 // ===================== Service =====================
 // OperationsService handles the business logic for fetching, resetting, and managing operation records.
-class OperationsService {
+export default class OperationsService {
   /**
    * Resets only the operations table in the database.
    * - Disables foreign key checks to allow truncation.
@@ -69,7 +69,6 @@ class OperationsService {
       totalUpdated += result.updated || 0;
       totalErrors += result.errors || 0;
 
-      // ✅ STANDARD TERMINATION: Same as other modules
       hasMoreData = (result.inserted || 0) > 0;
 
       // ✅ ADD: Early termination for efficiency
@@ -135,8 +134,14 @@ class OperationsService {
    */
   static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
     const finalCount = await this._getDatabaseCount();
-    const status =
-      finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    let status;
+
+    // All handle "ALL" target correctly
+    if (targetCount === "ALL") {
+      status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    } else {
+      status = finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    }
 
     OperationsLogger.logFinalResults(
       targetCount,
@@ -157,6 +162,3 @@ class OperationsService {
     };
   }
 }
-
-// ===================== Exports =====================
-export default OperationsService;
