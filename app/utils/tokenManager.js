@@ -1,7 +1,7 @@
 // tokenManager.js (ESM)
 import { login } from "../services/api/login.js";
 
-class TokenManager {
+export class TokenManager {
   constructor() {
     this.cachedToken = null;
     this.tokenExpiry = 0;
@@ -103,7 +103,4 @@ class TokenManager {
   }
 }
 
-// Export a singleton instance (default) and the class (named)
-const tokenManager = new TokenManager();
-export default tokenManager;
-export { TokenManager };
+export default new TokenManager();

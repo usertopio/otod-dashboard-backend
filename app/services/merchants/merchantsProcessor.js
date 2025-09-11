@@ -1,5 +1,3 @@
-// merchantsProcessor.js (ESM)
-
 // ===================== Imports =====================
 // Import API client for fetching merchants data
 import { getMerchants } from "../api/merchants.js";

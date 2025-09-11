@@ -1,4 +1,3 @@
-// services/api/apiClient.js (ESM)
 import axios from "axios";
 import tokenManager from "../../utils/tokenManager.js";
 

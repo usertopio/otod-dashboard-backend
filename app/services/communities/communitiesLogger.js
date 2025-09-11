@@ -1,5 +1,3 @@
-// utils/loggers/communitiesLogger.js (ESM)
-
 // ===================== Logger =====================
 // CommunitiesLogger provides structured logging for the communities fetch/process workflow.
 export default class CommunitiesLogger {

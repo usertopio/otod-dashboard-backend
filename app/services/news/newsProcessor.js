@@ -1,5 +1,3 @@
-// newsProcessor.js (ESM)
-
 // ===================== Imports =====================
 // Import API client for fetching news data
 import { getNews } from "../api/news.js";

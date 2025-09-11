@@ -1,5 +1,3 @@
-// operationsProcessor.js (ESM)
-
 // ===================== Imports =====================
 // Import API client for fetching operations data
 import { getOperations } from "../api/operations.js";

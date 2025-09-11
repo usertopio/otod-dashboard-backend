@@ -1,5 +1,3 @@
-// services/durianGardens/durianGardensLogger.js (ESM)
-
 // ===================== Logger =====================
 // DurianGardensLogger provides structured logging for the durian gardens fetch/process workflow.
 export default class DurianGardensLogger {

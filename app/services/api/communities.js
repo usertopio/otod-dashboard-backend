@@ -1,4 +1,3 @@
-// communities.js (ESM)
 import apiClient from "./apiClient.js";
 
 // Outsource doc: API Name: GetCommunities

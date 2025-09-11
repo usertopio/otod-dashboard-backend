@@ -6,7 +6,7 @@ import DurianGardensLogger from "./durianGardensLogger.js";
 
 // ===================== Service =====================
 // DurianGardensService handles the business logic for fetching, resetting, and managing durian garden records.
-class DurianGardensService {
+export default class DurianGardensService {
   /**
    * Resets only the durian_gardens table in the database.
    * - Disables foreign key checks to allow truncation.
@@ -61,7 +61,6 @@ class DurianGardensService {
     while (attempt <= maxAttempts && hasMoreData) {
       DurianGardensLogger.logAttemptStart(attempt, maxAttempts);
 
-      // ✅ SIMPLIFIED: Follow farmers pattern
       const result = await DurianGardensProcessor.fetchAndProcessData();
 
       DurianGardensLogger.logAttemptResults(attempt, result);
@@ -70,7 +69,6 @@ class DurianGardensService {
       totalUpdated += result.updated || 0;
       totalErrors += result.errors || 0;
 
-      // ✅ STANDARD TERMINATION: Same as farmers
       const hasNewData = (result.inserted || 0) > 0;
       hasMoreData = hasNewData;
 
@@ -81,7 +79,7 @@ class DurianGardensService {
       attempt++;
     }
 
-    // ✅ FIX: Pass the actual final count, not "ALL"
+    // Pass the actual final count, not "ALL"
     const finalCount = await this._getDatabaseCount();
     const result = await this._buildFinalResult(
       finalCount, // ← Pass the actual number like other modules
@@ -114,7 +112,7 @@ class DurianGardensService {
     const finalCount = await this._getDatabaseCount();
 
     let status;
-    // ✅ CONSISTENT: All handle "ALL" target correctly
+    // All handle "ALL" target correctly
     if (targetCount === "ALL") {
       status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
     } else {
@@ -142,6 +140,3 @@ class DurianGardensService {
     };
   }
 }
-
-// ===================== Exports =====================
-export default DurianGardensService;

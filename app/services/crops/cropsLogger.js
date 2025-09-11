@@ -1,5 +1,3 @@
-// utils/loggers/cropsLogger.js (ESM)
-
 // ===================== Logger =====================
 // CropsLogger provides structured logging for the crops fetch/process workflow.
 export default class CropsLogger {

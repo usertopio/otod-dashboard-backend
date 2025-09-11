@@ -6,7 +6,7 @@ import NewsLogger from "./newsLogger.js";
 
 // ===================== Service =====================
 // NewsService handles the business logic for fetching, resetting, and managing news records.
-class NewsService {
+export default class NewsService {
   /**
    * Resets only the news table in the database.
    * - Disables foreign key checks to allow truncation.
@@ -67,7 +67,6 @@ class NewsService {
       totalUpdated += result.updated || 0;
       totalErrors += result.errors || 0;
 
-      // ✅ STANDARD TERMINATION: Same as other modules
       hasMoreData = (result.inserted || 0) > 0;
 
       // ✅ ADD: Early termination for efficiency
@@ -135,7 +134,7 @@ class NewsService {
     const finalCount = await this._getDatabaseCount();
     let status;
 
-    // ✅ CONSISTENT: All handle "ALL" target correctly
+    // All handle "ALL" target correctly
     if (targetCount === "ALL") {
       status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
     } else {
@@ -161,6 +160,3 @@ class NewsService {
     };
   }
 }
-
-// ===================== Exports =====================
-export default NewsService;

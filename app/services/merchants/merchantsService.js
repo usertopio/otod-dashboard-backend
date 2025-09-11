@@ -6,7 +6,7 @@ import MerchantsLogger from "./merchantsLogger.js";
 
 // ===================== Service =====================
 // MerchantsService handles the business logic for fetching, resetting, and managing merchant records.
-class MerchantsService {
+export default class MerchantsService {
   /**
    * Resets only the merchants table in the database.
    * - Disables foreign key checks to allow truncation.
@@ -69,10 +69,9 @@ class MerchantsService {
       totalUpdated += result.updated || 0;
       totalErrors += result.errors || 0;
 
-      // ✅ STANDARD TERMINATION: Same as other modules
       hasMoreData = (result.inserted || 0) > 0;
 
-      // ✅ ADD: Early termination for efficiency
+      // Early termination for efficiency
       if (
         attempt === 1 &&
         (result.inserted || 0) > 0 &&
@@ -137,7 +136,7 @@ class MerchantsService {
     const finalCount = await this._getDatabaseCount();
     let status;
 
-    // ✅ CONSISTENT: All handle "ALL" target correctly
+    // All handle "ALL" target correctly
     if (targetCount === "ALL") {
       status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
     } else {
@@ -163,6 +162,3 @@ class MerchantsService {
     };
   }
 }
-
-// ===================== Exports =====================
-export default MerchantsService;

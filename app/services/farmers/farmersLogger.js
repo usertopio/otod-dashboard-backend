@@ -1,5 +1,3 @@
-// services/farmers/farmersLogger.js (ESM)
-
 // ===================== Logger =====================
 // FarmersLogger provides structured logging for the farmers fetch/process workflow.
 export default class FarmersLogger {

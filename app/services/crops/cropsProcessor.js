@@ -1,5 +1,3 @@
-// cropsProcessor.js (ESM)
-
 // ===================== Imports =====================
 // Import API clients for fetching crop data
 import { getCrops, getCropHarvests } from "../api/crops.js";

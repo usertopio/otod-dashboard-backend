@@ -1,5 +1,3 @@
-// durianGardensProcessor.js (ESM)
-
 // ===================== Imports =====================
 // Import API clients for fetching garden data
 import { getLands } from "../api/lands.js";

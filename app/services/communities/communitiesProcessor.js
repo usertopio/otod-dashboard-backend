@@ -1,5 +1,3 @@
-// communitiesProcessor.js  (ESM)
-
 // ===================== Imports =====================
 // Import API client for fetching communities data
 import { getCommunities } from "../api/communities.js";

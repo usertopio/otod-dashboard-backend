@@ -1,5 +1,3 @@
-// db.conf.js (ESM)
-
 // Load environment variables FIRST
 import "dotenv/config";
 

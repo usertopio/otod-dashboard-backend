@@ -1,5 +1,3 @@
-// app/services/farmers/farmersProcessor.js (ESM)
-
 // ===================== Imports =====================
 // Import API client for fetching farmers data
 import { getFarmers } from "../api/farmers.js";

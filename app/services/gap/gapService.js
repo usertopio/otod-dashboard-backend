@@ -6,7 +6,7 @@ import GapLogger from "./gapLogger.js";
 
 // ===================== Service =====================
 // GapService handles the business logic for fetching, resetting, and managing GAP certificate records.
-class GapService {
+export default class GapService {
   /**
    * Resets only the gap table in the database.
    * - Disables foreign key checks to allow truncation.
@@ -137,7 +137,7 @@ class GapService {
     const finalCount = await this._getDatabaseCount();
     let status;
 
-    // ✅ CONSISTENT: All handle "ALL" target correctly
+    // All handle "ALL" target correctly
     if (targetCount === "ALL") {
       status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
     } else {
@@ -163,6 +163,3 @@ class GapService {
     };
   }
 }
-
-// ===================== Exports =====================
-export default GapService;

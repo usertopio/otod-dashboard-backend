@@ -7,7 +7,7 @@ import WaterLogger from "./waterLogger.js";
 
 // ===================== Service =====================
 // WaterService handles the business logic for fetching, resetting, and managing water records.
-class WaterService {
+export default class WaterService {
   /**
    * Resets only the water table in the database.
    * - Disables foreign key checks to allow truncation.
@@ -73,7 +73,7 @@ class WaterService {
 
       hasMoreData = (result.inserted || 0) > 0;
 
-      // ADD: Early termination for efficiency
+      // Early termination for efficiency
       if (
         attempt === 1 &&
         (result.inserted || 0) > 0 &&
@@ -164,6 +164,3 @@ class WaterService {
     };
   }
 }
-
-// ===================== Exports =====================
-export default WaterService;

@@ -1,5 +1,3 @@
-// gapProcessor.js (ESM)
-
 // ===================== Imports =====================
 // Import API client for fetching crops (source of GAP data)
 import { getCrops } from "../api/crops.js";

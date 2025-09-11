@@ -5,7 +5,7 @@ import SubstanceProcessor from "./substanceProcessor.js";
 import SubstanceLogger from "./substanceLogger.js";
 
 // ===================== Service =====================
-class SubstanceService {
+export default class SubstanceService {
   /**
    * Resets only the substance table in the database.
    * - Disables foreign key checks to allow truncation.
@@ -134,7 +134,7 @@ class SubstanceService {
   static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
     const finalCount = await this._getDatabaseCount();
     let status;
-    // ✅ CONSISTENT: All handle "ALL" target correctly
+    // All handle "ALL" target correctly
     if (targetCount === "ALL") {
       status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
     } else {
@@ -160,6 +160,3 @@ class SubstanceService {
     };
   }
 }
-
-// ===================== Exports =====================
-export default SubstanceService;

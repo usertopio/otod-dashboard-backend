@@ -6,7 +6,7 @@ import CropsLogger from "./cropsLogger.js";
 
 // ===================== Service =====================
 // CropsService handles the business logic for fetching, resetting, and managing crop records.
-class CropsService {
+export default class CropsService {
   /**
    * Resets only the crops table in the database.
    * - Disables foreign key checks to allow truncation.
@@ -82,7 +82,7 @@ class CropsService {
 
   /**
    * Returns the current count of crops records in the database.
-   * ✅ Pattern 1: Direct database operation in service layer
+   * Pattern 1: Direct database operation in service layer
    */
   static async getCount() {
     try {
@@ -97,7 +97,7 @@ class CropsService {
   }
 
   /**
-   * ✅ Pattern 1: Direct database operation in service layer (for consistency)
+   * Direct database operation in service layer (for consistency)
    * @private
    */
   static async _getDatabaseCount() {
@@ -114,7 +114,7 @@ class CropsService {
   static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
     const finalCount = await this.getCount(); // ✅ Use service-level getCount()
     let status;
-    // ✅ CONSISTENT: All handle "ALL" target correctly
+    // All handle "ALL" target correctly
     if (targetCount === "ALL") {
       status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
     } else {
@@ -140,6 +140,3 @@ class CropsService {
     };
   }
 }
-
-// ===================== Exports =====================
-export default CropsService;

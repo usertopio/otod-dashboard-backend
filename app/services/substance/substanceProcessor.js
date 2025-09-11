@@ -1,5 +1,3 @@
-// substanceProcessor.js (ESM)
-
 // ===================== Imports =====================
 // Import API client for fetching substance usage summary
 import { getSubstanceUsageSummaryByMonth } from "../api/substance.js";

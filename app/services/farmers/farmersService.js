@@ -6,7 +6,7 @@ import FarmersLogger from "./farmersLogger.js";
 
 // ===================== Service =====================
 // FarmersService handles the business logic for fetching, resetting, and managing farmer records.
-class FarmersService {
+export default class FarmersService {
   /**
    * Resets only the farmers table in the database.
    * - Disables foreign key checks to allow truncation.
@@ -130,7 +130,7 @@ class FarmersService {
     const finalCount = await this._getDatabaseCount();
     let status;
 
-    // ✅ CONSISTENT: All handle "ALL" target correctly
+    // All handle "ALL" target correctly
     if (targetCount === "ALL") {
       status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
     } else {
@@ -156,6 +156,3 @@ class FarmersService {
     };
   }
 }
-
-// ===================== Exports =====================
-export default FarmersService;
