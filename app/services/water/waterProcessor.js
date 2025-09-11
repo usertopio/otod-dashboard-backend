@@ -35,7 +35,7 @@ class WaterProcessor {
       uniqueWater.length
     );
 
-    // ✅ BULK PROCESSING: Process all water records at once
+    // Process all water records at once
     console.log(
       `🚀 Processing ${uniqueWater.length} unique water records using BULK operations...`
     );
@@ -116,5 +116,4 @@ class WaterProcessor {
   }
 }
 
-// ===================== Exports =====================
 export default WaterProcessor;

@@ -30,13 +30,13 @@ class CropsProcessor {
     // Get database count before processing
     const dbCountBefore = await this._getDatabaseCount();
 
-    // 🔧 Fetch data from GetCrops API (with pagination)
+    // Fetch data from GetCrops API (with pagination)
     await this._fetchGetCropsPages(metrics);
 
-    // 🔧 Fetch data from GetCropHarvests API (loop by year and page)
+    // Fetch data from GetCropHarvests API (loop by year and page)
     await this._fetchGetCropHarvests(metrics);
 
-    // 🔧 Combine and merge records from both APIs by cropId
+    // Combine and merge records from both APIs by cropId
     const mergedCrops = this._mergeRecordsFromBothAPIs(
       metrics.allCropsFromGetCrops,
       metrics.allCropsFromGetCropHarvests
@@ -75,7 +75,7 @@ class CropsProcessor {
     };
   }
 
-  // 🔧 Fetch from GetCrops API (paginated)
+  // Fetch from GetCrops API (paginated)
   static async _fetchGetCropsPages(metrics) {
     console.log(``);
     console.log(
@@ -114,14 +114,14 @@ class CropsProcessor {
         }
       }
 
-      // ✅ INCREASE: Bigger delay between years
+      // INCREASE: Bigger delay between years
       if (year < CROPS_CONFIG.END_YEAR) {
         await new Promise((resolve) => setTimeout(resolve, 500)); // 500ms (was 200ms)
       }
     }
   }
 
-  // 🔧 Fetch from GetCropHarvests API (loop by year and page)
+  // Fetch from GetCropHarvests API (loop by year and page)
   static async _fetchGetCropHarvests(metrics) {
     console.log(
       `📞 Sending request to GetCropHarvests API (paginated, by year ${CROPS_CONFIG.START_YEAR}-${CROPS_CONFIG.END_YEAR})...`
@@ -163,7 +163,7 @@ class CropsProcessor {
     metrics.allCropsFromGetCropHarvests = allHarvests;
   }
 
-  // 🔧 Merge records from both APIs by cropId
+  // Merge records from both APIs by cropId
   static _mergeRecordsFromBothAPIs(getCropsData, getCropHarvestsData) {
     console.log(``);
     console.log("🔗 Merging records from both APIs by cropId...");
@@ -201,7 +201,6 @@ class CropsProcessor {
         gapExpiryDate: crop.gapExpiryDate,
         createdTime: crop.createdTime,
         updatedTime: crop.updatedTime,
-        // Initialize lotNumber as null (will be filled by GetCropHarvests)
         lotNumber: null,
       });
     });
@@ -258,7 +257,7 @@ class CropsProcessor {
     return mergedArray;
   }
 
-  // 🔧 Get unique crops (already unique by cropId from merge)
+  // Get unique crops (already unique by cropId from merge)
   static _getUniqueCrops(allCrops) {
     return allCrops; // Already unique from merge process
   }
@@ -271,5 +270,4 @@ class CropsProcessor {
   }
 }
 
-// ===================== Exports =====================
 export default CropsProcessor;

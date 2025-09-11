@@ -71,10 +71,9 @@ class WaterService {
       totalUpdated += result.updated || 0;
       totalErrors += result.errors || 0;
 
-      // ✅ STANDARD TERMINATION: Same as other modules
       hasMoreData = (result.inserted || 0) > 0;
 
-      // ✅ ADD: Early termination for efficiency
+      // ADD: Early termination for efficiency
       if (
         attempt === 1 &&
         (result.inserted || 0) > 0 &&
@@ -137,8 +136,14 @@ class WaterService {
    */
   static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
     const finalCount = await this._getDatabaseCount();
-    const status =
-      finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    let status;
+
+    // handle "ALL" target correctly
+    if (targetCount === "ALL") {
+      status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    } else {
+      status = finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    }
 
     WaterLogger.logFinalResults(
       targetCount,

@@ -5,7 +5,7 @@
 import { getCrops } from "../api/crops.js";
 import { bulkInsertOrUpdateGap } from "../db/gapDb.js";
 import { connectionDB } from "../../config/db/db.conf.js";
-import { GAP_CONFIG, OPERATIONS } from "../../utils/constants.js";
+import { GAP_CONFIG } from "../../utils/constants.js";
 import GapLogger from "./gapLogger.js";
 
 // ===================== Processor =====================
@@ -32,7 +32,7 @@ class GapProcessor {
 
     GapLogger.logApiSummary(metrics.allGapAllPages.length, uniqueGap.length);
 
-    // ✅ BULK PROCESSING: Process all GAP certificates at once
+    // Process all GAP certificates at once
     console.log(
       `🚀 Processing ${uniqueGap.length} unique GAP certificates using BULK operations...`
     );
@@ -149,6 +149,4 @@ class GapProcessor {
     return result[0].total;
   }
 }
-
-// ===================== Exports =====================
 export default GapProcessor;

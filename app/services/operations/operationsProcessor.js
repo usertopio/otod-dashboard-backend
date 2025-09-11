@@ -5,7 +5,7 @@
 import { getOperations } from "../api/operations.js";
 import { bulkInsertOrUpdateOperations } from "../db/operationsDb.js";
 import { connectionDB } from "../../config/db/db.conf.js";
-import { OPERATIONS_CONFIG, OPERATIONS } from "../../utils/constants.js";
+import { OPERATIONS_CONFIG } from "../../utils/constants.js";
 import OperationsLogger from "./operationsLogger.js";
 
 // ===================== Processor =====================
@@ -37,7 +37,7 @@ class OperationsProcessor {
       uniqueOperations.length
     );
 
-    // ✅ BULK PROCESSING: Process all operations at once
+    // Process all operations at once
     console.log(
       `🚀 Processing ${uniqueOperations.length} unique operations using BULK operations...`
     );
@@ -81,11 +81,6 @@ class OperationsProcessor {
           pageIndex: page,
           pageSize: OPERATIONS_CONFIG.DEFAULT_PAGE_SIZE,
         };
-
-        // const customHeaders = {
-        //   Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-        // };
-
         const operations = await getOperations(requestBody);
         const operationsCurPage = operations.data || [];
         metrics.allOperationsAllPages =
@@ -125,5 +120,4 @@ class OperationsProcessor {
   }
 }
 
-// ===================== Exports =====================
 export default OperationsProcessor;

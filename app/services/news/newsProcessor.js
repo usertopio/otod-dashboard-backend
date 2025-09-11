@@ -8,7 +8,7 @@ import { bulkInsertOrUpdateNews } from "../db/newsDb.js";
 // Import DB connection for direct queries
 import { connectionDB } from "../../config/db/db.conf.js";
 // Import config constants and operation enums
-import { NEWS_CONFIG, OPERATIONS } from "../../utils/constants.js";
+import { NEWS_CONFIG } from "../../utils/constants.js";
 // Import logger for structured process logging
 import NewsLogger from "./newsLogger.js";
 
@@ -36,7 +36,7 @@ class NewsProcessor {
 
     NewsLogger.logApiSummary(metrics.allNewsAllPages.length, uniqueNews.length);
 
-    // ✅ BULK PROCESSING: Process all news at once
+    // Process all news at once
     console.log(
       `🚀 Processing ${uniqueNews.length} unique news records using BULK operations...`
     );
