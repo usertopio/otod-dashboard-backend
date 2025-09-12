@@ -2,7 +2,18 @@
 // Import DB connection for executing SQL queries
 import { connectionDB } from "../../config/db/db.conf.js";
 
-// ===================== DB Utilities =====================
+// ✅ ADD: Same getBangkokTime function as other modules
+/**
+ * Get Bangkok timezone timestamp as MySQL-compatible string
+ */
+const getBangkokTime = () => {
+  return new Date()
+    .toLocaleString("sv-SE", {
+      timeZone: "Asia/Bangkok",
+    })
+    .replace(" ", "T");
+};
+
 /**
  * Bulk ensure reference codes for a list of names
  */
@@ -13,44 +24,47 @@ async function bulkEnsureRefCodes(
   names,
   prefix
 ) {
-  if (!names || names.length === 0) {
-    return new Map();
-  }
+  if (!names || names.length === 0) return new Map();
 
   try {
-    // Get existing codes
-    const placeholders = names.map(() => "?").join(",");
-    const selectQuery = `SELECT ${nameColumn}, ${codeColumn} FROM ${table} WHERE ${nameColumn} IN (${placeholders})`;
-    const [existing] = await connectionDB.promise().query(selectQuery, names);
+    // Get existing codes in one query
+    const [existing] = await connectionDB
+      .promise()
+      .query(
+        `SELECT ${nameColumn}, ${codeColumn} FROM ${table} WHERE ${nameColumn} IN (?)`,
+        [names]
+      );
 
     const codeMap = new Map();
-    const existingNames = new Set();
-
     existing.forEach((row) => {
       codeMap.set(row[nameColumn], row[codeColumn]);
-      existingNames.add(row[nameColumn]);
     });
 
     // Find missing names
-    const missingNames = names.filter((name) => !existingNames.has(name));
+    const missingNames = names.filter((name) => !codeMap.has(name));
 
     if (missingNames.length > 0) {
-      // Get next available code number
-      const maxQuery = `SELECT MAX(CAST(SUBSTRING(${codeColumn}, ${
-        prefix.length + 1
-      }) AS UNSIGNED)) as maxNum FROM ${table} WHERE ${codeColumn} LIKE '${prefix}%'`;
-      const [maxResult] = await connectionDB.promise().query(maxQuery);
-      let nextNum = (maxResult[0]?.maxNum || 0) + 1;
+      // Generate codes for missing names
+      const [maxResult] = await connectionDB
+        .promise()
+        .query(
+          `SELECT ${codeColumn} FROM ${table} WHERE ${codeColumn} LIKE '${prefix}%' ORDER BY ${codeColumn} DESC LIMIT 1`
+        );
 
-      // Insert missing codes
-      const insertData = missingNames.map((name) => {
-        const newCode = `${prefix}${nextNum.toString().padStart(3, "0")}`;
-        codeMap.set(name, newCode);
-        nextNum++;
-        return [newCode, name];
+      let nextNumber = 1;
+      if (maxResult.length > 0) {
+        const lastCode = maxResult[0][codeColumn];
+        nextNumber = parseInt(lastCode.replace(prefix, "")) + 1;
+      }
+
+      // Bulk insert missing codes
+      const insertData = missingNames.map((name, index) => {
+        const code = `${prefix}${String(nextNumber + index).padStart(3, "0")}`;
+        codeMap.set(name, code);
+        return [code, name, "generated"];
       });
 
-      const insertQuery = `INSERT INTO ${table} (${codeColumn}, ${nameColumn}) VALUES ?`;
+      const insertQuery = `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES ?`;
       await connectionDB.promise().query(insertQuery, [insertData]);
 
       console.log(`🆕 Created ${insertData.length} new ${table} codes`);
@@ -132,6 +146,9 @@ export async function bulkInsertOrUpdateMerchants(merchants) {
       .query("SELECT COUNT(*) as count FROM merchants");
     const beforeCount = countBefore[0].count;
 
+    // ✅ ADD: Get Bangkok time (same as other modules)
+    const bangkokTime = getBangkokTime();
+
     // Prepare merchant data
     const merchantData = merchants.map((merchant) => [
       merchant.recId,
@@ -145,13 +162,13 @@ export async function bulkInsertOrUpdateMerchants(merchants) {
       merchant.updatedTime,
       merchant.companyId,
       merchant.companyName,
-      new Date(),
+      bangkokTime, // ✅ CHANGED: Use bangkokTime instead of new Date()
     ]);
 
     console.timeEnd("⏱️ Data preparation");
     console.time("⏱️ Bulk database operation");
 
-    // Bulk insert/update query
+    // ✅ CHANGED: Use VALUES(fetch_at) pattern like other modules
     const insertQuery = `
       INSERT INTO merchants (
         rec_id, merchant_name, province_code, district_code, subdistrict_code,
@@ -168,10 +185,10 @@ export async function bulkInsertOrUpdateMerchants(merchants) {
         updated_time = VALUES(updated_time),
         company_id = VALUES(company_id),
         company_name = VALUES(company_name),
-        fetch_at = VALUES(fetch_at)
+        fetch_at = VALUES(fetch_at)  -- ✅ CHANGED: Use VALUES(fetch_at) like other modules
     `;
 
-    // Execute bulk operation
+    // ✅ CHANGED: Use merchantData directly (bangkokTime already in array)
     const [result] = await connectionDB
       .promise()
       .query(insertQuery, [merchantData]);
