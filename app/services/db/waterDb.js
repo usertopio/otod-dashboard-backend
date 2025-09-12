@@ -3,6 +3,17 @@
 import { connectionDB } from "../../config/db/db.conf.js";
 
 /**
+ * Get Bangkok timezone timestamp as MySQL-compatible string
+ */
+const getBangkokTime = () => {
+  return new Date()
+    .toLocaleString("sv-SE", {
+      timeZone: "Asia/Bangkok",
+    })
+    .replace(" ", "T");
+};
+
+/**
  * Bulk ensure reference codes for a list of names
  */
 async function bulkEnsureRefCodes(
@@ -12,44 +23,47 @@ async function bulkEnsureRefCodes(
   names,
   prefix
 ) {
-  if (!names || names.length === 0) {
-    return new Map();
-  }
+  if (!names || names.length === 0) return new Map();
 
   try {
-    // Get existing codes
-    const placeholders = names.map(() => "?").join(",");
-    const selectQuery = `SELECT ${nameColumn}, ${codeColumn} FROM ${table} WHERE ${nameColumn} IN (${placeholders})`;
-    const [existing] = await connectionDB.promise().query(selectQuery, names);
+    // Get existing codes in one query
+    const [existing] = await connectionDB
+      .promise()
+      .query(
+        `SELECT ${nameColumn}, ${codeColumn} FROM ${table} WHERE ${nameColumn} IN (?)`,
+        [names]
+      );
 
     const codeMap = new Map();
-    const existingNames = new Set();
-
     existing.forEach((row) => {
       codeMap.set(row[nameColumn], row[codeColumn]);
-      existingNames.add(row[nameColumn]);
     });
 
     // Find missing names
-    const missingNames = names.filter((name) => !existingNames.has(name));
+    const missingNames = names.filter((name) => !codeMap.has(name));
 
     if (missingNames.length > 0) {
-      // Get next available code number
-      const maxQuery = `SELECT MAX(CAST(SUBSTRING(${codeColumn}, ${
-        prefix.length + 1
-      }) AS UNSIGNED)) as maxNum FROM ${table} WHERE ${codeColumn} LIKE '${prefix}%'`;
-      const [maxResult] = await connectionDB.promise().query(maxQuery);
-      let nextNum = (maxResult[0]?.maxNum || 0) + 1;
+      // Generate codes for missing names
+      const [maxResult] = await connectionDB
+        .promise()
+        .query(
+          `SELECT ${codeColumn} FROM ${table} WHERE ${codeColumn} LIKE '${prefix}%' ORDER BY ${codeColumn} DESC LIMIT 1`
+        );
 
-      // Insert missing codes
-      const insertData = missingNames.map((name) => {
-        const newCode = `${prefix}${nextNum.toString().padStart(3, "0")}`;
-        codeMap.set(name, newCode);
-        nextNum++;
-        return [newCode, name];
+      let nextNumber = 1;
+      if (maxResult.length > 0) {
+        const lastCode = maxResult[0][codeColumn];
+        nextNumber = parseInt(lastCode.replace(prefix, "")) + 1;
+      }
+
+      // Bulk insert missing codes
+      const insertData = missingNames.map((name, index) => {
+        const code = `${prefix}${String(nextNumber + index).padStart(3, "0")}`;
+        codeMap.set(name, code);
+        return [code, name, "generated"];
       });
 
-      const insertQuery = `INSERT INTO ${table} (${codeColumn}, ${nameColumn}) VALUES ?`;
+      const insertQuery = `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES ?`;
       await connectionDB.promise().query(insertQuery, [insertData]);
 
       console.log(`🆕 Created ${insertData.length} new ${table} codes`);
@@ -66,23 +80,30 @@ async function bulkEnsureRefCodes(
  * Bulk process reference codes for all water records at once
  */
 export async function bulkProcessReferenceCodes(waterRecords) {
-  // Get unique province names
-  const provinceNames = [
-    ...new Set(waterRecords.map((w) => w.provinceName).filter(Boolean)),
-  ];
+  console.time("⏱️ Reference codes processing");
 
-  // Bulk lookup/create all reference codes
-  const [provinceCodes] = await Promise.all([
-    bulkEnsureRefCodes(
+  try {
+    // Extract unique province names from water records
+    const provinces = [
+      ...new Set(waterRecords.map((w) => w.provinceName).filter(Boolean)),
+    ];
+
+    // Process reference codes for provinces
+    const provinceCodes = await bulkEnsureRefCodes(
       "ref_provinces",
       "province_name_th",
       "province_code",
-      provinceNames,
+      provinces,
       "GPROV"
-    ),
-  ]);
+    );
 
-  return { provinceCodes };
+    console.timeEnd("⏱️ Reference codes processing");
+    return { provinceCodes };
+  } catch (error) {
+    console.error("❌ Error in bulkProcessReferenceCodes:", error);
+    console.timeEnd("⏱️ Reference codes processing");
+    return { provinceCodes: new Map() };
+  }
 }
 
 /**
@@ -110,41 +131,34 @@ export async function bulkInsertOrUpdateWater(waterRecords) {
       .query("SELECT COUNT(*) as count FROM water");
     const beforeCount = countBefore[0].count;
 
+    // Get Bangkok time
+    const bangkokTime = getBangkokTime();
+
     // Prepare water data for bulk insert
     const waterData = waterRecords.map((water) => [
       water.cropYear, // crop_year
-      provinceCodes.get(water.provinceName) || null, // water_province_code
-      water.operMonth, // oper_month (will be converted in SQL)
-      water.totalLitre || 0, // total_litre
+      provinceCodes.get(water.provinceName) || null,
+      water.operMonth,
+      water.totalLitre || 0,
+      bangkokTime,
     ]);
 
     console.timeEnd("⏱️ Data preparation");
     console.time("⏱️ Bulk database operation");
 
-    // Bulk insert/update query with STR_TO_DATE for month conversion
     const insertQuery = `
       INSERT INTO water (
         crop_year, water_province_code, oper_month, total_litre, fetch_at
-      ) VALUES ${waterRecords
-        .map(
-          () => "(?, ?, STR_TO_DATE(CONCAT(?, '-01'), '%Y-%m-%d'), ?, NOW())"
-        )
-        .join(", ")}
+      ) VALUES ?
       ON DUPLICATE KEY UPDATE
         total_litre = VALUES(total_litre),
         fetch_at = VALUES(fetch_at)
     `;
 
-    // Flatten the data for the parameterized query
-    const flatData = waterRecords.flatMap((water) => [
-      water.cropYear, // crop_year
-      provinceCodes.get(water.provinceName) || null, // water_province_code
-      water.operMonth, // oper_month
-      water.totalLitre || 0, // total_litre
-    ]);
-
-    // Execute bulk operation
-    const [result] = await connectionDB.promise().query(insertQuery, flatData);
+    // Use waterData directly
+    const [result] = await connectionDB
+      .promise()
+      .query(insertQuery, [waterData]);
 
     console.timeEnd("⏱️ Bulk database operation");
 

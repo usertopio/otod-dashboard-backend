@@ -2,6 +2,17 @@
 // Import DB connection for executing SQL queries
 import { connectionDB } from "../../config/db/db.conf.js";
 
+/**
+ * Get Bangkok timezone timestamp as MySQL-compatible string
+ */
+const getBangkokTime = () => {
+  return new Date()
+    .toLocaleString("sv-SE", {
+      timeZone: "Asia/Bangkok",
+    })
+    .replace(" ", "T");
+};
+
 // ===================== DB Utilities =====================
 // Provides helper functions for reference code lookup and upserting durian gardens
 
@@ -68,7 +79,7 @@ async function bulkEnsureRefCodes(
 }
 
 /**
- * Bulk process reference codes for all durian gardens at once
+ * Bulk process reference codes for durian gardens at once
  */
 export async function bulkProcessReferenceCodes(gardens) {
   // Get unique values
@@ -107,7 +118,7 @@ export async function bulkProcessReferenceCodes(gardens) {
         subdistricts,
         "GSUBDIST"
       ),
-      // ✅ FIXED: Use the correct column names for land types
+      // Use the correct column names for land types
       bulkEnsureRefCodes(
         "ref_land_types",
         "land_type",
@@ -146,6 +157,9 @@ export async function bulkInsertOrUpdateDurianGardens(gardens) {
       .query("SELECT COUNT(*) as count FROM durian_gardens");
     const beforeCount = countBefore[0].count;
 
+    // Get Bangkok time
+    const bangkokTime = getBangkokTime();
+
     // Prepare garden data with rec_id generation
     const processedGardens = gardens.map((garden, index) => {
       // Handle GeoJSON parsing
@@ -165,36 +179,35 @@ export async function bulkInsertOrUpdateDurianGardens(gardens) {
         }
       }
 
-      // ✅ FIXED: Generate rec_id if missing (prevents NULL error)
+      // Generate rec_id if missing
       const recId =
         garden.recId || garden.landId || `DG_${beforeCount + index + 1}`;
 
       return [
-        recId, // rec_id - NOW GUARANTEED NOT NULL
-        garden.farmerId, // farmer_id
-        garden.landId, // land_id
-        provinceCodes[garden.province] || "UNKNOWN", // garden_province_code
-        districtCodes[garden.amphur] || "UNKNOWN", // garden_district_code
-        subdistrictCodes[garden.tambon] || "UNKNOWN", // garden_subdistrict_code
-        landTypeCodes[garden.landType] || "UNKNOWN", // land_type_id
-        garden.lat || null, // lat
-        garden.lon || null, // lon
-        garden.noOfRais ?? 0, // no_of_rais
-        garden.noOfNgan ?? 0, // no_of_ngan
-        garden.noOfWah ?? 0, // no_of_wah
-        garden.kml || null, // kml
-        geoJsonValue, // geojson
-        garden.createdTime || null, // created_at
-        garden.updatedTime || null, // updated_at
-        garden.companyId || null, // company_id
-        new Date(), // fetch_at
+        recId,
+        garden.farmerId,
+        garden.landId,
+        provinceCodes[garden.province] || "UNKNOWN",
+        districtCodes[garden.amphur] || "UNKNOWN",
+        subdistrictCodes[garden.tambon] || "UNKNOWN",
+        landTypeCodes[garden.landType] || "UNKNOWN",
+        garden.lat || null,
+        garden.lon || null,
+        garden.noOfRais ?? 0,
+        garden.noOfNgan ?? 0,
+        garden.noOfWah ?? 0,
+        garden.kml || null,
+        geoJsonValue,
+        garden.createdTime || null,
+        garden.updatedTime || null,
+        garden.companyId || null,
+        bangkokTime,
       ];
     });
 
     console.timeEnd("⏱️ Data preparation");
     console.time("⏱️ Bulk database operation");
 
-    // Execute bulk insert with ON DUPLICATE KEY UPDATE
     const query = `
       INSERT INTO durian_gardens (
         rec_id, farmer_id, land_id, garden_province_code, garden_district_code, 
@@ -219,6 +232,7 @@ export async function bulkInsertOrUpdateDurianGardens(gardens) {
         fetch_at = VALUES(fetch_at)
     `;
 
+    // Use processedGardens directly
     const [result] = await connectionDB
       .promise()
       .query(query, [processedGardens]);
@@ -231,6 +245,7 @@ export async function bulkInsertOrUpdateDurianGardens(gardens) {
       .query("SELECT COUNT(*) as count FROM durian_gardens");
     const afterCount = countAfter[0].count;
 
+    // Calculate actual inserts and updates
     const actualInserts = afterCount - beforeCount;
     const actualUpdates = gardens.length - actualInserts;
 

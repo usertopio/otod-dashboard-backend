@@ -3,6 +3,17 @@
 import { connectionDB } from "../../config/db/db.conf.js";
 
 /**
+ * Get Bangkok timezone timestamp as MySQL-compatible string
+ */
+const getBangkokTime = () => {
+  return new Date()
+    .toLocaleString("sv-SE", {
+      timeZone: "Asia/Bangkok",
+    })
+    .replace(" ", "T");
+};
+
+/**
  * Bulk ensure reference codes for a list of names
  */
 const bulkEnsureRefCodes = async (
@@ -152,6 +163,9 @@ export async function bulkInsertOrUpdateOperations(operations) {
     );
     const beforeCount = countBefore[0].count;
 
+    // Get Bangkok time
+    const bangkokTime = getBangkokTime();
+
     // Filter operations with valid crop_ids and prepare data
     const validOperations = [];
     const skippedOperations = [];
@@ -187,6 +201,7 @@ export async function bulkInsertOrUpdateOperations(operations) {
         operation.createdTime || null,
         operation.updatedTime || null,
         operation.companyId ?? null,
+        bangkokTime,
       ]);
     }
 
@@ -208,17 +223,11 @@ export async function bulkInsertOrUpdateOperations(operations) {
 
     let actualInserts = 0;
     let actualUpdates = 0;
-    let result = null; // ✅ FIX: Declare result variable in proper scope
+    let result = null;
 
     if (validOperations.length > 0) {
       console.timeEnd("Data preparation");
       console.time("Bulk database operation");
-
-      // Add fetch_at timestamp to each row
-      const dataWithTimestamp = validOperations.map((row) => [
-        ...row,
-        new Date(),
-      ]);
 
       // Execute bulk insert with ON DUPLICATE KEY UPDATE
       const sql = `
@@ -240,10 +249,11 @@ export async function bulkInsertOrUpdateOperations(operations) {
           equipment_cost = VALUES(equipment_cost),
           updated_at = VALUES(updated_at),
           company_id = VALUES(company_id),
-          fetch_at = NOW()
+          fetch_at = VALUES(fetch_at)
       `;
 
-      [result] = await connection.query(sql, [dataWithTimestamp]);
+      // Use validOperations directly
+      [result] = await connection.query(sql, [validOperations]);
 
       console.timeEnd("Bulk database operation");
 
