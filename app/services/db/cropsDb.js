@@ -200,7 +200,7 @@ export async function bulkInsertOrUpdateCrops(crops) {
 
     console.time("Data preparation");
 
-    // ✅ ADD: Get Bangkok time (same as other modules)
+    // Get Bangkok time
     const bangkokTime = getBangkokTime();
 
     // Prepare data for bulk insert
@@ -225,7 +225,7 @@ export async function bulkInsertOrUpdateCrops(crops) {
       crop.lotNumber || null,
       crop.createdTime || null,
       crop.updatedTime || null,
-      bangkokTime, // ✅ CHANGED: Use bangkokTime instead of new Date()
+      bangkokTime,
     ]);
 
     console.timeEnd("Data preparation");
@@ -238,7 +238,6 @@ export async function bulkInsertOrUpdateCrops(crops) {
     );
     const countBefore = beforeResult[0].count;
 
-    // ✅ CHANGED: Use VALUES(fetch_at) pattern like other modules
     const sql = `
       INSERT INTO crops (
         rec_id, farmer_id, land_id, crop_id, crop_year, crop_name, breed_id,
@@ -267,10 +266,10 @@ export async function bulkInsertOrUpdateCrops(crops) {
         lot_number = VALUES(lot_number),
         created_at = VALUES(created_at),
         updated_at = VALUES(updated_at),
-        fetch_at = VALUES(fetch_at)  -- ✅ CHANGED: Use VALUES(fetch_at) like other modules
+        fetch_at = VALUES(fetch_at)
     `;
 
-    // ✅ CHANGED: Use cropData directly (bangkokTime already in array)
+    // Use cropData directly
     const [result] = await connection.query(sql, [cropData]);
 
     // Get count after operation

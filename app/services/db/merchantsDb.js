@@ -2,7 +2,6 @@
 // Import DB connection for executing SQL queries
 import { connectionDB } from "../../config/db/db.conf.js";
 
-// ✅ ADD: Same getBangkokTime function as other modules
 /**
  * Get Bangkok timezone timestamp as MySQL-compatible string
  */
@@ -146,7 +145,7 @@ export async function bulkInsertOrUpdateMerchants(merchants) {
       .query("SELECT COUNT(*) as count FROM merchants");
     const beforeCount = countBefore[0].count;
 
-    // ✅ ADD: Get Bangkok time (same as other modules)
+    // Get Bangkok time
     const bangkokTime = getBangkokTime();
 
     // Prepare merchant data
@@ -162,13 +161,12 @@ export async function bulkInsertOrUpdateMerchants(merchants) {
       merchant.updatedTime,
       merchant.companyId,
       merchant.companyName,
-      bangkokTime, // ✅ CHANGED: Use bangkokTime instead of new Date()
+      bangkokTime,
     ]);
 
     console.timeEnd("⏱️ Data preparation");
     console.time("⏱️ Bulk database operation");
 
-    // ✅ CHANGED: Use VALUES(fetch_at) pattern like other modules
     const insertQuery = `
       INSERT INTO merchants (
         rec_id, merchant_name, province_code, district_code, subdistrict_code,
@@ -185,10 +183,10 @@ export async function bulkInsertOrUpdateMerchants(merchants) {
         updated_time = VALUES(updated_time),
         company_id = VALUES(company_id),
         company_name = VALUES(company_name),
-        fetch_at = VALUES(fetch_at)  -- ✅ CHANGED: Use VALUES(fetch_at) like other modules
+        fetch_at = VALUES(fetch_at)
     `;
 
-    // ✅ CHANGED: Use merchantData directly (bangkokTime already in array)
+    // Use merchantData directly
     const [result] = await connectionDB
       .promise()
       .query(insertQuery, [merchantData]);

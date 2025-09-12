@@ -153,7 +153,7 @@ const bulkInsertOrUpdateFarmers = async (farmers) => {
       .query("SELECT COUNT(*) as count FROM farmers");
     const beforeCount = countBefore[0].count;
 
-    // ✅ FIX: Use Bangkok timezone for fetch_at
+    // Use Bangkok timezone for fetch_at
     const bangkokTime = getBangkokTime();
 
     // Prepare farmer data (now much faster - no individual queries)
@@ -180,13 +180,12 @@ const bulkInsertOrUpdateFarmers = async (farmers) => {
       farmer.companyId,
       farmer.createdTime,
       farmer.updatedTime,
-      bangkokTime, // ✅ Bangkok timezone for fetch_at
+      bangkokTime,
     ]);
 
     console.timeEnd("⏱️ Data preparation");
     console.time("⏱️ Bulk database operation");
 
-    // ✅ FIX: Updated SQL with Bangkok timezone conversion
     const query = `
       INSERT INTO farmers (
         rec_id, farmer_province_code, farmer_district_code, farmer_subdistrict_code, 
@@ -215,7 +214,7 @@ const bulkInsertOrUpdateFarmers = async (farmers) => {
         farmer_regist_type = VALUES(farmer_regist_type),
         company_id = VALUES(company_id),
         updated_at = VALUES(updated_at),
-        fetch_at = VALUES(fetch_at)  -- ✅ No conversion needed - already Bangkok time
+        fetch_at = VALUES(fetch_at)
     `;
 
     const [result] = await connectionDB
@@ -262,5 +261,4 @@ const bulkInsertOrUpdateFarmers = async (farmers) => {
   }
 };
 
-// ✅ Pattern 1: Single export block at bottom (ESM style)
 export { bulkInsertOrUpdateFarmers, bulkProcessReferenceCodes };

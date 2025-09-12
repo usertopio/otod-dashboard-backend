@@ -2,7 +2,6 @@
 // Import DB connection for executing SQL queries
 import { connectionDB } from "../../config/db/db.conf.js";
 
-// ✅ ADD: Same getBangkokTime function as other modules
 /**
  * Get Bangkok timezone timestamp as MySQL-compatible string
  */
@@ -50,7 +49,7 @@ export async function bulkInsertOrUpdateGap(gapCertificates) {
     console.timeEnd("Land validation");
     console.time("Data preparation");
 
-    // ✅ ADD: Get Bangkok time (same as other modules)
+    //  Get Bangkok time
     const bangkokTime = getBangkokTime();
 
     // Filter GAP certificates with valid land_ids and prepare data
@@ -85,7 +84,7 @@ export async function bulkInsertOrUpdateGap(gapCertificates) {
         gap.farmerId,
         gap.landId,
         gap.cropId,
-        bangkokTime, // ✅ CHANGED: Use bangkokTime instead of new Date()
+        bangkokTime,
       ]);
     }
 
@@ -113,7 +112,6 @@ export async function bulkInsertOrUpdateGap(gapCertificates) {
     );
     const beforeCount = countBefore[0].count;
 
-    // ✅ CHANGED: Use VALUES(fetch_at) pattern like other modules
     const sql = `
       INSERT INTO gap (
         gap_cert_number, gap_cert_type, gap_issued_date, gap_expiry_date,
@@ -126,10 +124,10 @@ export async function bulkInsertOrUpdateGap(gapCertificates) {
         farmer_id = VALUES(farmer_id),
         land_id = VALUES(land_id),
         crop_id = VALUES(crop_id),
-        fetch_at = VALUES(fetch_at)  -- ✅ CHANGED: Use VALUES(fetch_at) like other modules
+        fetch_at = VALUES(fetch_at)
     `;
 
-    // ✅ CHANGED: Use validGapCertificates directly (bangkokTime already in array)
+    // Use validGapCertificates directly
     const [result] = await connection.query(sql, [validGapCertificates]);
 
     console.timeEnd("Bulk database operation");

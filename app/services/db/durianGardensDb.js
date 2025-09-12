@@ -2,7 +2,6 @@
 // Import DB connection for executing SQL queries
 import { connectionDB } from "../../config/db/db.conf.js";
 
-// ✅ ADD: Same getBangkokTime function as other modules
 /**
  * Get Bangkok timezone timestamp as MySQL-compatible string
  */
@@ -119,7 +118,7 @@ export async function bulkProcessReferenceCodes(gardens) {
         subdistricts,
         "GSUBDIST"
       ),
-      // ✅ FIXED: Use the correct column names for land types
+      // Use the correct column names for land types
       bulkEnsureRefCodes(
         "ref_land_types",
         "land_type",
@@ -158,7 +157,7 @@ export async function bulkInsertOrUpdateDurianGardens(gardens) {
       .query("SELECT COUNT(*) as count FROM durian_gardens");
     const beforeCount = countBefore[0].count;
 
-    // ✅ ADD: Get Bangkok time (same as other modules)
+    // Get Bangkok time
     const bangkokTime = getBangkokTime();
 
     // Prepare garden data with rec_id generation
@@ -180,29 +179,29 @@ export async function bulkInsertOrUpdateDurianGardens(gardens) {
         }
       }
 
-      // ✅ FIXED: Generate rec_id if missing (prevents NULL error)
+      // Generate rec_id if missing
       const recId =
         garden.recId || garden.landId || `DG_${beforeCount + index + 1}`;
 
       return [
-        recId, // rec_id - NOW GUARANTEED NOT NULL
-        garden.farmerId, // farmer_id
-        garden.landId, // land_id
-        provinceCodes[garden.province] || "UNKNOWN", // garden_province_code
-        districtCodes[garden.amphur] || "UNKNOWN", // garden_district_code
-        subdistrictCodes[garden.tambon] || "UNKNOWN", // garden_subdistrict_code
-        landTypeCodes[garden.landType] || "UNKNOWN", // land_type_id
-        garden.lat || null, // lat
-        garden.lon || null, // lon
-        garden.noOfRais ?? 0, // no_of_rais
-        garden.noOfNgan ?? 0, // no_of_ngan
-        garden.noOfWah ?? 0, // no_of_wah
-        garden.kml || null, // kml
-        geoJsonValue, // geojson
-        garden.createdTime || null, // created_at
-        garden.updatedTime || null, // updated_at
-        garden.companyId || null, // company_id
-        bangkokTime, // ✅ CHANGED: Use bangkokTime instead of new Date()
+        recId,
+        garden.farmerId,
+        garden.landId,
+        provinceCodes[garden.province] || "UNKNOWN",
+        districtCodes[garden.amphur] || "UNKNOWN",
+        subdistrictCodes[garden.tambon] || "UNKNOWN",
+        landTypeCodes[garden.landType] || "UNKNOWN",
+        garden.lat || null,
+        garden.lon || null,
+        garden.noOfRais ?? 0,
+        garden.noOfNgan ?? 0,
+        garden.noOfWah ?? 0,
+        garden.kml || null,
+        geoJsonValue,
+        garden.createdTime || null,
+        garden.updatedTime || null,
+        garden.companyId || null,
+        bangkokTime,
       ];
     });
 
@@ -230,10 +229,10 @@ export async function bulkInsertOrUpdateDurianGardens(gardens) {
         geojson = VALUES(geojson),
         updated_at = VALUES(updated_at),
         company_id = VALUES(company_id),
-        fetch_at = VALUES(fetch_at)  -- ✅ Already correct - same pattern as other modules
+        fetch_at = VALUES(fetch_at)
     `;
 
-    // ✅ CHANGED: Use processedGardens directly (bangkokTime already in array)
+    // Use processedGardens directly
     const [result] = await connectionDB
       .promise()
       .query(query, [processedGardens]);

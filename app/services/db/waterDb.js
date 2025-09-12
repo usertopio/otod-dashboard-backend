@@ -2,7 +2,6 @@
 // Import DB connection for executing SQL queries
 import { connectionDB } from "../../config/db/db.conf.js";
 
-// ✅ ADD: Same getBangkokTime function as other modules
 /**
  * Get Bangkok timezone timestamp as MySQL-compatible string
  */
@@ -132,32 +131,31 @@ export async function bulkInsertOrUpdateWater(waterRecords) {
       .query("SELECT COUNT(*) as count FROM water");
     const beforeCount = countBefore[0].count;
 
-    // ✅ ADD: Get Bangkok time (same as other modules)
+    // Get Bangkok time
     const bangkokTime = getBangkokTime();
 
     // Prepare water data for bulk insert
     const waterData = waterRecords.map((water) => [
       water.cropYear, // crop_year
-      provinceCodes.get(water.provinceName) || null, // water_province_code
-      water.operMonth, // oper_month
-      water.totalLitre || 0, // total_litre
-      bangkokTime, // ✅ CHANGED: Use bangkokTime instead of NOW()
+      provinceCodes.get(water.provinceName) || null,
+      water.operMonth,
+      water.totalLitre || 0,
+      bangkokTime,
     ]);
 
     console.timeEnd("⏱️ Data preparation");
     console.time("⏱️ Bulk database operation");
 
-    // ✅ CHANGED: Simplified SQL - use VALUES ? pattern with bangkokTime in data
     const insertQuery = `
       INSERT INTO water (
         crop_year, water_province_code, oper_month, total_litre, fetch_at
       ) VALUES ?
       ON DUPLICATE KEY UPDATE
         total_litre = VALUES(total_litre),
-        fetch_at = VALUES(fetch_at)  -- ✅ CHANGED: Use VALUES(fetch_at) like other modules
+        fetch_at = VALUES(fetch_at)
     `;
 
-    // ✅ CHANGED: Use waterData directly (bangkokTime already in array)
+    // Use waterData directly
     const [result] = await connectionDB
       .promise()
       .query(insertQuery, [waterData]);

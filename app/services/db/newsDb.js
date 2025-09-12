@@ -2,7 +2,6 @@
 // Import DB connection for executing SQL queries
 import { connectionDB } from "../../config/db/db.conf.js";
 
-// ✅ ADD: Same getBangkokTime function as other modules
 /**
  * Get Bangkok timezone timestamp as MySQL-compatible string
  */
@@ -148,7 +147,7 @@ export async function bulkInsertOrUpdateNews(newsRecords) {
     );
     const beforeCount = countBefore[0].count;
 
-    // ✅ ADD: Get Bangkok time (same as other modules)
+    // Get Bangkok time
     const bangkokTime = getBangkokTime();
 
     // Validate and prepare news data
@@ -165,7 +164,7 @@ export async function bulkInsertOrUpdateNews(newsRecords) {
       news.createdTime || news.createdAt,
       news.updatedTime || news.updatedAt,
       news.companyId,
-      bangkokTime, // ✅ CHANGED: Use bangkokTime instead of new Date()
+      bangkokTime,
     ]);
 
     console.log(
@@ -180,7 +179,6 @@ export async function bulkInsertOrUpdateNews(newsRecords) {
       console.timeEnd("Data preparation");
       console.time("Bulk database operation");
 
-      // ✅ CHANGED: Use VALUES(fetch_at) pattern like other modules
       const sql = `
         INSERT INTO news (
           rec_id, news_province_code, news_id, announce_date, news_group_id,
@@ -198,10 +196,10 @@ export async function bulkInsertOrUpdateNews(newsRecords) {
           no_of_comments = VALUES(no_of_comments),
           updated_at = VALUES(updated_at),
           company_id = VALUES(company_id),
-          fetch_at = VALUES(fetch_at)  -- ✅ CHANGED: Use VALUES(fetch_at) like other modules
+          fetch_at = VALUES(fetch_at)
       `;
 
-      // ✅ CHANGED: Use validNews directly (bangkokTime already in array)
+      // Use validNews directly
       [result] = await connection.query(sql, [validNews]);
 
       console.timeEnd("Bulk database operation");

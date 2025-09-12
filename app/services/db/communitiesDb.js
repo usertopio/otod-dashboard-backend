@@ -138,7 +138,7 @@ export async function bulkInsertOrUpdateCommunities(communities) {
 
     console.time("Data preparation");
 
-    // ✅ ADD: Get Bangkok time (same as farmers)
+    // Get Bangkok time
     const bangkokTime = getBangkokTime();
 
     const communityData = communities.map((community) => [
@@ -155,7 +155,7 @@ export async function bulkInsertOrUpdateCommunities(communities) {
       provinceCodes.get(community.province) || null,
       districtCodes.get(community.amphur) || null,
       subdistrictCodes.get(community.tambon) || null,
-      bangkokTime, // ✅ CHANGED: Use bangkokTime instead of new Date()
+      bangkokTime,
     ]);
 
     console.timeEnd("Data preparation");
@@ -189,7 +189,7 @@ export async function bulkInsertOrUpdateCommunities(communities) {
         fetch_at = VALUES(fetch_at)  -- ✅ CHANGED: Use VALUES(fetch_at) like farmers
     `;
 
-    // ✅ CHANGED: Use communityData directly (no dataWithTimestamp mapping needed)
+    // Use communityData directly
     const [result] = await connection.query(sql, [communityData]);
 
     const [afterResult] = await connection.query(

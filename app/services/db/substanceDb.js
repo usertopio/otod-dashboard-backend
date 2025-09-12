@@ -2,7 +2,6 @@
 // Import DB connection for executing SQL queries
 import { connectionDB } from "../../config/db/db.conf.js";
 
-// ✅ ADD: Same getBangkokTime function as other modules
 /**
  * Get Bangkok timezone timestamp as MySQL-compatible string
  */
@@ -132,33 +131,32 @@ export async function bulkInsertOrUpdateSubstances(substances) {
       .query("SELECT COUNT(*) as count FROM substance");
     const beforeCount = countBefore[0].count;
 
-    // ✅ ADD: Get Bangkok time (same as other modules)
+    // Get Bangkok time
     const bangkokTime = getBangkokTime();
 
     // Prepare substance data
     const substanceData = substances.map((substance) => [
-      substance.cropYear, // crop_year
-      provinceCodes.get(substance.provinceName) || null, // province_code
-      substance.substance, // substance
-      `${substance.operMonth}-01`, // oper_month (converted to date format)
-      substance.totalRecords || 0, // total_records
-      bangkokTime, // ✅ CHANGED: Use bangkokTime instead of NOW()
+      substance.cropYear,
+      provinceCodes.get(substance.provinceName) || null, 
+      substance.substance,
+      `${substance.operMonth}-01`,
+      substance.totalRecords || 0,
+      bangkokTime,
     ]);
 
     console.timeEnd("⏱️ Data preparation");
     console.time("⏱️ Bulk database operation");
 
-    // ✅ CHANGED: Use VALUES ? pattern with bangkokTime in data
     const insertQuery = `
       INSERT INTO substance (
         crop_year, province_code, substance, oper_month, total_records, fetch_at
       ) VALUES ?
       ON DUPLICATE KEY UPDATE
         total_records = VALUES(total_records),
-        fetch_at = VALUES(fetch_at)  -- ✅ CHANGED: Use VALUES(fetch_at) like other modules
+        fetch_at = VALUES(fetch_at)
     `;
 
-    // ✅ CHANGED: Use substanceData directly (bangkokTime already in array)
+    // Use substanceData directly
     const [result] = await connectionDB
       .promise()
       .query(insertQuery, [substanceData]);

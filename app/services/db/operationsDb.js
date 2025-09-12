@@ -2,7 +2,6 @@
 // Import DB connection for executing SQL queries
 import { connectionDB } from "../../config/db/db.conf.js";
 
-// ✅ ADD: Same getBangkokTime function as farmers & communities
 /**
  * Get Bangkok timezone timestamp as MySQL-compatible string
  */
@@ -164,7 +163,7 @@ export async function bulkInsertOrUpdateOperations(operations) {
     );
     const beforeCount = countBefore[0].count;
 
-    // ✅ ADD: Get Bangkok time (same as farmers & communities)
+    // Get Bangkok time
     const bangkokTime = getBangkokTime();
 
     // Filter operations with valid crop_ids and prepare data
@@ -202,7 +201,7 @@ export async function bulkInsertOrUpdateOperations(operations) {
         operation.createdTime || null,
         operation.updatedTime || null,
         operation.companyId ?? null,
-        bangkokTime, // ✅ CHANGED: Use bangkokTime instead of new Date()
+        bangkokTime,
       ]);
     }
 
@@ -250,10 +249,10 @@ export async function bulkInsertOrUpdateOperations(operations) {
           equipment_cost = VALUES(equipment_cost),
           updated_at = VALUES(updated_at),
           company_id = VALUES(company_id),
-          fetch_at = VALUES(fetch_at)  -- ✅ CHANGED: Use VALUES(fetch_at) like farmers & communities
+          fetch_at = VALUES(fetch_at)
       `;
 
-      // ✅ CHANGED: Use validOperations directly (bangkokTime already in array)
+      // Use validOperations directly
       [result] = await connection.query(sql, [validOperations]);
 
       console.timeEnd("Bulk database operation");
