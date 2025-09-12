@@ -2,6 +2,18 @@
 // Import DB connection for executing SQL queries
 import { connectionDB } from "../../config/db/db.conf.js";
 
+// ✅ ADD: Same getBangkokTime function as other modules
+/**
+ * Get Bangkok timezone timestamp as MySQL-compatible string
+ */
+const getBangkokTime = () => {
+  return new Date()
+    .toLocaleString("sv-SE", {
+      timeZone: "Asia/Bangkok",
+    })
+    .replace(" ", "T");
+};
+
 // ===================== DB Utilities =====================
 // Provides helper functions for reference code lookup and upserting durian gardens
 
@@ -68,7 +80,7 @@ async function bulkEnsureRefCodes(
 }
 
 /**
- * Bulk process reference codes for all durian gardens at once
+ * Bulk process reference codes for durian gardens at once
  */
 export async function bulkProcessReferenceCodes(gardens) {
   // Get unique values
@@ -146,6 +158,9 @@ export async function bulkInsertOrUpdateDurianGardens(gardens) {
       .query("SELECT COUNT(*) as count FROM durian_gardens");
     const beforeCount = countBefore[0].count;
 
+    // ✅ ADD: Get Bangkok time (same as other modules)
+    const bangkokTime = getBangkokTime();
+
     // Prepare garden data with rec_id generation
     const processedGardens = gardens.map((garden, index) => {
       // Handle GeoJSON parsing
@@ -187,14 +202,13 @@ export async function bulkInsertOrUpdateDurianGardens(gardens) {
         garden.createdTime || null, // created_at
         garden.updatedTime || null, // updated_at
         garden.companyId || null, // company_id
-        new Date(), // fetch_at
+        bangkokTime, // ✅ CHANGED: Use bangkokTime instead of new Date()
       ];
     });
 
     console.timeEnd("⏱️ Data preparation");
     console.time("⏱️ Bulk database operation");
 
-    // Execute bulk insert with ON DUPLICATE KEY UPDATE
     const query = `
       INSERT INTO durian_gardens (
         rec_id, farmer_id, land_id, garden_province_code, garden_district_code, 
@@ -216,9 +230,10 @@ export async function bulkInsertOrUpdateDurianGardens(gardens) {
         geojson = VALUES(geojson),
         updated_at = VALUES(updated_at),
         company_id = VALUES(company_id),
-        fetch_at = VALUES(fetch_at)
+        fetch_at = VALUES(fetch_at)  -- ✅ Already correct - same pattern as other modules
     `;
 
+    // ✅ CHANGED: Use processedGardens directly (bangkokTime already in array)
     const [result] = await connectionDB
       .promise()
       .query(query, [processedGardens]);
@@ -231,6 +246,7 @@ export async function bulkInsertOrUpdateDurianGardens(gardens) {
       .query("SELECT COUNT(*) as count FROM durian_gardens");
     const afterCount = countAfter[0].count;
 
+    // Calculate actual inserts and updates
     const actualInserts = afterCount - beforeCount;
     const actualUpdates = gardens.length - actualInserts;
 
