@@ -3,6 +3,17 @@
 import { connectionDB } from "../../config/db/db.conf.js";
 
 /**
+ * Get Bangkok timezone timestamp as MySQL-compatible string
+ */
+const getBangkokTime = () => {
+  return new Date()
+    .toLocaleString("sv-SE", {
+      timeZone: "Asia/Bangkok",
+    })
+    .replace(" ", "T");
+};
+
+/**
  * Bulk ensure reference codes for a list of names
  */
 const bulkEnsureRefCodes = async (
@@ -66,7 +77,7 @@ const bulkEnsureRefCodes = async (
 };
 
 /**
- * Validate land ownership for crops
+ * Validates land ownership for crops
  */
 const validateLandOwnership = async (crops) => {
   console.time("Land validation");
@@ -189,6 +200,9 @@ export async function bulkInsertOrUpdateCrops(crops) {
 
     console.time("Data preparation");
 
+    // ✅ ADD: Get Bangkok time (same as other modules)
+    const bangkokTime = getBangkokTime();
+
     // Prepare data for bulk insert
     const cropData = validCrops.map((crop) => [
       crop.recId,
@@ -211,6 +225,7 @@ export async function bulkInsertOrUpdateCrops(crops) {
       crop.lotNumber || null,
       crop.createdTime || null,
       crop.updatedTime || null,
+      bangkokTime, // ✅ CHANGED: Use bangkokTime instead of new Date()
     ]);
 
     console.timeEnd("Data preparation");
@@ -223,7 +238,7 @@ export async function bulkInsertOrUpdateCrops(crops) {
     );
     const countBefore = beforeResult[0].count;
 
-    // Bulk insert with ON DUPLICATE KEY UPDATE
+    // ✅ CHANGED: Use VALUES(fetch_at) pattern like other modules
     const sql = `
       INSERT INTO crops (
         rec_id, farmer_id, land_id, crop_id, crop_year, crop_name, breed_id,
@@ -252,13 +267,11 @@ export async function bulkInsertOrUpdateCrops(crops) {
         lot_number = VALUES(lot_number),
         created_at = VALUES(created_at),
         updated_at = VALUES(updated_at),
-        fetch_at = NOW()
+        fetch_at = VALUES(fetch_at)  -- ✅ CHANGED: Use VALUES(fetch_at) like other modules
     `;
 
-    // Add fetch_at timestamp to each row
-    const dataWithTimestamp = cropData.map((row) => [...row, new Date()]);
-
-    const [result] = await connection.query(sql, [dataWithTimestamp]);
+    // ✅ CHANGED: Use cropData directly (bangkokTime already in array)
+    const [result] = await connection.query(sql, [cropData]);
 
     // Get count after operation
     const [afterResult] = await connection.query(
@@ -286,7 +299,6 @@ export async function bulkInsertOrUpdateCrops(crops) {
     };
   } catch (error) {
     console.error("❌ Bulk crop insert/update error:", error);
-
     return {
       inserted: 0,
       updated: 0,
