@@ -2,17 +2,29 @@
 // Import DB connection for executing SQL queries
 import { connectionDB } from "../../config/db/db.conf.js";
 
+// ✅ ADD: Same getBangkokTime function as other modules
+/**
+ * Get Bangkok timezone timestamp as MySQL-compatible string
+ */
+const getBangkokTime = () => {
+  return new Date()
+    .toLocaleString("sv-SE", {
+      timeZone: "Asia/Bangkok",
+    })
+    .replace(" ", "T");
+};
+
 /**
  * Get all existing land_ids from durian_gardens table for validation
  */
 async function getValidLandIds() {
   try {
-    const [rows] = await connectionDB
+    const [result] = await connectionDB
       .promise()
-      .query("SELECT DISTINCT land_id FROM durian_gardens");
-    return new Set(rows.map((row) => row.land_id));
-  } catch (err) {
-    console.error("Error fetching valid land IDs:", err);
+      .query("SELECT land_id FROM durian_gardens");
+    return new Set(result.map((row) => row.land_id));
+  } catch (error) {
+    console.error("Error getting valid land_ids:", error);
     return new Set();
   }
 }
@@ -37,6 +49,9 @@ export async function bulkInsertOrUpdateGap(gapCertificates) {
 
     console.timeEnd("Land validation");
     console.time("Data preparation");
+
+    // ✅ ADD: Get Bangkok time (same as other modules)
+    const bangkokTime = getBangkokTime();
 
     // Filter GAP certificates with valid land_ids and prepare data
     const validGapCertificates = [];
@@ -70,7 +85,7 @@ export async function bulkInsertOrUpdateGap(gapCertificates) {
         gap.farmerId,
         gap.landId,
         gap.cropId,
-        new Date(),
+        bangkokTime, // ✅ CHANGED: Use bangkokTime instead of new Date()
       ]);
     }
 
@@ -98,7 +113,7 @@ export async function bulkInsertOrUpdateGap(gapCertificates) {
     );
     const beforeCount = countBefore[0].count;
 
-    // ✅ SIMPLE SQL: Add crop_id column
+    // ✅ CHANGED: Use VALUES(fetch_at) pattern like other modules
     const sql = `
       INSERT INTO gap (
         gap_cert_number, gap_cert_type, gap_issued_date, gap_expiry_date,
@@ -111,9 +126,10 @@ export async function bulkInsertOrUpdateGap(gapCertificates) {
         farmer_id = VALUES(farmer_id),
         land_id = VALUES(land_id),
         crop_id = VALUES(crop_id),
-        fetch_at = NOW()
+        fetch_at = VALUES(fetch_at)  -- ✅ CHANGED: Use VALUES(fetch_at) like other modules
     `;
 
+    // ✅ CHANGED: Use validGapCertificates directly (bangkokTime already in array)
     const [result] = await connection.query(sql, [validGapCertificates]);
 
     console.timeEnd("Bulk database operation");
@@ -151,3 +167,6 @@ export async function bulkInsertOrUpdateGap(gapCertificates) {
     };
   }
 }
+
+// Export the validation function as well
+export { getValidLandIds };
