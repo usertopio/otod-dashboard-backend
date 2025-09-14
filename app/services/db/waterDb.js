@@ -136,9 +136,9 @@ export async function bulkInsertOrUpdateWater(waterRecords) {
 
     // Prepare water data for bulk insert
     const waterData = waterRecords.map((water) => [
-      water.cropYear, // crop_year
+      water.cropYear,
       provinceCodes.get(water.provinceName) || null,
-      water.operMonth,
+      water.operMonth ? `${water.operMonth}-01` : null,
       water.totalLitre || 0,
       bangkokTime,
     ]);
@@ -155,7 +155,7 @@ export async function bulkInsertOrUpdateWater(waterRecords) {
         fetch_at = VALUES(fetch_at)
     `;
 
-    // Use waterData directly
+    // ✅ CHANGED: Use waterData directly (bangkokTime already in array)
     const [result] = await connectionDB
       .promise()
       .query(insertQuery, [waterData]);

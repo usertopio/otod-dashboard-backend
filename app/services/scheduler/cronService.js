@@ -11,6 +11,8 @@ import SubstanceService from "../substance/substanceService.js";
 import GapService from "../gap/gapService.js";
 import NewsService from "../news/newsService.js";
 import OperationsService from "../operations/operationsService.js";
+import AvgPriceService from "../price/priceService.js";
+import { PRICE_CONFIG } from "../../utils/constants.js";
 
 class CronService {
   static isRunning = false;
@@ -127,6 +129,7 @@ class CronService {
         { name: "Water", run: () => WaterService.fetchAllWater() },
         { name: "News", run: () => NewsService.fetchAllNews() },
         { name: "GAP", run: () => GapService.fetchAllGap() },
+        { name: "Avg Price", run: () => AvgPriceService.fetchAllAvgPrices() },
       ];
 
       const results = [];
