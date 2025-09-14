@@ -4,6 +4,12 @@ import { bulkInsertOrUpdateAvgPrice } from "../db/priceDb.js";
 import { connectionDB } from "../../config/db/db.conf.js";
 import { PRICE_CONFIG } from "../../utils/constants.js";
 
+function addDays(dateStr, days) {
+  const date = new Date(dateStr);
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
 // ===================== Processor =====================
 // AvgPriceProcessor handles fetching, deduplication, and DB upserts for avg price.
 export default class AvgPriceProcessor {
@@ -12,15 +18,18 @@ export default class AvgPriceProcessor {
    * Returns a result object with metrics and tracking info.
    */
   static async fetchAndProcessData() {
-    let page = 1;
-    let hasMore = true;
-    let allPrices = [];
+    const allPrices = [];
+    let startDate = PRICE_CONFIG.FROM_DATE;
+    const endDate = PRICE_CONFIG.TO_DATE;
 
-    // Paginated fetch loop
-    while (hasMore) {
+    while (startDate <= endDate) {
+      // Calculate chunk end date (max 365 days)
+      let chunkEndDate = addDays(startDate, 364);
+      if (chunkEndDate > endDate) chunkEndDate = endDate;
+
       const requestBody = {
-        fromDate: PRICE_CONFIG.FROM_DATE,
-        toDate: PRICE_CONFIG.TO_DATE,
+        fromDate: startDate,
+        toDate: chunkEndDate,
         province: "",
         breedName: "",
       };
@@ -33,20 +42,16 @@ export default class AvgPriceProcessor {
         break;
       }
 
-      // Defensive: check for valid response
-      if (!apiResult || !apiResult.success || !Array.isArray(apiResult.data)) {
-        hasMore = false;
-        break;
+      if (
+        apiResult &&
+        Array.isArray(apiResult.data) &&
+        apiResult.data.length > 0
+      ) {
+        allPrices.push(...apiResult.data);
       }
 
-      const pricesThisPage = apiResult.data;
-      if (pricesThisPage.length === 0) {
-        hasMore = false;
-        break;
-      }
-
-      allPrices = allPrices.concat(pricesThisPage);
-      page++;
+      // Move to next chunk
+      startDate = addDays(chunkEndDate, 1);
     }
 
     // Deduplicate by appPriceId
