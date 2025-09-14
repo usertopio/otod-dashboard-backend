@@ -1,5 +1,5 @@
 import express from "express";
-import { fetchAvgPrice } from "../controllers/avgPriceCon.js";
+import { fetchAvgPrice } from "../controllers/priceCon.js";
 
 const router = express.Router();
 

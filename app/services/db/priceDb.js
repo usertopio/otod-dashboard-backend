@@ -67,7 +67,7 @@ export async function bulkProcessReferenceCodes(avgPrices) {
     ),
     bulkEnsureRefCodes(
       "ref_breeds",
-      "breed_name_th",
+      "breed_name",
       "breed_id",
       breeds,
       "GBREED"

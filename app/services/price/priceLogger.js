@@ -1,22 +1,46 @@
 // ===================== Logger =====================
-// AvgPriceLogger provides structured logging for the avg price fetch/process workflow.
-export default class AvgPriceLogger {
+// PriceLogger provides structured logging for the avg price fetch/process workflow.
+export default class PriceLogger {
+  /**
+   * Logs the start of an attempt.
+   */
   static logAttemptStart(attempt, maxAttempts) {
+    console.log(`\n🚀 Attempt ${attempt} of ${maxAttempts}`);
+  }
+
+  /**
+   * Logs the current status of the database.
+   */
+  static logCurrentStatus(currentCount, targetCount) {
     console.log(
-      `\n🚦 Attempt ${attempt} of ${maxAttempts} to fetch/process avg price data`
+      `📊 Current avg price records in DB: ${currentCount}/${targetCount}`
     );
+
+    if (currentCount < targetCount) {
+      console.log(
+        `📊 Need ${
+          targetCount - currentCount
+        } more avg price records - calling API...`
+      );
+    } else {
+      console.log(
+        `🔄 Target reached but continuing API call for fresh data...`
+      );
+    }
   }
 
-  static logCurrentStatus(currentCount, targetCount, type = "avg price") {
-    console.log(`🔄 Current ${type} records: ${currentCount}/${targetCount}`);
-  }
-
+  /**
+   * Logs when the target is reached.
+   */
   static logTargetReached(targetCount, attemptsUsed) {
     console.log(
-      `✅ Target reached: ${targetCount} records after ${attemptsUsed} attempts`
+      `🎯 Target of ${targetCount} reached after ${attemptsUsed} attempts`
     );
   }
 
+  /**
+   * Logs the final results of the fetch operation.
+   */
   static logFinalResults(
     targetCount,
     achieved,
@@ -24,27 +48,28 @@ export default class AvgPriceLogger {
     maxAttempts,
     status
   ) {
-    console.log(
-      `🏁 Final Results: Target=${targetCount}, Achieved=${achieved}, Attempts=${attemptsUsed}/${maxAttempts}, Status=${status}`
-    );
+    console.log(`\n🏁 === FINAL RESULT ===`);
+    console.log(`🎯 Target: ${targetCount}`);
+    console.log(`📊 Achieved: ${achieved}`);
+    console.log(`🔄 Attempts used: ${attemptsUsed}/${maxAttempts}`);
+    console.log(`✅ Status: ${status}`);
   }
 
+  /**
+   * Logs the results of a single attempt.
+   */
   static logAttemptResults(attempt, result) {
     console.log(`📈 Attempt ${attempt} completed:`);
     console.log(`   ➕ Inserted: ${result.inserted}`);
     console.log(`   🔄 Updated: ${result.updated}`);
     console.log(`   ❌ Errors: ${result.errors}`);
-    if (result.totalAfter !== undefined) {
-      console.log(`   📊 Total now: ${result.totalAfter}`);
-    }
-    if (result.recordsInDbNotInAPI > 0) {
-      console.log(
-        `📍 Records in DB but not in current API: ${result.recordsInDbNotInAPI}`
-      );
-    }
+    console.log(`   📊 Total now: ${result.totalAfter}`);
     console.log("==========================================\n");
   }
 
+  /**
+   * Logs API metrics for the current batch.
+   */
   static _logApiMetrics(result) {
     console.log("\n📊 === API METRICS ===");
     console.log(
@@ -57,6 +82,9 @@ export default class AvgPriceLogger {
     console.log(`🔄 Duplicated data amount: ${result.duplicatedDataAmount}`);
   }
 
+  /**
+   * Logs database metrics for the current batch.
+   */
   static _logDatabaseMetrics(result) {
     console.log("\n📊 === DATABASE METRICS ===");
     console.log(`📊 Previous amount records in table: ${result.totalBefore}`);
@@ -66,6 +94,9 @@ export default class AvgPriceLogger {
     console.log(`❌ Records with ERRORS: ${result.errors}`);
   }
 
+  /**
+   * Logs additional insights for the current batch.
+   */
   static _logInsights(result) {
     console.log("\n📊 === ADDITIONAL INSIGHTS ===");
     if (result.totalProcessingOperations !== undefined) {
@@ -83,6 +114,9 @@ export default class AvgPriceLogger {
     }
   }
 
+  /**
+   * Logs error recIds for failed upserts.
+   */
   static _logErrorRecIds(result) {
     if (result.errorRecIds && result.errorRecIds.length > 0) {
       console.log(
@@ -92,11 +126,17 @@ export default class AvgPriceLogger {
     }
   }
 
+  /**
+   * Logs info for each API page.
+   */
   static logPageInfo(page, records) {
     const safeRecords = Array.isArray(records) ? records : [];
-    console.log(`📄 Page: ${page} Length: ${safeRecords.length}`);
+    console.log(`📄 Page ${page}: Length: ${safeRecords.length}`);
   }
 
+  /**
+   * Logs API summary after deduplication.
+   */
   static logApiSummary(totalFromAPI, uniqueCount) {
     console.log(`📊 Total from API: ${totalFromAPI}, Unique: ${uniqueCount}`);
   }
