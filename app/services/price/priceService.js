@@ -61,8 +61,7 @@ export default class AvgPriceService {
 
       // Fetch and process data (single bulk operation)
       const result = await AvgPriceProcessor.fetchAndProcessData();
-
-      AvgPriceLogger.logAttemptResults(attempt, result.dbResult || {});
+      AvgPriceLogger.logAttemptResults(attempt, result); // Pass the whole result object
 
       totalInserted += result.dbResult?.inserted || 0;
       totalUpdated += result.dbResult?.updated || 0;
