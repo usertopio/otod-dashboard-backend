@@ -1,40 +1,27 @@
-<h1 align="center">Welcome to OTOD-Dashboard 👋</h1>
-
-<p align="center">
+<h1 align="center">Welcome to otod-dashboard-backend 👋</h1>
+<p>
   <img alt="Version" src="https://img.shields.io/badge/version-2.2.0-blue.svg?cacheSeconds=2592000" />
+  <img src="https://img.shields.io/badge/node-%3E%3D16.0.0-blue.svg" />
+  <img src="https://img.shields.io/badge/npm-%3E%3D8.0.0-blue.svg" />
   <a href="https://github.com/usertopio/otod-durian-lab1#readme" target="_blank">
     <img alt="Documentation" src="https://img.shields.io/badge/documentation-yes-brightgreen.svg" />
   </a>
   <a href="https://github.com/usertopio/otod-durian-lab1/graphs/commit-activity" target="_blank">
     <img alt="Maintenance" src="https://img.shields.io/badge/Maintained%3F-yes-green.svg" />
   </a>
-  <a href="https://github.com/usertopio/otod-durian-lab1/blob/main/LICENSE" target="_blank">
-    <img alt="License: UNLICENSED" src="https://img.shields.io/badge/license-UNLICENSED-lightgrey.svg" />
+  <a href="https://github.com/usertopio/otod-durian-lab1/blob/master/LICENSE" target="_blank">
+    <img alt="License: UNLICENSED" src="https://img.shields.io/github/license/usertopio/otod-dashboard-backend" />
   </a>
 </p>
 
-### 📌 Project Description
+> OTOD-Dashboard is a web application integrated with Power BI dashboards, developed under the One Tambon One Digital (OTOD) – Durian Digital project by the Digital Economy Promotion Agency(depa). The backend is responsible for connecting to the National Agriculture Platform (NAP) APIs (developed by the outsourced team), processing the data, and storing it in an AWS MySQL database. The processed data is then utilized by Power BI dashboards to support data-driven decision-making for the Digital Economy Promotion Agency (depa).
 
-> OTOD-Dashboard is a web application integrated with Power BI dashboards, developed under the One Tambon One Digital (OTOD) – Durian Digital project by depa.
->
-> **👉 This repository contains only the backend code for OTOD-Dashboard.**
->
-> The backend is responsible for connecting to the National Agriculture Platform (NAP) APIs (provided by the outsource team), processing the data, and storing it into a local MySQL database. The processed data is then used for Power BI dashboards that support data-driven decision-making for farmers, communities, and policymakers.
+### 🏠 [Homepage](https://github.com/usertopio/otod-dashboard-backend.git)
 
-### 📌 Key Features
+## Prerequisites
 
-- Backend (Node.js + Express.js) – fetches data from NAP APIs, applies duplicate filtering, and upserts into the database.
-- Database (MySQL) – local MySQL database with structured schema for farmers, gardens, crops, operations, merchants, communities, GAP, water, and substances.
-- Power BI Integration – backend provides clean and validated datasets for interactive dashboards.
-- Data Pipeline – ensures synchronization, validation, logging, and error handling for continuous data ingestion.
-
-### 🎯 Objectives
-
-- Provide a reliable backend service for OTOD-Dashboard.
-- Ensure real-time and accurate data for Power BI dashboards.
-- Support depa’s mission of digital transformation in agriculture through centralized National Agriculture Platform (NAP) APIs.
-
-### 🏠 [Homepage](https://github.com/usertopio/otod-durian-lab1)
+- node >=16.0.0
+- npm >=8.0.0
 
 ## Install
 
@@ -50,20 +37,24 @@ npm start
 
 ## Author
 
-👤 **Tammasorn Rojanaakarapong**
+👤 ** Tammasorn Rojanaakarapong**
 
-- Github: [@usertopio](https://github.com/usertopio)
-- LinkedIn: [@www.linkedin.com\/in\/tammasornroj](https://linkedin.com/in/www.linkedin.com/in/tammasornroj)
-
-## 🤝 Contributing
-
-Contributions, issues and feature requests are welcome!<br />Feel free to check [issues page](https://github.com/usertopio/otod-durian-lab1/issues). You can also take a look at the [contributing guide](https://github.com/usertopio/otod-durian-lab1/blob/master/CONTRIBUTING.md).
+* Website: https://github.com/usertopio
+* Github: [@usertopio](https://github.com/usertopio)
+* LinkedIn: [@www.linkedin.com\/in\/tammasornroj](https://linkedin.com/in/www.linkedin.com\/in\/tammasornroj)
 
 ## Show your support
 
 Give a ⭐️ if this project helped you!
 
+<a href="https://www.patreon.com/https:\/\/patreon.com\/usertopio?utm\_medium=unknown&utm\_source=join\_link&utm\_campaign=creatorshare\_creator&utm\_content=copyLink">
+  <img src="https://c5.patreon.com/external/logo/become_a_patron_button@2x.png" width="160">
+</a>
+
 ## 📝 License
 
-Copyright © 2025 [Tammasorn Rojanaakarapong](https://github.com/usertopio).<br />
+Copyright © 2025 [ Tammasorn Rojanaakarapong](https://github.com/usertopio).<br />
 This project is [UNLICENSED](https://github.com/usertopio/otod-durian-lab1/blob/master/LICENSE) licensed.
+
+***
+_This README was generated with ❤️ by [readme-md-generator](https://github.com/kefranabg/readme-md-generator)_
