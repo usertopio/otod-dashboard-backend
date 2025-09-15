@@ -2,6 +2,98 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.4.0](https://github.com/usertopio/otod-durian-lab1/compare/v2.2.0...v2.4.0) (2025-09-15)
+
+
+### 🧹 Chore
+
+* **package:** 🔧update project metadata and structure ([061f97a](https://github.com/usertopio/otod-durian-lab1/commit/061f97a7c5b7e00a5a62c400ecad6fd102faa609))
+
+
+### 🐛 Fixes
+
+* **db)(water:** 🛠️ streamline water records bulk insert process ([08e7458](https://github.com/usertopio/otod-durian-lab1/commit/08e74584fa5285112cf1e77b7d09806ef3ef86ff))
+
+
+### ✨ Features
+
+* **cronUtils:** ✨ run every 1.5 min ([b721383](https://github.com/usertopio/otod-durian-lab1/commit/b7213834cf945d1891e8fbaef3706d01cde031a3))
+* **price)(esm:** ✨add avg price fetching and processing functionality ([07dc767](https://github.com/usertopio/otod-durian-lab1/commit/07dc76785b3f72eb0fdb8ae84c3c3f7d1de1020c))
+* **price:** ✨implement avg price fetching and processing service ([79ff50b](https://github.com/usertopio/otod-durian-lab1/commit/79ff50b1a1859eebabdd2b36d28230a4d841e84f))
+* **price:** ✨refactor avg price fetching to use date range chunks ([e0f6ffa](https://github.com/usertopio/otod-durian-lab1/commit/e0f6ffad92cbcc98686317417a7c4fd806636d87))
+
+
+### ♻️ Refactor
+
+* **config:** 🐳add Docker configuration files ([9fe759f](https://github.com/usertopio/otod-durian-lab1/commit/9fe759fc352cce0da9795f5bf689a8716c1dd782))
+* **config:** 🐳update Docker configuration for backend service naming ([f702a18](https://github.com/usertopio/otod-durian-lab1/commit/f702a18f020ba0ddbfbd3c330d156889d5c3ad53))
+* **config:** 🐳update Docker configuration for clarity and consistency ([69cbc30](https://github.com/usertopio/otod-durian-lab1/commit/69cbc30507e1fef66e1c8a1f1298f363b3b9ca26))
+* **constants:** 🎨export constants for better module usage ([760cbcb](https://github.com/usertopio/otod-durian-lab1/commit/760cbcba502a88865b855303c0c9cd6d53dc659b))
+* **controllers:** 🎨migrate to ES6 module syntax for improved consistency ([324c189](https://github.com/usertopio/otod-durian-lab1/commit/324c189bb4f2696664612ae2af3d420f3bf0e462))
+* **cronService:** ♻️ update scheduled task interval to 1 minute and 30 seconds ([08d2523](https://github.com/usertopio/otod-durian-lab1/commit/08d2523608ed3d3d0053f6b1472447e8fce9ab29))
+* **cronService:** 🎨improve code formatting and logging consistency ([cc3712a](https://github.com/usertopio/otod-durian-lab1/commit/cc3712a000a710b84b28160f64d4d3c36ce657a7))
+* **db)(communities:** ♻️ export bulk process functions for communities management ([f05ca22](https://github.com/usertopio/otod-durian-lab1/commit/f05ca2212cd801a28495a9b7ee9cd3d10e9f83da))
+* **db)(communities:** ♻️ streamline timestamp handling and improve code consistency ([da34ca3](https://github.com/usertopio/otod-durian-lab1/commit/da34ca3d871b8e8f80bf1e1628a87f47c8a23a6b))
+* **db)(crops:** ♻️ unify timestamp handling and streamline bulk operations ([3e9189b](https://github.com/usertopio/otod-durian-lab1/commit/3e9189b853c5a3c79656769b7cff88aeaf139ed4))
+* **db)(durain_gardens:** ♻️ unify timestamp handling with getBangkokTime function ([5090d6e](https://github.com/usertopio/otod-durian-lab1/commit/5090d6e9b5791e43ebba956dd35fc23310332edc))
+* **db)(farmers)(func:** ♻️ improve bulkEnsureRefCodes and bulkInsertOrUpdateFarmers functions ([ea5a917](https://github.com/usertopio/otod-durian-lab1/commit/ea5a917f847c31a33c83cc00ad1c04ed092f3544))
+* **db)(gap:** ♻️ unify timestamp handling with getBangkokTime function ([2669444](https://github.com/usertopio/otod-durian-lab1/commit/2669444c5f021dd38cbbb6c64e50dc9cc3823664))
+* **db)(merchants:** ♻️ unify timestamp handling and streamline code ([e3c0ecf](https://github.com/usertopio/otod-durian-lab1/commit/e3c0ecf856e2dd1e7cc975c368f9010e8901e990))
+* **db)(news:** ♻️ streamline bulk reference code processing and error handling ([dabda1c](https://github.com/usertopio/otod-durian-lab1/commit/dabda1c532ac26f66ded5f9eb52cf04d5ed3975e))
+* **db)(news:** ♻️ unify timestamp handling and streamline bulk operations ([dbdb696](https://github.com/usertopio/otod-durian-lab1/commit/dbdb696bd960690cd21f81c3c3b5fd0e2da8550e))
+* **db)(operations:** ♻️ export bulkProcessReferenceCodes and bulkInsertOrUpdateOperations functions ([c95c0ac](https://github.com/usertopio/otod-durian-lab1/commit/c95c0acedaf3fc189e1c51d3afc327d516e7b591))
+* **db)(operations:** ♻️ improve variable scoping and result handling in bulkInsertOrUpdateOperations ([0d2afe3](https://github.com/usertopio/otod-durian-lab1/commit/0d2afe37169ed7733283ca3d1194705c85ff450c))
+* **db)(operations:** ♻️ unify timestamp handling with getBangkokTime function ([1fe18ce](https://github.com/usertopio/otod-durian-lab1/commit/1fe18cee36a9662b8ff7a4acdeb0e86207dbbe60))
+* **db)(operations:** 🔥remove unused operations count and reset functions ([7673d0d](https://github.com/usertopio/otod-durian-lab1/commit/7673d0d31bb88bd263d1ce914a992d53a4f470b9))
+* **db)(substance:** ♻️ unify timestamp handling and streamline bulk operations ([e5cb0ce](https://github.com/usertopio/otod-durian-lab1/commit/e5cb0ce94e89fee053cf8107063189c7c06b7b80))
+* **db)(water:** ♻️ unify timestamp handling and streamline bulk operations ([c85c2dc](https://github.com/usertopio/otod-durian-lab1/commit/c85c2dc5a574f6f0059319e0e8872a5b3e9d0fc5))
+* **db:** ♻️ restructure bulk process reference codes for crops, farmers, and merchants ([d43a401](https://github.com/usertopio/otod-durian-lab1/commit/d43a401bf7c66c15d545d78fedfb7000bd67d042))
+* **db:** ♻️ streamline bulk data processing across multiple database services ([b41e5e6](https://github.com/usertopio/otod-durian-lab1/commit/b41e5e6ddc663161c52f06323d3b21e995f37c1d))
+* **db:** ♻️ unify timestamp handling across modules ([8a99a2f](https://github.com/usertopio/otod-durian-lab1/commit/8a99a2f6b565b05edfc3b6ad58477b21f35aeedf))
+* **docker:** 🐳 update Docker configuration for backend service ([21a7e2e](https://github.com/usertopio/otod-durian-lab1/commit/21a7e2e22d3145cc2c5fee638632c683ac6ef07f))
+* **gap:** ♻️ remove unused bulk reference code processing functions ([9628e80](https://github.com/usertopio/otod-durian-lab1/commit/9628e80e512f9ae67d2f1677639f3ecac8cf3013))
+* **gap:** ♻️ streamline bulk insert/update process for GAP certificates ([8563efa](https://github.com/usertopio/otod-durian-lab1/commit/8563efa510577786ec4c407d6d7c7b5dd645b12e))
+* **price:** ♻️ pass the whole result object to the logger ([30c46c8](https://github.com/usertopio/otod-durian-lab1/commit/30c46c8006fb4eeb853a8827eb0cd7ad7b9e7754))
+* Remove unnecessary comments and improve code clarity across services ([9ec844b](https://github.com/usertopio/otod-durian-lab1/commit/9ec844b4975a1f056e0d5db209c0e84953f3ae24))
+* **routes:** 🎨migrate to ES6 module syntax for improved consistency ([bf57f8d](https://github.com/usertopio/otod-durian-lab1/commit/bf57f8da5bea0c9fff576ae2bbb692abcf69a570))
+* **server:** 🎨update PORT assignment for consistency ([ab5be0e](https://github.com/usertopio/otod-durian-lab1/commit/ab5be0e2ec4329936b0ca89ae8ef8db6c242353f))
+* **services)(communities:** ♻️ streamline community count retrieval and enhance service layer usage ([9a05af9](https://github.com/usertopio/otod-durian-lab1/commit/9a05af92763fba73c832216a5c3cc393ced8eed6))
+* **services)(communities:** ♻️implement bulk processing for community records and optimize reference code handling ([2dcbc48](https://github.com/usertopio/otod-durian-lab1/commit/2dcbc4850aecee2ea69f7ac135b10c44ef6e3cf7))
+* **services)(crops:** ♻️ streamline bulk reference code processing and enhance error handling ([c182945](https://github.com/usertopio/otod-durian-lab1/commit/c182945788c439bea9e4d9a4c297effc869cf84f))
+* **services)(crops:** ♻️ streamline crop count retrieval and remove unused functions ([25ac1e0](https://github.com/usertopio/otod-durian-lab1/commit/25ac1e07b40d38e65140a953df74fde5443c113b))
+* **services)(crops:** ♻️ use nullish coalescing for crop properties to preserve zero values ([9a490ad](https://github.com/usertopio/otod-durian-lab1/commit/9a490ade3c3ce9f115eb788a1b1277b6c40470c0))
+* **services)(crops:** ♻️ use nullish coalescing for crop properties to preserve zero values ([d409484](https://github.com/usertopio/otod-durian-lab1/commit/d40948454b3f43e2745268a98b0242fa1a43eb82))
+* **services)(crops:** ♻️implement bulk processing for crop records and optimize reference code handling ([a1439ff](https://github.com/usertopio/otod-durian-lab1/commit/a1439ff18030abe978e47a2549358d33b7e93422))
+* **services)(crops:** ♻️optimize crop data processing and improve rate limiting ([17461a7](https://github.com/usertopio/otod-durian-lab1/commit/17461a7894a894a934d33670ff666730d676e0f9))
+* **services)(db:** ♻️ streamline bulk reference code processing and improve database interactions ([4b05625](https://github.com/usertopio/otod-durian-lab1/commit/4b05625880d8ae630af50e1158de1df6bb5526a9))
+* **services)(db:** ♻️ update district and subdistrict name columns for consistency ([0b9f7b0](https://github.com/usertopio/otod-durian-lab1/commit/0b9f7b000044303769d679cb28857a13035a660c))
+* **services)(durianGardens:** ♻️fix reference code processing and ensure rec_id generation ([a4d33b9](https://github.com/usertopio/otod-durian-lab1/commit/a4d33b9bc9d81ba098a82ac7edf5a4cd0fcbcb3b))
+* **services)(durianGardens:** ♻️implement bulk processing for durian gardens and optimize database operations ([4e17cfc](https://github.com/usertopio/otod-durian-lab1/commit/4e17cfc55644941d69ebea09b0a44752d4434c1f))
+* **services)(durianGardens:** ♻️optimize bulk operation handling for durian gardens ([0c3429b](https://github.com/usertopio/otod-durian-lab1/commit/0c3429b907392025b2c797484da49e0a4c8d2c36))
+* **services)(durianGardens:** ♻️simplify fetchAllDurianGardens logic and improve data handling ([fed9f5a](https://github.com/usertopio/otod-durian-lab1/commit/fed9f5a2b6db092668f61ddb080af2928df2a433))
+* **services)(farmers:** ♻️ update farmer data handling to preserve null values ([090e1f6](https://github.com/usertopio/otod-durian-lab1/commit/090e1f63364b3aae9234da916f3f2f5c7591de4e))
+* **services)(farmers:** ♻️implement bulk insert/update for farmers processing ([5f06896](https://github.com/usertopio/otod-durian-lab1/commit/5f06896bf76be26285e6af152faba4401e0efc49))
+* **services)(farmers:** ♻️implement bulk processing for reference codes and optimize farmer data insertion ([cdb2df4](https://github.com/usertopio/otod-durian-lab1/commit/cdb2df40b8dfb18d847ac8d37d2b3b9fc48c3451))
+* **services)(farmers:** ♻️remove unused reference code functions and streamline farmer processing ([55d4b19](https://github.com/usertopio/otod-durian-lab1/commit/55d4b195e6607d9e2413006514729cdb5fa6d75f))
+* **services)(gap:** ♻️implement bulk processing for GAP certificates and optimize database interactions ([1087f89](https://github.com/usertopio/otod-durian-lab1/commit/1087f89dd624f06cc529d84ba8fa32f5bdf8057b))
+* **services)(merchants:** ♻️implement bulk processing for merchant records and optimize reference code handling ([0073f14](https://github.com/usertopio/otod-durian-lab1/commit/0073f14bb32bb852c8446e26fc8d9e0191195e47))
+* **services)(news:** ♻️implement bulk processing for news records and optimize database interactions ([8ad2982](https://github.com/usertopio/otod-durian-lab1/commit/8ad298290e9b4afd2b5e6c2f592037b9f25694d8))
+* **services)(operations:** ♻️ streamline bulk reference code processing and enhance error handling ([b974aad](https://github.com/usertopio/otod-durian-lab1/commit/b974aad55df58bb62a5d1ab6a1873ee40f822a30))
+* **services)(operations:** ♻️implement bulk processing for operations and optimize data handling ([570e1bc](https://github.com/usertopio/otod-durian-lab1/commit/570e1bccc076ec08214112859c3a03d12403b097))
+* **services)(substance:** ♻️implement bulk processing for substance records and optimize database interactions ([00a15ba](https://github.com/usertopio/otod-durian-lab1/commit/00a15ba1e4d79817aae50872314f21fc9787af5e))
+* **services)(water:** ♻️implement bulk processing for water records and optimize database interactions ([b12493f](https://github.com/usertopio/otod-durian-lab1/commit/b12493f2eaebdea97b9e35082501bc59c7f1a61a))
+* **services:** ♻️ standardize comments and improve consistency in bulk processing logs ([5bb6c3b](https://github.com/usertopio/otod-durian-lab1/commit/5bb6c3b9cf64e95d5a907dc9ede6dbd55a20fd23))
+* **services:** ♻️remove redundant fetch methods and streamline data processing ([39cddfd](https://github.com/usertopio/otod-durian-lab1/commit/39cddfd391bbe717f1545d5350b1812472e12b9f))
+* **services:** 🎨migrate database files to ES6 module syntax ([045eaee](https://github.com/usertopio/otod-durian-lab1/commit/045eaee1b83ab58b235cc332b3f7eec44ab146e6))
+* **services:** 🎨migrate farmersDb to ES6 module syntax and update farmer handling ([0442ba5](https://github.com/usertopio/otod-durian-lab1/commit/0442ba5133e2b5ff8699ad6a2ee5314cb26044f8))
+* **services:** 🎨migrate farmersProcessor to ES6 module syntax ([3c5974b](https://github.com/usertopio/otod-durian-lab1/commit/3c5974b9e718a677326f56ad436e9223764c86f7))
+* **services:** 🎨migrate to ES6 module syntax for improved consistency ([7c4f15b](https://github.com/usertopio/otod-durian-lab1/commit/7c4f15bee015d02c513e639f621319559cd086a5))
+
+
+### 📝 Docs
+
+* **README:** 📝 update project description and improve formatting ([7396304](https://github.com/usertopio/otod-durian-lab1/commit/739630490bc89d2c51596c0b74fd266e037afb60))
+
 ## [2.3.0](https://github.com/usertopio/otod-durian-lab1/compare/v2.2.0...v2.3.0) (2025-09-15)
 
 
