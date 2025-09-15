@@ -1,7 +1,7 @@
 <h1 align="center">Welcome to OTOD-Dashboard-Backend 🦪</h1>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-2.3.0-blue.svg?cacheSeconds=2592000" />
+  <img alt="Version" src="https://img.shields.io/badge/version-2.3.1-blue.svg?cacheSeconds=2592000" />
   <img src="https://img.shields.io/badge/node-%3E%3D16.0.0-blue.svg" />
   <img src="https://img.shields.io/badge/npm-%3E%3D8.0.0-blue.svg" />
   <a href="https://github.com/usertopio/otod-durian-lab1#readme" target="_blank">
@@ -31,13 +31,19 @@ npm install
 ```
 
 ## Usage
+
 ### Run locally
+
 Configure .env → select the correct database connection (Localhost).
+
 ```sh
 npm start
 ```
+
 ### Run with Docker
+
 Configure .env → make sure database connection matches your environment.
+
 ```sh
 docker compose up --build -d
 ```
@@ -46,9 +52,9 @@ docker compose up --build -d
 
 👤 Tammasorn Rojanaakarapong
 
-* Website: https://github.com/usertopio
-* Github: [@usertopio](https://github.com/usertopio)
-* LinkedIn: [@www.linkedin.com\/in\/tammasornroj](https://linkedin.com/in/www.linkedin.com\/in\/tammasornroj)
+- Website: https://github.com/usertopio
+- Github: [@usertopio](https://github.com/usertopio)
+- LinkedIn: [@www.linkedin.com\/in\/tammasornroj](https://linkedin.com/in/www.linkedin.com/in/tammasornroj)
 
 ## Show your support
 
@@ -63,5 +69,6 @@ Give a ⭐️ if this project helped you!
 Copyright © 2025 [ Tammasorn Rojanaakarapong](https://github.com/usertopio).<br />
 This project is [UNLICENSED](https://github.com/usertopio/otod-durian-lab1/blob/master/LICENSE) licensed.
 
-***
+---
+
 _This README was generated with ❤️ by [readme-md-generator](https://github.com/kefranabg/readme-md-generator)_
