@@ -1,6 +1,6 @@
 // ===================== Logger =====================
 // OperationsLogger provides structured logging for the operations fetch/process workflow.
-class OperationsLogger {
+export default class OperationsLogger {
   static logTargetStart(targetCount, maxAttempts) {
     console.log(
       `🎯 Target: ${targetCount} operations, Max attempts: ${maxAttempts}`
@@ -66,5 +66,3 @@ class OperationsLogger {
     console.log(`✅ Status: ${status}`);
   }
 }
-
-module.exports = OperationsLogger;

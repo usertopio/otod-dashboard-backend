@@ -1,12 +1,12 @@
 // ===================== Imports =====================
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { NEWS_CONFIG, STATUS } = require("../../utils/constants");
-const NewsProcessor = require("./newsProcessor");
-const NewsLogger = require("./newsLogger");
+import { connectionDB } from "../../config/db/db.conf.js";
+import { NEWS_CONFIG, STATUS } from "../../utils/constants.js";
+import NewsProcessor from "./newsProcessor.js";
+import NewsLogger from "./newsLogger.js";
 
 // ===================== Service =====================
 // NewsService handles the business logic for fetching, resetting, and managing news records.
-class NewsService {
+export default class NewsService {
   /**
    * Resets only the news table in the database.
    * - Disables foreign key checks to allow truncation.
@@ -40,48 +40,6 @@ class NewsService {
   }
 
   /**
-   * Main entry point for fetching news from APIs and storing them in the database.
-   * - Resets the news table before starting.
-   * - Loops up to maxAttempts, fetching and processing data each time.
-   * - Logs progress and metrics for each attempt.
-   * - Stops early if the target number of news is reached.
-   * - Returns a summary result object.
-   * @param {number} targetCount - The number of news to fetch and store.
-   * @param {number} maxAttempts - The maximum number of fetch attempts.
-   */
-  static async fetchNews(targetCount, maxAttempts) {
-    await this.resetOnlyNewsTable();
-
-    let attempt = 1;
-    let currentCount = 0;
-    let attemptsUsed = 0;
-
-    console.log(`🎯 Target: ${targetCount} news, Max attempts: ${maxAttempts}`);
-
-    while (attempt <= maxAttempts) {
-      NewsLogger.logAttemptStart(attempt, maxAttempts);
-
-      currentCount = await this._getDatabaseCount();
-      NewsLogger.logCurrentStatus(currentCount, targetCount);
-
-      attemptsUsed++;
-      const result = await NewsProcessor.fetchAndProcessData();
-
-      NewsLogger.logAttemptResults(attempt, result);
-
-      currentCount = result.totalAfter;
-      attempt++;
-
-      if (currentCount >= targetCount) {
-        NewsLogger.logTargetReached(targetCount, attemptsUsed);
-        break;
-      }
-    }
-
-    return this._buildFinalResult(targetCount, attemptsUsed, maxAttempts);
-  }
-
-  /**
    * Fetches ALL news from the API and stores them in the database.
    * Loops up to maxAttempts, stops early if no new records are inserted.
    * Returns a summary result object.
@@ -109,8 +67,24 @@ class NewsService {
       totalUpdated += result.updated || 0;
       totalErrors += result.errors || 0;
 
-      // Only continue if new records were inserted in this attempt
       hasMoreData = (result.inserted || 0) > 0;
+
+      // ✅ ADD: Early termination for efficiency
+      if (
+        attempt === 1 &&
+        (result.inserted || 0) > 0 &&
+        (result.errors || 0) === 0
+      ) {
+        console.log(
+          `✅ First attempt successful with ${result.inserted} records - stopping`
+        );
+        hasMoreData = false;
+      }
+
+      console.log(
+        `🔍 Attempt ${attempt}: Inserted ${result.inserted}, Continue: ${hasMoreData}`
+      );
+
       attempt++;
     }
 
@@ -158,8 +132,14 @@ class NewsService {
    */
   static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
     const finalCount = await this._getDatabaseCount();
-    const status =
-      finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    let status;
+
+    // All handle "ALL" target correctly
+    if (targetCount === "ALL") {
+      status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    } else {
+      status = finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    }
 
     NewsLogger.logFinalResults(
       targetCount,
@@ -180,6 +160,3 @@ class NewsService {
     };
   }
 }
-
-// ===================== Exports =====================
-module.exports = NewsService;

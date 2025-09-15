@@ -1,6 +1,6 @@
 // ===================== Logger =====================
 // WaterLogger provides structured logging for the water fetch/process workflow.
-class WaterLogger {
+export default class WaterLogger {
   static logTargetStart(targetCount, maxAttempts) {
     console.log(
       `🎯 Target: ${targetCount} water records, Max attempts: ${maxAttempts}`
@@ -127,6 +127,3 @@ class WaterLogger {
     console.log(`📄 Year: ${year} Page: ${page} Length: ${safeRecords.length}`);
   }
 }
-
-// ===================== Exports =====================
-module.exports = WaterLogger;

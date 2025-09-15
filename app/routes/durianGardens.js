@@ -1,7 +1,8 @@
-const express = require("express");
+import express from "express";
+import { fetchDurianGardens } from "../controllers/durianGardensCon.js";
+
 const router = express.Router();
-const { fetchDurianGardens } = require("../controllers/durianGardensCon.js");
 
 router.post("/fetchDurianGardens", fetchDurianGardens);
 
-module.exports = router;
+export default router;

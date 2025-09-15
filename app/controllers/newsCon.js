@@ -1,11 +1,11 @@
 // ===================== Imports =====================
 // Import the NewsService for business logic
-const NewsService = require("../services/news/newsService");
-const { NEWS_CONFIG } = require("../utils/constants");
+import NewsService from "../services/news/newsService.js";
+import { NEWS_CONFIG } from "../utils/constants.js";
 
 // ===================== Controller =====================
 // Handles HTTP requests for news-related operations
-const fetchNews = async (req, res) => {
+export const fetchNews = async (req, res) => {
   try {
     // Get maxAttempts from request body or use default
     const maxAttempts =
@@ -24,10 +24,4 @@ const fetchNews = async (req, res) => {
       details: error.message,
     });
   }
-};
-
-// ===================== Exports =====================
-// Export the fetchNews controller method
-module.exports = {
-  fetchNews,
 };

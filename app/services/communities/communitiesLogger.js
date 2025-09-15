@@ -1,6 +1,6 @@
 // ===================== Logger =====================
 // CommunitiesLogger provides structured logging for the communities fetch/process workflow.
-class CommunitiesLogger {
+export default class CommunitiesLogger {
   // Log the start of the target/attempts
   static logTargetStart(targetCount, maxAttempts) {
     console.log(
@@ -73,6 +73,3 @@ class CommunitiesLogger {
     console.log(`✅ Status: ${status}`);
   }
 }
-
-// ===================== Exports =====================
-module.exports = CommunitiesLogger;

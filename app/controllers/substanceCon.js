@@ -1,11 +1,11 @@
 // ===================== Imports =====================
 // Import the SubstanceService for business logic
-const SubstanceService = require("../services/substance/substanceService");
-const { SUBSTANCE_CONFIG } = require("../utils/constants");
+import SubstanceService from "../services/substance/substanceService.js";
+import { SUBSTANCE_CONFIG } from "../utils/constants.js";
 
 // ===================== Controller =====================
 // Handles HTTP requests for substance-related operations
-const fetchSubstance = async (req, res) => {
+export const fetchSubstance = async (req, res) => {
   try {
     // Get maxAttempts from request body or use default
     const maxAttempts =
@@ -25,9 +25,4 @@ const fetchSubstance = async (req, res) => {
       error: err.message,
     });
   }
-};
-
-// ===================== Exports =====================
-module.exports = {
-  fetchSubstance,
 };

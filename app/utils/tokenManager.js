@@ -1,10 +1,11 @@
-const { login } = require("../services/api/login");
+// tokenManager.js (ESM)
+import { login } from "../services/api/login.js";
 
-class TokenManager {
+export class TokenManager {
   constructor() {
     this.cachedToken = null;
     this.tokenExpiry = 0;
-    this.refreshBuffer = 60000; // 60 seconds buffer before expiry
+    this.refreshBuffer = 60_000; // 60 seconds buffer before expiry
   }
 
   /**
@@ -28,9 +29,8 @@ class TokenManager {
 
         console.log("✅ Token fetched successfully");
         return this.cachedToken;
-      }
-      // Check other possible response structures as fallback
-      else if (response && response.accessToken) {
+      } else if (response && response.accessToken) {
+        // Fallback structure
         this.cachedToken = response.accessToken;
         const expiresIn = response.expiresIn || 3600;
         this.tokenExpiry = Date.now() + expiresIn * 1000 - this.refreshBuffer;
@@ -70,11 +70,9 @@ class TokenManager {
    * @returns {Promise<string>} A valid access token
    */
   async getToken() {
-    // Check if we need a new token
     if (!this.cachedToken || Date.now() > this.tokenExpiry) {
       await this.fetchToken();
     }
-
     return this.cachedToken;
   }
 
@@ -101,9 +99,8 @@ class TokenManager {
    * @returns {boolean} True if token is valid
    */
   isTokenValid() {
-    return this.cachedToken && Date.now() <= this.tokenExpiry;
+    return !!this.cachedToken && Date.now() <= this.tokenExpiry;
   }
 }
 
-// Export a singleton instance
-module.exports = new TokenManager();
+export default new TokenManager();

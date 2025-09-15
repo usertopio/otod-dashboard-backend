@@ -1,13 +1,13 @@
 // ===================== Imports =====================
 // Import DB connection for executing SQL queries
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { WATER_CONFIG, STATUS } = require("../../utils/constants");
-const WaterProcessor = require("./waterProcessor");
-const WaterLogger = require("./waterLogger");
+import { connectionDB } from "../../config/db/db.conf.js";
+import { WATER_CONFIG, STATUS } from "../../utils/constants.js";
+import WaterProcessor from "./waterProcessor.js";
+import WaterLogger from "./waterLogger.js";
 
 // ===================== Service =====================
 // WaterService handles the business logic for fetching, resetting, and managing water records.
-class WaterService {
+export default class WaterService {
   /**
    * Resets only the water table in the database.
    * - Disables foreign key checks to allow truncation.
@@ -41,50 +41,6 @@ class WaterService {
   }
 
   /**
-   * Main entry point for fetching water usage summary from the API and storing it in the database.
-   * - Resets the water table before starting.
-   * - Loops up to maxAttempts, fetching and processing data each time.
-   * - Logs progress and metrics for each attempt.
-   * - Stops early if the target number of records is reached.
-   * - Returns a summary result object.
-   * @param {number} targetCount - The number of records to fetch and store.
-   * @param {number} maxAttempts - The maximum number of fetch attempts.
-   */
-  static async fetchWater(targetCount, maxAttempts) {
-    await this.resetOnlyWaterTable();
-
-    let attempt = 1;
-    let currentCount = 0;
-    let attemptsUsed = 0;
-
-    console.log(
-      `🎯 Target: ${targetCount} water records, Max attempts: ${maxAttempts}`
-    );
-
-    while (attempt <= maxAttempts) {
-      WaterLogger.logAttemptStart(attempt, maxAttempts);
-
-      currentCount = await this._getDatabaseCount();
-      WaterLogger.logCurrentStatus(currentCount, targetCount);
-
-      attemptsUsed++;
-      const result = await WaterProcessor.fetchAndProcessData();
-
-      WaterLogger.logAttemptResults(attempt, result);
-
-      currentCount = result.totalAfter;
-      attempt++;
-
-      if (currentCount >= targetCount) {
-        WaterLogger.logTargetReached(targetCount, attemptsUsed);
-        break;
-      }
-    }
-
-    return this._buildFinalResult(targetCount, attemptsUsed, maxAttempts);
-  }
-
-  /**
    * Main entry point for fetching ALL water usage summary from the API and storing it in the database.
    * - Resets the water table before starting.
    * - Loops up to maxAttempts, fetching and processing data each time.
@@ -115,8 +71,24 @@ class WaterService {
       totalUpdated += result.updated || 0;
       totalErrors += result.errors || 0;
 
-      // Only continue if new records were inserted in this attempt
       hasMoreData = (result.inserted || 0) > 0;
+
+      // Early termination for efficiency
+      if (
+        attempt === 1 &&
+        (result.inserted || 0) > 0 &&
+        (result.errors || 0) === 0
+      ) {
+        console.log(
+          `✅ First attempt successful with ${result.inserted} records - stopping`
+        );
+        hasMoreData = false;
+      }
+
+      console.log(
+        `🔍 Attempt ${attempt}: Inserted ${result.inserted}, Continue: ${hasMoreData}`
+      );
+
       attempt++;
     }
 
@@ -164,8 +136,14 @@ class WaterService {
    */
   static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
     const finalCount = await this._getDatabaseCount();
-    const status =
-      finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    let status;
+
+    // handle "ALL" target correctly
+    if (targetCount === "ALL") {
+      status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    } else {
+      status = finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    }
 
     WaterLogger.logFinalResults(
       targetCount,
@@ -186,6 +164,3 @@ class WaterService {
     };
   }
 }
-
-// ===================== Exports =====================
-module.exports = WaterService;

@@ -1,9 +1,9 @@
-const tokenManager = require("../utils/tokenManager");
+import tokenManager from "../utils/tokenManager.js";
 
 /**
  * Get current token status
  */
-async function getTokenStatus(req, res) {
+export async function getTokenStatus(req, res) {
   try {
     const isValid = tokenManager.isTokenValid();
     const token = tokenManager.cachedToken;
@@ -24,7 +24,7 @@ async function getTokenStatus(req, res) {
 /**
  * Force refresh the token
  */
-async function refreshToken(req, res) {
+export async function refreshToken(req, res) {
   try {
     const token = await tokenManager.refreshToken();
     res.status(200).json({
@@ -38,8 +38,3 @@ async function refreshToken(req, res) {
     });
   }
 }
-
-module.exports = {
-  getTokenStatus,
-  refreshToken,
-};

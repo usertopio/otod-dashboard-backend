@@ -1,9 +1,10 @@
 // ===================== Imports =====================
-const { getCrops } = require("../api/crops");
-const { insertOrUpdateGap } = require("../db/gapDb");
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { GAP_CONFIG, OPERATIONS } = require("../../utils/constants");
-const GapLogger = require("./gapLogger");
+// Import API client for fetching crops (source of GAP data)
+import { getCrops } from "../api/crops.js";
+import { bulkInsertOrUpdateGap } from "../db/gapDb.js";
+import { connectionDB } from "../../config/db/db.conf.js";
+import { GAP_CONFIG } from "../../utils/constants.js";
+import GapLogger from "./gapLogger.js";
 
 // ===================== Processor =====================
 // GapProcessor handles fetching, deduplication, and DB upserts for GAP certificates.
@@ -13,40 +14,52 @@ class GapProcessor {
    * Returns a result object with metrics and tracking info.
    */
   static async fetchAndProcessData() {
-    // Initialize counters
-    const metrics = {
-      allGapAllPages: [],
-      insertCount: 0,
-      updateCount: 0,
-      errorCount: 0,
-      processedRecIds: new Set(),
-      newRecIds: [],
-      updatedRecIds: [],
-      errorRecIds: [],
-    };
-
     // Get database count before processing
     const dbCountBefore = await this._getDatabaseCount();
 
-    // Fetch data from all pages
+    // Initialize metrics
+    const metrics = {
+      allGapAllPages: [],
+    };
+
+    // Fetch data from all pages (extracts GAP certificates from crops)
     await this._fetchGapPages(metrics);
 
-    // Process unique gap certificates
+    // Process unique GAP certificates
     const uniqueGap = this._getUniqueGap(metrics.allGapAllPages);
+
     GapLogger.logApiSummary(metrics.allGapAllPages.length, uniqueGap.length);
 
-    // Process each unique gap certificate
-    await this._processUniqueGap(uniqueGap, metrics);
+    // Process all GAP certificates at once
+    console.log(
+      `🚀 Processing ${uniqueGap.length} unique GAP certificates using BULK operations...`
+    );
+
+    const bulkResult = await bulkInsertOrUpdateGap(uniqueGap);
 
     // Get database count after processing
     const dbCountAfter = await this._getDatabaseCount();
 
-    return this._buildResult(metrics, dbCountBefore, dbCountAfter);
+    // Return simplified result compatible with service
+    return {
+      inserted: bulkResult.inserted || 0,
+      updated: bulkResult.updated || 0,
+      errors: bulkResult.errors || 0,
+      skipped: bulkResult.skipped || 0,
+      totalProcessed: uniqueGap.length,
+      totalBefore: dbCountBefore,
+      totalAfter: dbCountAfter,
+      growth: dbCountAfter - dbCountBefore,
+
+      // Keep existing properties for compatibility
+      allGapAllPages: metrics.allGapAllPages,
+      totalFromAPI: metrics.allGapAllPages.length,
+      uniqueFromAPI: uniqueGap.length,
+    };
   }
 
   /**
    * Fetches all pages of crops from the API and extracts GAP certificates.
-   * @param {number} pages - Number of pages to fetch.
    * @param {object} metrics - Metrics object to accumulate results.
    */
   static async _fetchGapPages(metrics) {
@@ -64,10 +77,6 @@ class GapProcessor {
           pageIndex: page,
           pageSize: GAP_CONFIG.DEFAULT_PAGE_SIZE,
         };
-
-        // const customHeaders = {
-        //   Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-        // };
 
         const crops = await getCrops(requestBody);
         const allCropsCurPage = crops.data || [];
@@ -128,34 +137,6 @@ class GapProcessor {
   }
 
   /**
-   * Upserts each unique GAP certificate into the DB and updates metrics.
-   * @param {Array} uniqueGap - Array of unique GAP certificates.
-   * @param {object} metrics - Metrics object to update.
-   */
-  static async _processUniqueGap(uniqueGap, metrics) {
-    for (const gap of uniqueGap) {
-      const result = await insertOrUpdateGap(gap);
-
-      switch (result.operation) {
-        case OPERATIONS.INSERT:
-          metrics.insertCount++;
-          metrics.newRecIds.push(gap.recId);
-          break;
-        case OPERATIONS.UPDATE:
-          metrics.updateCount++;
-          metrics.updatedRecIds.push(gap.recId);
-          break;
-        case OPERATIONS.ERROR:
-          metrics.errorCount++;
-          metrics.errorRecIds.push(gap.recId);
-          break;
-      }
-
-      metrics.processedRecIds.add(gap.recId);
-    }
-  }
-
-  /**
    * Gets the current count of GAP certificates in the DB.
    * @returns {Promise<number>} - Total number of GAP certificates.
    */
@@ -165,51 +146,5 @@ class GapProcessor {
       .query("SELECT COUNT(*) as total FROM gap");
     return result[0].total;
   }
-
-  /**
-   * Builds a detailed result object with metrics and insights.
-   * @param {object} metrics - Metrics object.
-   * @param {number} dbCountBefore - DB count before processing.
-   * @param {number} dbCountAfter - DB count after processing.
-   * @returns {object} - Result summary.
-   */
-  static _buildResult(metrics, dbCountBefore, dbCountAfter) {
-    return {
-      // Database metrics
-      totalBefore: dbCountBefore,
-      totalAfter: dbCountAfter,
-      inserted: metrics.insertCount,
-      updated: metrics.updateCount,
-      errors: metrics.errorCount,
-      growth: dbCountAfter - dbCountBefore,
-
-      // API metrics
-      totalFromAPI: metrics.allGapAllPages.length,
-      uniqueFromAPI: metrics.allGapAllPages.filter(
-        (gap, index, self) =>
-          index === self.findIndex((g) => g.recId === gap.recId)
-      ).length,
-      duplicatedDataAmount:
-        metrics.allGapAllPages.length -
-        metrics.insertCount -
-        metrics.updateCount,
-
-      // Record tracking
-      newRecIds: metrics.newRecIds,
-      updatedRecIds: metrics.updatedRecIds,
-      errorRecIds: metrics.errorRecIds,
-      processedRecIds: Array.from(metrics.processedRecIds),
-
-      // Additional insights
-      recordsInDbNotInAPI: dbCountBefore - metrics.updateCount,
-      totalProcessingOperations:
-        metrics.insertCount + metrics.updateCount + metrics.errorCount,
-
-      // For compatibility
-      allGapAllPages: metrics.allGapAllPages,
-    };
-  }
 }
-
-// ===================== Exports =====================
-module.exports = GapProcessor;
+export default GapProcessor;

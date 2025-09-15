@@ -1,11 +1,11 @@
 // ===================== Imports =====================
 // Import the DurianGardensService for business logic
-const DurianGardensService = require("../services/durianGardens/durianGardensService");
-const { DURIAN_GARDENS_CONFIG } = require("../utils/constants");
+import DurianGardensService from "../services/durianGardens/durianGardensService.js";
+import { DURIAN_GARDENS_CONFIG } from "../utils/constants.js";
 
 // ===================== Controller =====================
 // Handles HTTP requests for durian garden-related operations
-const fetchDurianGardens = async (req, res) => {
+export const fetchDurianGardens = async (req, res) => {
   try {
     // Get maxAttempts from request body or use default
     const maxAttempts =
@@ -27,10 +27,4 @@ const fetchDurianGardens = async (req, res) => {
       error: err.message,
     });
   }
-};
-
-// ===================== Exports =====================
-// Export the fetchDurianGardens controller method
-module.exports = {
-  fetchDurianGardens,
 };

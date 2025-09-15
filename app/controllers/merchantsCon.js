@@ -1,11 +1,11 @@
 // ===================== Imports =====================
 // Import the MerchantsService for business logic
-const MerchantsService = require("../services/merchants/merchantsService");
-const { MERCHANTS_CONFIG } = require("../utils/constants");
+import MerchantsService from "../services/merchants/merchantsService.js";
+import { MERCHANTS_CONFIG } from "../utils/constants.js";
 
 // ===================== Controller =====================
 // Handles HTTP requests for merchant-related operations
-const fetchMerchants = async (req, res) => {
+export const fetchMerchants = async (req, res) => {
   try {
     // Get maxAttempts from request body or use default
     const maxAttempts =
@@ -25,10 +25,4 @@ const fetchMerchants = async (req, res) => {
       details: error.message,
     });
   }
-};
-
-// ===================== Exports =====================
-// Export the fetchMerchants controller method
-module.exports = {
-  fetchMerchants,
 };

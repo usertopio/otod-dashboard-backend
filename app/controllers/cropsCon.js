@@ -1,11 +1,11 @@
 // ===================== Imports =====================
 // Import the CropsService for business logic
-const CropsService = require("../services/crops/cropsService");
-const { CROPS_CONFIG } = require("../utils/constants");
+import CropsService from "../services/crops/cropsService.js";
+import { CROPS_CONFIG } from "../utils/constants.js";
 
 // ===================== Controller =====================
 // Handles HTTP requests for crop-related operations
-const fetchCrops = async (req, res) => {
+export const fetchCrops = async (req, res) => {
   try {
     // Safely get maxAttempts from request body or use default
     const maxAttempts =
@@ -24,10 +24,4 @@ const fetchCrops = async (req, res) => {
       details: error.message,
     });
   }
-};
-
-// ===================== Exports =====================
-// Export the fetchCrops controller method
-module.exports = {
-  fetchCrops,
 };

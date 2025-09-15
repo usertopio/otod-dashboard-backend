@@ -1,9 +1,14 @@
 // ===================== Imports =====================
-const { getNews } = require("../api/news");
-const { insertOrUpdateNews } = require("../db/newsDb");
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { NEWS_CONFIG, OPERATIONS } = require("../../utils/constants");
-const NewsLogger = require("./newsLogger");
+// Import API client for fetching news data
+import { getNews } from "../api/news.js";
+// Import DB helper for upserting news records
+import { bulkInsertOrUpdateNews } from "../db/newsDb.js";
+// Import DB connection for direct queries
+import { connectionDB } from "../../config/db/db.conf.js";
+// Import config constants and operation enums
+import { NEWS_CONFIG } from "../../utils/constants.js";
+// Import logger for structured process logging
+import NewsLogger from "./newsLogger.js";
 
 // ===================== Processor =====================
 // NewsProcessor handles fetching, deduplication, and DB upserts for news.
@@ -13,40 +18,51 @@ class NewsProcessor {
    * Returns a result object with metrics and tracking info.
    */
   static async fetchAndProcessData() {
-    // Initialize counters
-    const metrics = {
-      allNewsAllPages: [],
-      insertCount: 0,
-      updateCount: 0,
-      errorCount: 0,
-      processedRecIds: new Set(),
-      newRecIds: [],
-      updatedRecIds: [],
-      errorRecIds: [],
-    };
-
     // Get database count before processing
     const dbCountBefore = await this._getDatabaseCount();
+
+    // Initialize metrics
+    const metrics = {
+      allNewsAllPages: [],
+    };
 
     // Fetch data from all pages
     await this._fetchNewsPages(metrics);
 
     // Process unique news
     const uniqueNews = this._getUniqueNews(metrics.allNewsAllPages);
+
     NewsLogger.logApiSummary(metrics.allNewsAllPages.length, uniqueNews.length);
 
-    // Process each unique news
-    await this._processUniqueNews(uniqueNews, metrics);
+    // Process all news at once
+    console.log(
+      `🚀 Processing ${uniqueNews.length} unique news records using BULK operations...`
+    );
+
+    const bulkResult = await bulkInsertOrUpdateNews(uniqueNews);
 
     // Get database count after processing
     const dbCountAfter = await this._getDatabaseCount();
 
-    return this._buildResult(metrics, dbCountBefore, dbCountAfter);
+    // Return simplified result compatible with service
+    return {
+      inserted: bulkResult.inserted || 0,
+      updated: bulkResult.updated || 0,
+      errors: bulkResult.errors || 0,
+      totalProcessed: uniqueNews.length,
+      totalBefore: dbCountBefore,
+      totalAfter: dbCountAfter,
+      growth: dbCountAfter - dbCountBefore,
+
+      // Keep existing properties for compatibility
+      allNewsAllPages: metrics.allNewsAllPages,
+      uniqueFromAPI: uniqueNews.length,
+      totalFromAPI: metrics.allNewsAllPages.length,
+    };
   }
 
   /**
    * Fetches all pages of news from the API and logs each page.
-   * @param {number} pages - Number of pages to fetch.
    * @param {object} metrics - Metrics object to accumulate results.
    */
   static async _fetchNewsPages(metrics) {
@@ -60,10 +76,6 @@ class NewsProcessor {
         pageIndex: page,
         pageSize: NEWS_CONFIG.DEFAULT_PAGE_SIZE,
       };
-
-      // const customHeaders = {
-      //   Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-      // };
 
       const news = await getNews(requestBody);
       const allNewsCurPage = news.data || [];
@@ -93,34 +105,6 @@ class NewsProcessor {
   }
 
   /**
-   * Upserts each unique news record into the DB and updates metrics.
-   * @param {Array} uniqueNews - Array of unique news.
-   * @param {object} metrics - Metrics object to update.
-   */
-  static async _processUniqueNews(uniqueNews, metrics) {
-    for (const news of uniqueNews) {
-      const result = await insertOrUpdateNews(news);
-
-      switch (result.operation) {
-        case OPERATIONS.INSERT:
-          metrics.insertCount++;
-          metrics.newRecIds.push(news.recId);
-          break;
-        case OPERATIONS.UPDATE:
-          metrics.updateCount++;
-          metrics.updatedRecIds.push(news.recId);
-          break;
-        case OPERATIONS.ERROR:
-          metrics.errorCount++;
-          metrics.errorRecIds.push(news.recId);
-          break;
-      }
-
-      metrics.processedRecIds.add(news.recId);
-    }
-  }
-
-  /**
    * Gets the current count of news in the DB.
    * @returns {Promise<number>} - Total number of news.
    */
@@ -130,51 +114,7 @@ class NewsProcessor {
       .query("SELECT COUNT(*) as total FROM news");
     return result[0].total;
   }
-
-  /**
-   * Builds a detailed result object with metrics and insights.
-   * @param {object} metrics - Metrics object.
-   * @param {number} dbCountBefore - DB count before processing.
-   * @param {number} dbCountAfter - DB count after processing.
-   * @returns {object} - Result summary.
-   */
-  static _buildResult(metrics, dbCountBefore, dbCountAfter) {
-    return {
-      // Database metrics
-      totalBefore: dbCountBefore,
-      totalAfter: dbCountAfter,
-      inserted: metrics.insertCount,
-      updated: metrics.updateCount,
-      errors: metrics.errorCount,
-      growth: dbCountAfter - dbCountBefore,
-
-      // API metrics
-      totalFromAPI: metrics.allNewsAllPages.length,
-      uniqueFromAPI: metrics.allNewsAllPages.filter(
-        (news, index, self) =>
-          index === self.findIndex((n) => n.recId === news.recId)
-      ).length,
-      duplicatedDataAmount:
-        metrics.allNewsAllPages.length -
-        metrics.insertCount -
-        metrics.updateCount,
-
-      // Record tracking
-      newRecIds: metrics.newRecIds,
-      updatedRecIds: metrics.updatedRecIds,
-      errorRecIds: metrics.errorRecIds,
-      processedRecIds: Array.from(metrics.processedRecIds),
-
-      // Additional insights
-      recordsInDbNotInAPI: dbCountBefore - metrics.updateCount,
-      totalProcessingOperations:
-        metrics.insertCount + metrics.updateCount + metrics.errorCount,
-
-      // For compatibility
-      allNewsAllPages: metrics.allNewsAllPages,
-    };
-  }
 }
 
 // ===================== Exports =====================
-module.exports = NewsProcessor;
+export default NewsProcessor;

@@ -1,8 +1,9 @@
-const express = require("express");
-const {
+import express from "express";
+import {
   triggerManualFetch,
   getCronStatus,
-} = require("../controllers/cronController");
+} from "../controllers/cronController.js";
+
 const router = express.Router();
 
 // Get cron status
@@ -11,4 +12,4 @@ router.get("/status", getCronStatus);
 // Manual trigger
 router.post("/trigger", triggerManualFetch);
 
-module.exports = router;
+export default router;

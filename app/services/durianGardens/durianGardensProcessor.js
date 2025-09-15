@@ -1,15 +1,15 @@
 // ===================== Imports =====================
 // Import API clients for fetching garden data
-const { getLands } = require("../api/lands");
-const { getLandGeoJSON } = require("../api/landGeoJSON");
+import { getLands } from "../api/lands.js";
+import { getLandGeoJSON } from "../api/landGeoJSON.js";
 // Import DB helper for upserting garden records
-const { insertOrUpdateDurianGarden } = require("../db/durianGardensDb");
+import { bulkInsertOrUpdateDurianGardens } from "../db/durianGardensDb.js";
 // Import DB connection for direct queries
-const { connectionDB } = require("../../config/db/db.conf.js");
+import { connectionDB } from "../../config/db/db.conf.js";
 // Import config constants and operation enums
-const { DURIAN_GARDENS_CONFIG, OPERATIONS } = require("../../utils/constants");
+import { DURIAN_GARDENS_CONFIG, OPERATIONS } from "../../utils/constants.js";
 // Import logger for structured process logging
-const DurianGardensLogger = require("./durianGardensLogger");
+import DurianGardensLogger from "./durianGardensLogger.js";
 
 // ===================== Processor =====================
 // DurianGardensProcessor handles fetching, merging, deduplication, and DB upserts for durian gardens.
@@ -19,30 +19,21 @@ class DurianGardensProcessor {
    * Returns a result object with metrics and tracking info.
    */
   static async fetchAndProcessData() {
-    // Initialize metrics for BOTH APIs
     const metrics = {
-      allGardensFromGetLands: [], // Data from GetLands API (paginated)
-      allGardensFromGetLandGeoJSON: [], // Data from GetLandGeoJSON API (single call)
-      allGardensAllPages: [], // Combined data from both APIs
-      insertCount: 0,
-      updateCount: 0,
-      errorCount: 0,
-      processedRecIds: new Set(),
-      newRecIds: [],
-      updatedRecIds: [],
-      errorRecIds: [],
+      allGardensFromGetLands: [],
+      allGardensFromGetLandGeoJSON: [],
+      allGardensAllPages: [],
     };
 
     // Get database count before processing
     const dbCountBefore = await this._getDatabaseCount();
 
-    // Fetch data from GetLands API (with pagination)
+    // Fetch from GetLands API (paginated)
     await this._fetchGetLandsPages(metrics);
 
-    // Fetch data from GetLandGeoJSON API (single call, no pagination)
+    // Fetch from GetLandGeoJSON API (single call, no pagination)
     await this._fetchGetLandGeoJSON(metrics);
 
-    // Combine and merge records from both APIs by landId
     const mergedGardens = this._mergeRecordsFromBothAPIs(
       metrics.allGardensFromGetLands,
       metrics.allGardensFromGetLandGeoJSON
@@ -52,6 +43,7 @@ class DurianGardensProcessor {
 
     // Process unique gardens (using landId as unique identifier)
     const uniqueGardens = this._getUniqueGardens(metrics.allGardensAllPages);
+
     DurianGardensLogger.logApiSummary(
       metrics.allGardensAllPages.length,
       uniqueGardens.length,
@@ -59,17 +51,26 @@ class DurianGardensProcessor {
       metrics.allGardensFromGetLandGeoJSON.length
     );
 
-    // Upsert each unique garden into the DB and update metrics
-    await this._processUniqueGardens(uniqueGardens, metrics);
+    console.log(
+      `🚀 Processing ${uniqueGardens.length} unique durian gardens using BULK operations...`
+    );
+
+    // BULK PROCESSING - Single operation for all gardens
+    const result = await bulkInsertOrUpdateDurianGardens(uniqueGardens);
 
     // Get database count after processing
     const dbCountAfter = await this._getDatabaseCount();
 
-    // Build and return a detailed result object
-    return this._buildResult(metrics, dbCountBefore, dbCountAfter);
+    return {
+      inserted: result.inserted,
+      updated: result.updated,
+      errors: result.errors,
+      totalAfter: dbCountAfter,
+      processingMethod: "BULK_UPSERT",
+    };
   }
 
-  // 🌿 Fetch from GetLands API (paginated)
+  // Fetch from GetLands API (paginated)
   static async _fetchGetLandsPages(metrics) {
     console.log("");
     console.log("📞 Sending request to GetLands API (paginated)...");
@@ -105,7 +106,7 @@ class DurianGardensProcessor {
     }
   }
 
-  // 🌿 Fetch from GetLandGeoJSON API (single call, no pagination)
+  // Fetch from GetLandGeoJSON API (single call, no pagination)
   static async _fetchGetLandGeoJSON(metrics) {
     console.log("📞 Sending request to GetLandGeoJSON API (single call)...");
 
@@ -115,10 +116,6 @@ class DurianGardensProcessor {
       tambon: "",
       landType: "",
     };
-
-    // const customHeaders = {
-    //   Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-    // };
 
     const landGeoJSON = await getLandGeoJSON(requestBody);
 
@@ -148,7 +145,7 @@ class DurianGardensProcessor {
     DurianGardensLogger.logPageInfo(1, 1, flattenedLands);
   }
 
-  // 🌿 Merge records from both APIs by landId
+  // Merge records from both APIs by landId
   static _mergeRecordsFromBothAPIs(getLandsData, getLandGeoJSONData) {
     console.log(``);
     console.log("🔗 Merging records from both APIs...");
@@ -159,7 +156,6 @@ class DurianGardensProcessor {
     // Add all GetLands records
     getLandsData.forEach((land) => {
       mergedMap.set(land.landId, {
-        // 🌿 Map GetLands fields based on actual API response
         source: "GetLands",
         recId: land.recId,
         farmerId: land.farmerId,
@@ -247,35 +243,9 @@ class DurianGardensProcessor {
     return mergedArray;
   }
 
-  // 🌿 Get unique gardens (already unique by landId from merge)
+  // Get unique gardens (already unique by landId from merge)
   static _getUniqueGardens(allGardens) {
     return allGardens; // Already unique from merge process
-  }
-
-  // 🌿 Process all unique gardens into single durian_gardens table
-  static async _processUniqueGardens(uniqueGardens, metrics) {
-    for (const garden of uniqueGardens) {
-      const result = await insertOrUpdateDurianGarden(garden);
-
-      const landId = garden.landId;
-
-      switch (result.operation) {
-        case OPERATIONS.INSERT:
-          metrics.insertCount++;
-          metrics.newRecIds.push(landId);
-          break;
-        case OPERATIONS.UPDATE:
-          metrics.updateCount++;
-          metrics.updatedRecIds.push(landId);
-          break;
-        case OPERATIONS.ERROR:
-          metrics.errorCount++;
-          metrics.errorRecIds.push(landId);
-          break;
-      }
-
-      metrics.processedRecIds.add(landId);
-    }
   }
 
   static async _getDatabaseCount() {
@@ -326,5 +296,4 @@ class DurianGardensProcessor {
   }
 }
 
-// ===================== Exports =====================
-module.exports = DurianGardensProcessor;
+export default DurianGardensProcessor;

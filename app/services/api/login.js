@@ -1,7 +1,7 @@
-const axios = require("axios");
+import axios from "axios";
 
 // Outsource doc: API Name: Login
-const login = async () => {
+export async function login() {
   const requestBody = {
     username: process.env.API_USERNAME,
     password: process.env.API_PASSWORD,
@@ -12,13 +12,9 @@ const login = async () => {
     `${process.env.OUTSOURCE_API_BASE_URL}/api/JWT/Login`,
     requestBody,
     {
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
     }
   );
 
   return response.data;
-};
-
-module.exports = { login };
+}

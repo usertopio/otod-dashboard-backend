@@ -1,8 +1,8 @@
-const express = require("express");
-const router = express.Router();
-const { fetchCrops } = require("../controllers/cropsCon.js");
+import express from "express";
+import { fetchCrops } from "../controllers/cropsCon.js";
 
-// ✅ Enable crops endpoint
+const router = express.Router();
+
 router.post("/fetchCrops", fetchCrops);
 
-module.exports = router;
+export default router;

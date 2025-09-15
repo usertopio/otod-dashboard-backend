@@ -1,6 +1,6 @@
 // ===================== Logger =====================
 // DurianGardensLogger provides structured logging for the durian gardens fetch/process workflow.
-class DurianGardensLogger {
+export default class DurianGardensLogger {
   static logAttemptStart(attempt, maxAttempts) {
     console.log(`\n🔄 === ATTEMPT ${attempt}/${maxAttempts} ===`);
   }
@@ -74,6 +74,3 @@ class DurianGardensLogger {
     console.log(`🔗 Merged unique gardens: ${totalMerged}`);
   }
 }
-
-// ===================== Exports =====================
-module.exports = DurianGardensLogger;

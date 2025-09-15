@@ -1,8 +1,8 @@
-const express = require("express");
-const router = express.Router();
-const { fetchSubstance } = require("../controllers/substanceCon.js");
+import express from "express";
+import { fetchSubstance } from "../controllers/substanceCon.js";
 
-// Main substance endpoints
+const router = express.Router();
+
 router.post("/fetchSubstance", fetchSubstance);
 
-module.exports = router;
+export default router;

@@ -1,16 +1,12 @@
 // ===================== Imports =====================
-// Import DB connection for executing SQL queries
-const { connectionDB } = require("../../config/db/db.conf.js");
-// Import configuration constants and status enums
-const { CROPS_CONFIG, STATUS } = require("../../utils/constants");
-// Import the processor for handling API data and DB upserts
-const CropsProcessor = require("./cropsProcessor");
-// Import the logger for structured logging of the fetch process
-const CropsLogger = require("./cropsLogger");
+import { connectionDB } from "../../config/db/db.conf.js";
+import { CROPS_CONFIG, STATUS } from "../../utils/constants.js";
+import CropsProcessor from "./cropsProcessor.js";
+import CropsLogger from "./cropsLogger.js";
 
 // ===================== Service =====================
 // CropsService handles the business logic for fetching, resetting, and managing crop records.
-class CropsService {
+export default class CropsService {
   /**
    * Resets only the crops table in the database.
    * - Disables foreign key checks to allow truncation.
@@ -22,7 +18,6 @@ class CropsService {
     const connection = connectionDB.promise();
 
     try {
-      // Log the start of the reset operation
       console.log("==========================================");
       console.log(
         `📩 Sending request to API Endpoint: {{LOCAL_HOST}}/api/fetchCrops`
@@ -31,72 +26,17 @@ class CropsService {
 
       console.log("🧹 Resetting ONLY crops table...");
 
-      // Disable foreign key checks to allow truncation
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
-      // Truncate the crops table (delete all records, reset auto-increment)
       await connection.query("TRUNCATE TABLE crops");
-      // Re-enable foreign key checks after truncation
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
 
-      // Log completion
       console.log("✅ Only crops table reset - next ID will be 1");
       return { success: true, message: "Only crops table reset" };
     } catch (error) {
-      // Always re-enable foreign key checks even if error occurs
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-      // Log the error
       console.error("❌ Error resetting crops table:", error);
       throw error;
     }
-  }
-
-  /**
-   * Main entry point for fetching crops from APIs and storing them in the database.
-   * - Resets the crops table before starting.
-   * - Loops up to maxAttempts, fetching and processing data each time.
-   * - Logs progress and metrics for each attempt.
-   * - Stops early if the target number of crops is reached.
-   * - Returns a summary result object.
-   * @param {number} targetCount - The number of crops to fetch and store.
-   * @param {number} maxAttempts - The maximum number of fetch attempts.
-   */
-  static async fetchCrops(targetCount, maxAttempts) {
-    await this.resetOnlyCropsTable();
-
-    let attempt = 1;
-    let currentCount = 0;
-    let attemptsUsed = 0;
-
-    // Log the fetch target and attempt limit
-    console.log(
-      `🎯 Target: ${targetCount} crops (GetCrops + GetCropHarvests), Max attempts: ${maxAttempts}`
-    );
-
-    while (attempt <= maxAttempts) {
-      CropsLogger.logAttemptStart(attempt, maxAttempts);
-
-      currentCount = await this._getDatabaseCount();
-      CropsLogger.logCurrentStatus(
-        currentCount,
-        targetCount,
-        "crops (from both APIs)"
-      );
-
-      attemptsUsed++;
-      const result = await CropsProcessor.fetchAndProcessData();
-
-      CropsLogger.logAttemptResults(attempt, result);
-
-      currentCount = result.totalAfter;
-      attempt++;
-
-      if (currentCount >= targetCount) {
-        CropsLogger.logTargetReached(targetCount, attemptsUsed);
-        break;
-      }
-    }
-
-    return this._buildFinalResult(targetCount, attemptsUsed, maxAttempts);
   }
 
   /**
@@ -127,43 +67,41 @@ class CropsService {
       totalUpdated += result.updated || 0;
       totalErrors += result.errors || 0;
 
-      // Only continue if new records were inserted in this attempt
-      hasMoreData = (result.inserted || 0) > 0;
+      const hasNewData = (result.inserted || 0) > 0;
+      hasMoreData = hasNewData;
+
+      console.log(
+        `🔍 Attempt ${attempt}: Inserted ${result.inserted}, Continue: ${hasMoreData}`
+      );
+
       attempt++;
     }
 
-    const finalCount = await this._getDatabaseCount();
-
-    CropsLogger.logFinalResults(
-      "ALL",
-      finalCount,
-      attempt - 1,
-      maxAttempts,
-      STATUS.SUCCESS
-    );
-
-    return {
-      message: `Fetch loop completed - ALL records fetched`,
-      achieved: finalCount,
-      attemptsUsed: attempt - 1,
-      maxAttempts: maxAttempts,
-      inserted: totalInserted,
-      updated: totalUpdated,
-      errors: totalErrors,
-      status: STATUS.SUCCESS,
-      reachedTarget: true,
-    };
+    return this._buildFinalResult("ALL", attempt - 1, maxAttempts);
   }
 
   /**
-   * Returns the current count of crop records in the database.
-   * @returns {Promise<number>} - The total number of crops in the DB.
+   * Returns the current count of crops records in the database.
+   * Pattern 1: Direct database operation in service layer
+   */
+  static async getCount() {
+    try {
+      const [result] = await connectionDB
+        .promise()
+        .query("SELECT COUNT(*) as total FROM crops");
+      return result[0].total;
+    } catch (error) {
+      console.error("❌ Error getting crops count:", error);
+      return 0;
+    }
+  }
+
+  /**
+   * Direct database operation in service layer (for consistency)
+   * @private
    */
   static async _getDatabaseCount() {
-    const [result] = await connectionDB
-      .promise()
-      .query("SELECT COUNT(*) as total FROM crops");
-    return result[0].total;
+    return await this.getCount();
   }
 
   /**
@@ -174,9 +112,14 @@ class CropsService {
    * @returns {object} - Summary of the fetch operation.
    */
   static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
-    const finalCount = await this._getDatabaseCount();
-    const status =
-      finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    const finalCount = await this.getCount(); // ✅ Use service-level getCount()
+    let status;
+    // All handle "ALL" target correctly
+    if (targetCount === "ALL") {
+      status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    } else {
+      status = finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    }
 
     CropsLogger.logFinalResults(
       targetCount,
@@ -194,12 +137,6 @@ class CropsService {
       maxAttempts: maxAttempts,
       status: status,
       reachedTarget: finalCount >= targetCount,
-      apis: ["GetCrops", "GetCropHarvests"],
-      table: "crops",
     };
   }
 }
-
-// ===================== Exports =====================
-// Export the CropsService class for use in controllers and routes
-module.exports = CropsService;

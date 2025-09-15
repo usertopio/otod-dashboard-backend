@@ -1,7 +1,8 @@
-const express = require("express");
+import express from "express";
+import { fetchOperations } from "../controllers/operationsCon.js";
+
 const router = express.Router();
-const { fetchOperations } = require("../controllers/operationsCon.js");
 
 router.post("/fetchOperations", fetchOperations);
 
-module.exports = router;
+export default router;

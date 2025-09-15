@@ -1,14 +1,14 @@
 // ===================== Imports =====================
 // Import API client for fetching merchants data
-const { getMerchants } = require("../api/merchants");
+import { getMerchants } from "../api/merchants.js";
 // Import DB helper for upserting merchant records
-const { insertOrUpdateMerchant } = require("../db/merchantsDb");
+import { bulkInsertOrUpdateMerchants } from "../db/merchantsDb.js";
 // Import DB connection for direct queries
-const { connectionDB } = require("../../config/db/db.conf.js");
+import { connectionDB } from "../../config/db/db.conf.js";
 // Import config constants and operation enums
-const { MERCHANTS_CONFIG, OPERATIONS } = require("../../utils/constants");
+import { MERCHANTS_CONFIG, OPERATIONS } from "../../utils/constants.js";
 // Import logger for structured process logging
-const MerchantsLogger = require("./merchantsLogger");
+import MerchantsLogger from "./merchantsLogger.js";
 
 // ===================== Processor =====================
 // MerchantsProcessor handles fetching, deduplication, and DB upserts for merchants.
@@ -45,19 +45,32 @@ class MerchantsProcessor {
       uniqueMerchants.length
     );
 
-    // Upsert each unique merchant into the DB and update metrics
-    await this._processUniqueMerchants(uniqueMerchants, metrics);
+    // Process all merchants at once
+    console.log(
+      `🚀 Processing ${uniqueMerchants.length} unique merchants using BULK operations...`
+    );
+
+    const bulkResult = await bulkInsertOrUpdateMerchants(uniqueMerchants);
 
     // Get DB count after processing
     const dbCountAfter = await this._getDatabaseCount();
 
-    // Build and return a detailed result object
-    return this._buildResult(metrics, dbCountBefore, dbCountAfter);
+    // Return simplified result compatible with service
+    return {
+      inserted: bulkResult.inserted || 0,
+      updated: bulkResult.updated || 0,
+      errors: bulkResult.errors || 0,
+      totalProcessed: uniqueMerchants.length,
+      totalBefore: dbCountBefore,
+      totalAfter: dbCountAfter,
+      growth: dbCountAfter - dbCountBefore,
+      // Keep for compatibility
+      allMerchantsAllPages: metrics.allMerchantsAllPages,
+    };
   }
 
   /**
    * Fetches all pages of merchants from the API and logs each page.
-   * @param {number} pages - Number of pages to fetch.
    * @param {object} metrics - Metrics object to accumulate results.
    */
   static async _fetchMerchantsPages(metrics) {
@@ -105,34 +118,6 @@ class MerchantsProcessor {
   }
 
   /**
-   * Upserts each unique merchant into the DB and updates metrics.
-   * @param {Array} uniqueMerchants - Array of unique merchants.
-   * @param {object} metrics - Metrics object to update.
-   */
-  static async _processUniqueMerchants(uniqueMerchants, metrics) {
-    for (const merchant of uniqueMerchants) {
-      const result = await insertOrUpdateMerchant(merchant);
-
-      switch (result.operation) {
-        case OPERATIONS.INSERT:
-          metrics.insertCount++;
-          metrics.newRecIds.push(merchant.recId);
-          break;
-        case OPERATIONS.UPDATE:
-          metrics.updateCount++;
-          metrics.updatedRecIds.push(merchant.recId);
-          break;
-        case OPERATIONS.ERROR:
-          metrics.errorCount++;
-          metrics.errorRecIds.push(merchant.recId);
-          break;
-      }
-
-      metrics.processedRecIds.add(merchant.recId);
-    }
-  }
-
-  /**
    * Gets the current count of merchants in the DB.
    * @returns {Promise<number>} - Total number of merchants.
    */
@@ -142,51 +127,7 @@ class MerchantsProcessor {
       .query("SELECT COUNT(*) as total FROM merchants");
     return result[0].total;
   }
-
-  /**
-   * Builds a detailed result object with metrics and insights.
-   * @param {object} metrics - Metrics object.
-   * @param {number} dbCountBefore - DB count before processing.
-   * @param {number} dbCountAfter - DB count after processing.
-   * @returns {object} - Result summary.
-   */
-  static _buildResult(metrics, dbCountBefore, dbCountAfter) {
-    return {
-      // Database metrics
-      totalBefore: dbCountBefore,
-      totalAfter: dbCountAfter,
-      inserted: metrics.insertCount,
-      updated: metrics.updateCount,
-      errors: metrics.errorCount,
-      growth: dbCountAfter - dbCountBefore,
-
-      // API metrics
-      totalFromAPI: metrics.allMerchantsAllPages.length,
-      uniqueFromAPI: metrics.allMerchantsAllPages.filter(
-        (merchant, index, self) =>
-          index === self.findIndex((m) => m.recId === merchant.recId)
-      ).length,
-      duplicatedDataAmount:
-        metrics.allMerchantsAllPages.length -
-        metrics.insertCount -
-        metrics.updateCount,
-
-      // Record tracking
-      newRecIds: metrics.newRecIds,
-      updatedRecIds: metrics.updatedRecIds,
-      errorRecIds: metrics.errorRecIds,
-      processedRecIds: Array.from(metrics.processedRecIds),
-
-      // Additional insights
-      recordsInDbNotInAPI: dbCountBefore - metrics.updateCount,
-      totalProcessingOperations:
-        metrics.insertCount + metrics.updateCount + metrics.errorCount,
-
-      // For compatibility
-      allMerchantsAllPages: metrics.allMerchantsAllPages,
-    };
-  }
 }
 
 // ===================== Exports =====================
-module.exports = MerchantsProcessor;
+export default MerchantsProcessor;

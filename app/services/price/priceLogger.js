@@ -1,27 +1,26 @@
 // ===================== Logger =====================
-// GapLogger provides structured logging for the GAP fetch/process workflow.
-export default class GapLogger {
-  static logTargetStart(targetCount, maxAttempts) {
-    console.log(
-      `🎯 Target: ${targetCount} gap certificates, Max attempts: ${maxAttempts}`
-    );
-    console.log("");
-  }
-
+// PriceLogger provides structured logging for the avg price fetch/process workflow.
+export default class PriceLogger {
+  /**
+   * Logs the start of an attempt.
+   */
   static logAttemptStart(attempt, maxAttempts) {
-    console.log(`\n🔄 === ATTEMPT ${attempt}/${maxAttempts} ===`);
+    console.log(`\n🚀 Attempt ${attempt} of ${maxAttempts}`);
   }
 
+  /**
+   * Logs the current status of the database.
+   */
   static logCurrentStatus(currentCount, targetCount) {
     console.log(
-      `📊 Current gap certificates in DB: ${currentCount}/${targetCount}`
+      `📊 Current avg price records in DB: ${currentCount}/${targetCount}`
     );
 
     if (currentCount < targetCount) {
       console.log(
         `📊 Need ${
           targetCount - currentCount
-        } more gap certificates - calling API...`
+        } more avg price records - calling API...`
       );
     } else {
       console.log(
@@ -30,12 +29,18 @@ export default class GapLogger {
     }
   }
 
+  /**
+   * Logs when the target is reached.
+   */
   static logTargetReached(targetCount, attemptsUsed) {
     console.log(
       `🎯 Target of ${targetCount} reached after ${attemptsUsed} attempts`
     );
   }
 
+  /**
+   * Logs the final results of the fetch operation.
+   */
   static logFinalResults(
     targetCount,
     achieved,
@@ -50,22 +55,21 @@ export default class GapLogger {
     console.log(`✅ Status: ${status}`);
   }
 
+  /**
+   * Logs the results of a single attempt.
+   */
   static logAttemptResults(attempt, result) {
     console.log(`📈 Attempt ${attempt} completed:`);
     console.log(`   ➕ Inserted: ${result.inserted}`);
     console.log(`   🔄 Updated: ${result.updated}`);
     console.log(`   ❌ Errors: ${result.errors}`);
     console.log(`   📊 Total now: ${result.totalAfter}`);
-
-    if (result.recordsInDbNotInAPI > 0) {
-      console.log(
-        `📍 Records in DB but not in current API: ${result.recordsInDbNotInAPI}`
-      );
-    }
-
     console.log("==========================================\n");
   }
 
+  /**
+   * Logs API metrics for the current batch.
+   */
   static _logApiMetrics(result) {
     console.log("\n📊 === API METRICS ===");
     console.log(
@@ -78,6 +82,9 @@ export default class GapLogger {
     console.log(`🔄 Duplicated data amount: ${result.duplicatedDataAmount}`);
   }
 
+  /**
+   * Logs database metrics for the current batch.
+   */
   static _logDatabaseMetrics(result) {
     console.log("\n📊 === DATABASE METRICS ===");
     console.log(`📊 Previous amount records in table: ${result.totalBefore}`);
@@ -87,29 +94,49 @@ export default class GapLogger {
     console.log(`❌ Records with ERRORS: ${result.errors}`);
   }
 
+  /**
+   * Logs additional insights for the current batch.
+   */
   static _logInsights(result) {
     console.log("\n📊 === ADDITIONAL INSIGHTS ===");
-    console.log(
-      `📋 Total processing operations: ${result.totalProcessingOperations}`
-    );
-    console.log(
-      `📍 Records in DB but not in current API: ${result.recordsInDbNotInAPI}`
-    );
-    console.log(`⏱️ Database growth: ${result.growth} records`);
+    if (result.totalProcessingOperations !== undefined) {
+      console.log(
+        `📋 Total processing operations: ${result.totalProcessingOperations}`
+      );
+    }
+    if (result.recordsInDbNotInAPI !== undefined) {
+      console.log(
+        `📍 Records in DB but not in current API: ${result.recordsInDbNotInAPI}`
+      );
+    }
+    if (result.growth !== undefined) {
+      console.log(`⏱️ Database growth: ${result.growth} records`);
+    }
   }
 
+  /**
+   * Logs error recIds for failed upserts.
+   */
   static _logErrorRecIds(result) {
-    if (result.errorRecIds.length > 0) {
-      console.log(`\n❌ ERROR REC_IDS (${result.errorRecIds.length}):`);
+    if (result.errorRecIds && result.errorRecIds.length > 0) {
+      console.log(
+        `\n❌ ERROR AVG PRICE RECORDS (${result.errorRecIds.length}):`
+      );
       console.log(`   [${result.errorRecIds.slice(0, 10).join(", ")}]`);
     }
   }
 
-  static logPageInfo(year, page, records) {
+  /**
+   * Logs info for each API page.
+   */
+  static logPageInfo(page, records) {
     const safeRecords = Array.isArray(records) ? records : [];
-    console.log(`📄 Year: ${year} Page: ${page} Length: ${safeRecords.length}`);
+    console.log(`📄 Page ${page}: Length: ${safeRecords.length}`);
   }
 
+  /**
+   * Logs API summary after deduplication.
+   */
   static logApiSummary(totalFromAPI, uniqueCount) {
     console.log(`📊 Total from API: ${totalFromAPI}, Unique: ${uniqueCount}`);
   }

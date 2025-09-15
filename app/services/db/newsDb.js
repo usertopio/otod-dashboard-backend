@@ -1,186 +1,248 @@
 // ===================== Imports =====================
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { OPERATIONS } = require("../../utils/constants");
+// Import DB connection for executing SQL queries
+import { connectionDB } from "../../config/db/db.conf.js";
 
-// ===================== Reference Lookup =====================
 /**
- * Ensures a reference code exists in the table, inserts if not found.
- * @param {string} table - Reference table name.
- * @param {string} nameColumn - Column for the name.
- * @param {string} codeColumn - Column for the code.
- * @param {string} name - Name to look up or insert.
- * @param {string} generatedCodePrefix - Prefix for generated codes.
- * @returns {Promise<string>} - The code.
+ * Get Bangkok timezone timestamp as MySQL-compatible string
  */
-async function ensureRefCode(
+const getBangkokTime = () => {
+  return new Date()
+    .toLocaleString("sv-SE", {
+      timeZone: "Asia/Bangkok",
+    })
+    .replace(" ", "T");
+};
+
+/**
+ * Bulk ensure reference codes for a list of names
+ */
+async function bulkEnsureRefCodes(
   table,
   nameColumn,
   codeColumn,
-  name,
-  generatedCodePrefix
+  names,
+  prefix
 ) {
-  if (!name) return null;
+  if (!names || names.length === 0) return new Map();
 
   try {
+    // Get existing codes in one query
     const [existing] = await connectionDB
       .promise()
       .query(
-        `SELECT ${codeColumn} FROM ${table} WHERE ${nameColumn} = ? LIMIT 1`,
-        [name]
+        `SELECT ${nameColumn}, ${codeColumn} FROM ${table} WHERE ${nameColumn} IN (?)`,
+        [names]
       );
 
-    if (existing.length > 0) {
-      return existing[0][codeColumn];
-    } else {
+    const codeMap = new Map();
+    existing.forEach((row) => {
+      codeMap.set(row[nameColumn], row[codeColumn]);
+    });
+
+    // Find missing names
+    const missingNames = names.filter((name) => !codeMap.has(name));
+
+    if (missingNames.length > 0) {
+      // Generate codes for missing names
       const [maxResult] = await connectionDB
         .promise()
         .query(
-          `SELECT MAX(CAST(${codeColumn} AS UNSIGNED)) AS maxId FROM ${table}`
+          `SELECT ${codeColumn} FROM ${table} WHERE ${codeColumn} LIKE '${prefix}%' ORDER BY ${codeColumn} DESC LIMIT 1`
         );
 
-      let newCode;
-      if (maxResult.length > 0 && maxResult[0].maxId !== null) {
-        newCode = String(Number(maxResult[0].maxId) + 1);
-      } else {
-        newCode = "1";
+      let nextNumber = 1;
+      if (maxResult.length > 0) {
+        const lastCode = maxResult[0][codeColumn];
+        nextNumber = parseInt(lastCode.replace(prefix, "")) + 1;
       }
 
-      // Insert new code if not found
-      await connectionDB
-        .promise()
-        .query(
-          `INSERT INTO ${table} (${codeColumn}, ${nameColumn}) VALUES (?, ?)`,
-          [newCode, name]
-        );
+      // Bulk insert missing codes
+      const insertData = missingNames.map((name, index) => {
+        const code = `${prefix}${String(nextNumber + index).padStart(3, "0")}`;
+        codeMap.set(name, code);
+        return [code, name, "generated"];
+      });
 
-      console.log(`🆕 Created new ${table}: ${newCode} = "${name}"`);
-      return newCode;
+      const insertQuery = `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES ?`;
+      await connectionDB.promise().query(insertQuery, [insertData]);
+
+      console.log(`🆕 Created ${insertData.length} new ${table} codes`);
     }
+
+    return codeMap;
   } catch (err) {
-    console.error(`${table} lookup error:`, err.message);
-    return null;
+    console.error(`Bulk ${table} lookup error:`, err);
+    return new Map();
   }
 }
 
-// ===================== Insert/Update =====================
 /**
- * Inserts or updates a news record in the database.
- * Maps province and news group to codes, checks for existence, and upserts accordingly.
- * @param {object} news - News data object.
- * @returns {Promise<object>} - Operation result.
+ * Bulk process reference codes for all news at once
  */
-const insertOrUpdateNews = async (news) => {
+export async function bulkProcessReferenceCodes(newsRecords) {
+  console.time("Reference codes processing");
+
   try {
-    // Convert province and news group to codes
-    const provinceCode = await ensureRefCode(
-      "ref_provinces",
-      "province_name_th",
-      "province_code",
-      news.province,
-      "GPROV"
+    // Get unique values
+    const provinces = [
+      ...new Set(newsRecords.map((n) => n.province).filter(Boolean)),
+    ];
+    const newsGroups = [
+      ...new Set(newsRecords.map((n) => n.newsGroup).filter(Boolean)),
+    ];
+
+    // Bulk lookup/create all reference codes
+    const [provinceCodes, newsGroupCodes] = await Promise.all([
+      bulkEnsureRefCodes(
+        "ref_provinces",
+        "province_name_th",
+        "province_code",
+        provinces,
+        "GPROV"
+      ),
+      bulkEnsureRefCodes(
+        "ref_news_groups",
+        "news_group_name",
+        "news_group_id",
+        newsGroups,
+        "NG"
+      ),
+    ]);
+
+    console.timeEnd("Reference codes processing");
+    return { provinceCodes, newsGroupCodes };
+  } catch (error) {
+    console.error("❌ Error in bulkProcessReferenceCodes:", error);
+    console.timeEnd("Reference codes processing");
+    return { provinceCodes: new Map(), newsGroupCodes: new Map() };
+  }
+}
+
+/**
+ * Bulk insert or update news using INSERT ... ON DUPLICATE KEY UPDATE
+ * @param {Array} newsRecords - Array of news objects
+ * @returns {Promise<object>} - Bulk operation result
+ */
+export async function bulkInsertOrUpdateNews(newsRecords) {
+  if (!newsRecords || newsRecords.length === 0) {
+    return { inserted: 0, updated: 0, errors: 0, skipped: 0 };
+  }
+
+  const connection = connectionDB.promise();
+
+  try {
+    console.time("Reference codes processing");
+
+    // BULK process all reference codes at once
+    const { provinceCodes, newsGroupCodes } = await bulkProcessReferenceCodes(
+      newsRecords
     );
 
-    const newsGroupCode = await ensureRefCode(
-      "ref_news_groups",
-      "news_group_name",
-      "news_group_id",
-      news.newsGroup,
-      "NG"
+    console.timeEnd("Reference codes processing");
+    console.time("Data preparation");
+
+    // Get current count before operation
+    const [countBefore] = await connection.query(
+      "SELECT COUNT(*) as count FROM news"
+    );
+    const beforeCount = countBefore[0].count;
+
+    // Get Bangkok time
+    const bangkokTime = getBangkokTime();
+
+    // Validate and prepare news data
+    const validNews = newsRecords.map((news) => [
+      news.recId,
+      provinceCodes.get(news.province) || null,
+      news.newsId,
+      news.announceDate || null,
+      newsGroupCodes.get(news.newsGroup) || null,
+      news.newsTopic || news.newsTitle || null,
+      news.newsDetail || news.newsContent || null,
+      news.noOfLike || 0,
+      news.noOfComments || 0,
+      news.createdTime || news.createdAt,
+      news.updatedTime || news.updatedAt,
+      news.companyId,
+      bangkokTime,
+    ]);
+
+    console.log(
+      `📊 Validation: ${validNews.length} valid, 0 skipped news records`
     );
 
-    // === Prepare values ===
-    const values = {
-      rec_id: news.recId,
-      news_province_code: provinceCode,
-      news_id: news.newsId,
-      announce_date: news.announceDate || null,
-      news_group_id: newsGroupCode,
-      news_topic: news.newsTopic || null,
-      news_detail: news.newsDetail || null,
-      no_of_like: news.noOfLike || null,
-      no_of_comments: news.noOfComments || null,
-      created_at: news.createdTime || null,
-      updated_at: news.updatedTime || null,
-      fetch_at: new Date(),
-      company_id: news.companyId || null,
-    };
+    let actualInserts = 0;
+    let actualUpdates = 0;
+    let result = null;
 
-    // Check if news already exists
-    const [existing] = await connectionDB
-      .promise()
-      .query(`SELECT id FROM news WHERE rec_id = ? LIMIT 1`, [values.rec_id]);
+    if (validNews.length > 0) {
+      console.timeEnd("Data preparation");
+      console.time("Bulk database operation");
 
-    if (existing.length > 0) {
-      // UPDATE existing news
-      await connectionDB.promise().query(
-        `UPDATE news SET 
-         news_province_code = ?, 
-         news_id = ?, 
-         announce_date = ?, 
-         news_group_id = ?, 
-         news_topic = ?, 
-         news_detail = ?, 
-         no_of_like = ?, 
-         no_of_comments = ?, 
-         updated_at = ?, 
-         fetch_at = ?,
-         company_id = ?
-         WHERE rec_id = ?`,
-        [
-          values.news_province_code,
-          values.news_id,
-          values.announce_date,
-          values.news_group_id,
-          values.news_topic,
-          values.news_detail,
-          values.no_of_like,
-          values.no_of_comments,
-          values.updated_at,
-          values.fetch_at,
-          values.company_id,
-          values.rec_id,
-        ]
+      const sql = `
+        INSERT INTO news (
+          rec_id, news_province_code, news_id, announce_date, news_group_id,
+          news_topic, news_detail, no_of_like, no_of_comments,
+          created_at, updated_at, company_id, fetch_at
+        ) VALUES ? 
+        ON DUPLICATE KEY UPDATE
+          news_province_code = VALUES(news_province_code),
+          news_id = VALUES(news_id),
+          announce_date = VALUES(announce_date),
+          news_group_id = VALUES(news_group_id),
+          news_topic = VALUES(news_topic),
+          news_detail = VALUES(news_detail),
+          no_of_like = VALUES(no_of_like),
+          no_of_comments = VALUES(no_of_comments),
+          updated_at = VALUES(updated_at),
+          company_id = VALUES(company_id),
+          fetch_at = VALUES(fetch_at)
+      `;
+
+      // Use validNews directly
+      [result] = await connection.query(sql, [validNews]);
+
+      console.timeEnd("Bulk database operation");
+
+      // Get count after operation
+      const [countAfter] = await connection.query(
+        "SELECT COUNT(*) as count FROM news"
       );
+      const afterCount = countAfter[0].count;
 
-      return { operation: OPERATIONS.UPDATE, recId: values.rec_id };
+      actualInserts = afterCount - beforeCount;
+      actualUpdates = validNews.length - actualInserts;
     } else {
-      // INSERT new news
-      await connectionDB.promise().query(
-        `INSERT INTO news 
-         (rec_id, news_province_code, news_id, announce_date, 
-          news_group_id, news_topic, news_detail, no_of_like, 
-          no_of_comments, created_at, updated_at, fetch_at, company_id) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          values.rec_id,
-          values.news_province_code,
-          values.news_id,
-          values.announce_date,
-          values.news_group_id,
-          values.news_topic,
-          values.news_detail,
-          values.no_of_like,
-          values.no_of_comments,
-          values.created_at,
-          values.updated_at,
-          values.fetch_at,
-          values.company_id,
-        ]
-      );
-
-      return { operation: OPERATIONS.INSERT, recId: values.rec_id };
+      console.timeEnd("Data preparation");
+      console.log("⚠️  No valid news records to process");
     }
-  } catch (err) {
-    console.error("News insert/update error:", err);
+
+    console.log(
+      `📊 Bulk operation: ${actualInserts} inserted, ${actualUpdates} updated, 0 skipped`
+    );
+    console.log(
+      `📊 Database: ${beforeCount} → ${beforeCount + actualInserts} (${
+        actualInserts > 0 ? "+" + actualInserts : "no change"
+      })`
+    );
+
     return {
-      operation: OPERATIONS.ERROR,
-      recId: news.recId,
-      error: err.message,
+      inserted: actualInserts,
+      updated: Math.max(0, actualUpdates),
+      errors: 0,
+      skipped: 0,
+      totalProcessed: newsRecords.length,
+      affectedRows: result?.affectedRows || 0,
+    };
+  } catch (error) {
+    console.error("❌ Bulk news insert/update error:", error);
+    return {
+      inserted: 0,
+      updated: 0,
+      errors: newsRecords.length,
+      skipped: 0,
+      totalProcessed: newsRecords.length,
+      error: error.message,
     };
   }
-};
-
-// ===================== Exports =====================
-module.exports = {
-  insertOrUpdateNews,
-};
+}

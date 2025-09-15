@@ -1,11 +1,10 @@
 // ===================== Imports =====================
-// Import the GapService for business logic
-const GapService = require("../services/gap/gapService");
-const { GAP_CONFIG } = require("../utils/constants");
+import GapService from "../services/gap/gapService.js";
+import { GAP_CONFIG } from "../utils/constants.js";
 
 // ===================== Controller =====================
 // Handles HTTP requests for GAP-related operations
-const fetchGap = async (req, res) => {
+export const fetchGap = async (req, res) => {
   try {
     // Get maxAttempts from request body or use default
     const maxAttempts =
@@ -24,9 +23,4 @@ const fetchGap = async (req, res) => {
       error: err.message,
     });
   }
-};
-
-// ===================== Exports =====================
-module.exports = {
-  fetchGap,
 };

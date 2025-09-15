@@ -1,10 +1,10 @@
 // ===================== Imports =====================
 // Import API client for fetching substance usage summary
-const { getSubstanceUsageSummaryByMonth } = require("../api/substance");
-const { insertOrUpdateSubstance } = require("../db/substanceDb");
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { SUBSTANCE_CONFIG, OPERATIONS } = require("../../utils/constants");
-const SubstanceLogger = require("./substanceLogger");
+import { getSubstanceUsageSummaryByMonth } from "../api/substance.js";
+import { bulkInsertOrUpdateSubstances } from "../db/substanceDb.js";
+import { connectionDB } from "../../config/db/db.conf.js";
+import { SUBSTANCE_CONFIG, OPERATIONS } from "../../utils/constants.js";
+import SubstanceLogger from "./substanceLogger.js";
 
 // ===================== Processor =====================
 // SubstanceProcessor handles fetching, deduplication, and DB upserts for substance usage summary.
@@ -14,45 +14,56 @@ class SubstanceProcessor {
    * Returns a result object with metrics and tracking info.
    */
   static async fetchAndProcessData() {
-    // Initialize counters
-    const metrics = {
-      allSubstanceAllPages: [],
-      insertCount: 0,
-      updateCount: 0,
-      errorCount: 0,
-      processedRecIds: new Set(),
-      newRecIds: [],
-      updatedRecIds: [],
-      errorRecIds: [],
-    };
-
     // Get database count before processing
     const dbCountBefore = await this._getDatabaseCount();
 
-    // Fetch data from API (single call)
+    // Initialize metrics
+    const metrics = {
+      allSubstanceAllPages: [],
+    };
+
+    // Fetch data from API (single call per year)
     await this._fetchSubstanceByMonth(metrics);
 
     // Process unique substance records
     const uniqueSubstance = this._getUniqueSubstance(
       metrics.allSubstanceAllPages
     );
+
     SubstanceLogger.logApiSummary(
       metrics.allSubstanceAllPages.length,
       uniqueSubstance.length
     );
 
-    // Process each unique substance record
-    await this._processUniqueSubstance(uniqueSubstance, metrics);
+    // Process all substances at once
+    console.log(
+      `🚀 Processing ${uniqueSubstance.length} unique substances using BULK operations...`
+    );
+
+    const bulkResult = await bulkInsertOrUpdateSubstances(uniqueSubstance);
 
     // Get database count after processing
     const dbCountAfter = await this._getDatabaseCount();
 
-    return this._buildResult(metrics, dbCountBefore, dbCountAfter);
+    // Return simplified result compatible with service
+    return {
+      inserted: bulkResult.inserted || 0,
+      updated: bulkResult.updated || 0,
+      errors: bulkResult.errors || 0,
+      totalProcessed: uniqueSubstance.length,
+      totalBefore: dbCountBefore,
+      totalAfter: dbCountAfter,
+      growth: dbCountAfter - dbCountBefore,
+
+      // Keep existing properties for compatibility
+      allSubstanceAllPages: metrics.allSubstanceAllPages,
+      uniqueFromAPI: uniqueSubstance.length,
+      totalFromAPI: metrics.allSubstanceAllPages.length,
+    };
   }
 
   /**
    * Fetches all pages of substance usage summary from the API and logs each page.
-   * @param {number} pages - Number of pages to fetch (always 1).
    * @param {object} metrics - Metrics object to accumulate results.
    */
   static async _fetchSubstanceByMonth(metrics) {
@@ -65,10 +76,6 @@ class SubstanceProcessor {
         cropYear: year,
         provinceName: "",
       };
-
-      // const customHeaders = {
-      //   Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-      // };
 
       const substanceResponse = await getSubstanceUsageSummaryByMonth(
         requestBody
@@ -101,37 +108,6 @@ class SubstanceProcessor {
   }
 
   /**
-   * Upserts each unique substance record into the DB and updates metrics.
-   * @param {Array} uniqueSubstance - Array of unique substance records.
-   * @param {object} metrics - Metrics object to update.
-   */
-  static async _processUniqueSubstance(uniqueSubstance, metrics) {
-    for (const substance of uniqueSubstance) {
-      const result = await insertOrUpdateSubstance(substance);
-
-      // Create unique ID for tracking
-      const substanceRecId = `${substance.cropYear}-${substance.provinceName}-${substance.operMonth}-${substance.substance}`;
-
-      switch (result.operation) {
-        case OPERATIONS.INSERT:
-          metrics.insertCount++;
-          metrics.newRecIds.push(substanceRecId);
-          break;
-        case OPERATIONS.UPDATE:
-          metrics.updateCount++;
-          metrics.updatedRecIds.push(substanceRecId);
-          break;
-        case OPERATIONS.ERROR:
-          metrics.errorCount++;
-          metrics.errorRecIds.push(substanceRecId);
-          break;
-      }
-
-      metrics.processedRecIds.add(substanceRecId);
-    }
-  }
-
-  /**
    * Gets the current count of substance records in the DB.
    * @returns {Promise<number>} - Total number of substance records.
    */
@@ -141,58 +117,6 @@ class SubstanceProcessor {
       .query("SELECT COUNT(*) as total FROM substance");
     return result[0].total;
   }
-
-  /**
-   * Builds a detailed result object with metrics and insights.
-   * @param {object} metrics - Metrics object.
-   * @param {number} dbCountBefore - DB count before processing.
-   * @param {number} dbCountAfter - DB count after processing.
-   * @returns {object} - Result summary.
-   */
-  static _buildResult(metrics, dbCountBefore, dbCountAfter) {
-    return {
-      // Database metrics
-      totalBefore: dbCountBefore,
-      totalAfter: dbCountAfter,
-      inserted: metrics.insertCount,
-      updated: metrics.updateCount,
-      errors: metrics.errorCount,
-      growth: dbCountAfter - dbCountBefore,
-
-      // API metrics
-      totalFromAPI: metrics.allSubstanceAllPages.length,
-      uniqueFromAPI: metrics.allSubstanceAllPages.filter(
-        (substance, index, self) =>
-          index ===
-          self.findIndex(
-            (s) =>
-              s.cropYear === substance.cropYear &&
-              s.provinceName === substance.provinceName &&
-              s.operMonth === substance.operMonth &&
-              s.substance === substance.substance
-          )
-      ).length,
-      duplicatedDataAmount:
-        metrics.allSubstanceAllPages.length -
-        metrics.insertCount -
-        metrics.updateCount,
-
-      // Record tracking
-      newRecIds: metrics.newRecIds,
-      updatedRecIds: metrics.updatedRecIds,
-      errorRecIds: metrics.errorRecIds,
-      processedRecIds: Array.from(metrics.processedRecIds),
-
-      // Additional insights
-      recordsInDbNotInAPI: dbCountBefore - metrics.updateCount,
-      totalProcessingOperations:
-        metrics.insertCount + metrics.updateCount + metrics.errorCount,
-
-      // For compatibility
-      allSubstanceAllPages: metrics.allSubstanceAllPages,
-    };
-  }
 }
 
-// ===================== Exports =====================
-module.exports = SubstanceProcessor;
+export default SubstanceProcessor;

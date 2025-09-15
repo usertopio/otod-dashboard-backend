@@ -1,12 +1,12 @@
 // ===================== Imports =====================
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { GAP_CONFIG, STATUS } = require("../../utils/constants");
-const GapProcessor = require("./gapProcessor");
-const GapLogger = require("./gapLogger");
+import { connectionDB } from "../../config/db/db.conf.js";
+import { GAP_CONFIG, STATUS } from "../../utils/constants.js";
+import GapProcessor from "./gapProcessor.js";
+import GapLogger from "./gapLogger.js";
 
 // ===================== Service =====================
 // GapService handles the business logic for fetching, resetting, and managing GAP certificate records.
-class GapService {
+export default class GapService {
   /**
    * Resets only the gap table in the database.
    * - Disables foreign key checks to allow truncation.
@@ -40,50 +40,6 @@ class GapService {
   }
 
   /**
-   * Main entry point for fetching GAP certificates from the API and storing them in the database.
-   * - Resets the gap table before starting.
-   * - Loops up to maxAttempts, fetching and processing data each time.
-   * - Logs progress and metrics for each attempt.
-   * - Stops early if the target number of records is reached.
-   * - Returns a summary result object.
-   * @param {number} targetCount - The number of records to fetch and store.
-   * @param {number} maxAttempts - The maximum number of fetch attempts.
-   */
-  static async fetchGap(targetCount, maxAttempts) {
-    await this.resetOnlyGapTable();
-
-    let attempt = 1;
-    let currentCount = 0;
-    let attemptsUsed = 0;
-
-    console.log(
-      `🎯 Target: ${targetCount} gap certificates, Max attempts: ${maxAttempts}`
-    );
-
-    while (attempt <= maxAttempts) {
-      GapLogger.logAttemptStart(attempt, maxAttempts);
-
-      currentCount = await this._getDatabaseCount();
-      GapLogger.logCurrentStatus(currentCount, targetCount);
-
-      attemptsUsed++;
-      const result = await GapProcessor.fetchAndProcessData();
-
-      GapLogger.logAttemptResults(attempt, result);
-
-      currentCount = result.totalAfter;
-      attempt++;
-
-      if (currentCount >= targetCount) {
-        GapLogger.logTargetReached(targetCount, attemptsUsed);
-        break;
-      }
-    }
-
-    return this._buildFinalResult(targetCount, attemptsUsed, maxAttempts);
-  }
-
-  /**
    * Fetches ALL GAP certificates from the API and stores them in the database.
    * Loops up to maxAttempts, stops early if no new records are inserted.
    * Returns a summary result object.
@@ -113,8 +69,25 @@ class GapService {
       totalUpdated += result.updated || 0;
       totalErrors += result.errors || 0;
 
-      // Only continue if new records were inserted in this attempt
+      // ✅ STANDARD TERMINATION: Same as other modules
       hasMoreData = (result.inserted || 0) > 0;
+
+      // ✅ ADD: Early termination for efficiency
+      if (
+        attempt === 1 &&
+        (result.inserted || 0) > 0 &&
+        (result.errors || 0) === 0
+      ) {
+        console.log(
+          `✅ First attempt successful with ${result.inserted} records - stopping`
+        );
+        hasMoreData = false;
+      }
+
+      console.log(
+        `🔍 Attempt ${attempt}: Inserted ${result.inserted}, Continue: ${hasMoreData}`
+      );
+
       attempt++;
     }
 
@@ -162,8 +135,14 @@ class GapService {
    */
   static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
     const finalCount = await this._getDatabaseCount();
-    const status =
-      finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    let status;
+
+    // All handle "ALL" target correctly
+    if (targetCount === "ALL") {
+      status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    } else {
+      status = finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    }
 
     GapLogger.logFinalResults(
       targetCount,
@@ -184,6 +163,3 @@ class GapService {
     };
   }
 }
-
-// ===================== Exports =====================
-module.exports = GapService;

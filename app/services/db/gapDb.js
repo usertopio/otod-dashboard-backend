@@ -1,75 +1,170 @@
 // ===================== Imports =====================
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { OPERATIONS } = require("../../utils/constants");
+// Import DB connection for executing SQL queries
+import { connectionDB } from "../../config/db/db.conf.js";
 
-// ===================== Insert/Update =====================
 /**
- * Inserts or updates a GAP certificate record in the database.
- * Checks for existence, and upserts accordingly.
- * @param {object} gap - GAP certificate data object.
- * @returns {Promise<object>} - Operation result.
+ * Get Bangkok timezone timestamp as MySQL-compatible string
  */
-const insertOrUpdateGap = async (gap) => {
+const getBangkokTime = () => {
+  return new Date()
+    .toLocaleString("sv-SE", {
+      timeZone: "Asia/Bangkok",
+    })
+    .replace(" ", "T");
+};
+
+/**
+ * Get all existing land_ids from durian_gardens table for validation
+ */
+async function getValidLandIds() {
   try {
-    // Check if GAP certificate already exists
-    const [existing] = await connectionDB
+    const [result] = await connectionDB
       .promise()
-      .query(`SELECT id FROM gap WHERE gap_cert_number = ? LIMIT 1`, [
+      .query("SELECT land_id FROM durian_gardens");
+    return new Set(result.map((row) => row.land_id));
+  } catch (error) {
+    console.error("Error getting valid land_ids:", error);
+    return new Set();
+  }
+}
+
+/**
+ * Bulk insert or update GAP certificates using INSERT ... ON DUPLICATE KEY UPDATE
+ * @param {Array} gapCertificates - Array of GAP certificate objects
+ * @returns {Promise<object>} - Bulk operation result
+ */
+export async function bulkInsertOrUpdateGap(gapCertificates) {
+  if (!gapCertificates || gapCertificates.length === 0) {
+    return { inserted: 0, updated: 0, errors: 0, skipped: 0 };
+  }
+
+  const connection = connectionDB.promise();
+
+  try {
+    console.time("Land validation");
+
+    // Get all valid land_ids from durian_gardens table
+    const validLandIds = await getValidLandIds();
+
+    console.timeEnd("Land validation");
+    console.time("Data preparation");
+
+    //  Get Bangkok time
+    const bangkokTime = getBangkokTime();
+
+    // Filter GAP certificates with valid land_ids and prepare data
+    const validGapCertificates = [];
+    const skippedGapCertificates = [];
+
+    for (const gap of gapCertificates) {
+      // Skip if gapCertNumber is empty (no GAP certificate)
+      if (!gap.gapCertNumber || gap.gapCertNumber.trim() === "") {
+        skippedGapCertificates.push({
+          landId: gap.landId,
+          reason: "empty_gap_cert_number",
+        });
+        continue;
+      }
+
+      // Validate if land_id exists in durian_gardens table
+      if (!validLandIds.has(gap.landId)) {
+        skippedGapCertificates.push({
+          landId: gap.landId,
+          reason: "missing_land_reference",
+        });
+        continue;
+      }
+
+      // Only map the fields that exist in the table
+      validGapCertificates.push([
         gap.gapCertNumber,
+        gap.gapCertType || null,
+        gap.gapIssuedDate || null,
+        gap.gapExpiryDate || null,
+        gap.farmerId,
+        gap.landId,
+        gap.cropId,
+        bangkokTime,
       ]);
-
-    if (existing.length > 0) {
-      // UPDATE existing GAP certificate
-      await connectionDB.promise().query(
-        `UPDATE gap SET 
-         gap_cert_type = ?, 
-         gap_issued_date = ?, 
-         gap_expiry_date = ?, 
-         farmer_id = ?, 
-         land_id = ?, 
-         fetch_at = NOW()
-         WHERE gap_cert_number = ?`,
-        [
-          gap.gapCertType || null,
-          gap.gapIssuedDate || null,
-          gap.gapExpiryDate || null,
-          gap.farmerId,
-          gap.landId,
-          gap.gapCertNumber,
-        ]
-      );
-
-      return { operation: OPERATIONS.UPDATE, gapCertNumber: gap.gapCertNumber };
-    } else {
-      // INSERT new GAP certificate
-      await connectionDB.promise().query(
-        `INSERT INTO gap 
-         (gap_cert_number, gap_cert_type, gap_issued_date, gap_expiry_date, 
-          farmer_id, land_id, fetch_at) 
-         VALUES (?, ?, ?, ?, ?, ?, NOW())`,
-        [
-          gap.gapCertNumber,
-          gap.gapCertType || null,
-          gap.gapIssuedDate || null,
-          gap.gapExpiryDate || null,
-          gap.farmerId,
-          gap.landId,
-        ]
-      );
-
-      return { operation: OPERATIONS.INSERT, gapCertNumber: gap.gapCertNumber };
     }
-  } catch (err) {
-    console.error("GAP insert/update error:", err);
+
+    console.log(
+      `📊 Validation: ${validGapCertificates.length} valid, ${skippedGapCertificates.length} skipped GAP certificates`
+    );
+
+    if (validGapCertificates.length === 0) {
+      console.log("⚠️  No valid GAP certificates to process");
+      console.timeEnd("Data preparation");
+      return {
+        inserted: 0,
+        updated: 0,
+        errors: 0,
+        skipped: skippedGapCertificates.length,
+      };
+    }
+
+    console.timeEnd("Data preparation");
+    console.time("Bulk database operation");
+
+    // Get count before operation
+    const [countBefore] = await connection.query(
+      "SELECT COUNT(*) as count FROM gap"
+    );
+    const beforeCount = countBefore[0].count;
+
+    const sql = `
+      INSERT INTO gap (
+        gap_cert_number, gap_cert_type, gap_issued_date, gap_expiry_date,
+        farmer_id, land_id, crop_id, fetch_at
+      ) VALUES ?
+      ON DUPLICATE KEY UPDATE
+        gap_cert_type = VALUES(gap_cert_type),
+        gap_issued_date = VALUES(gap_issued_date),
+        gap_expiry_date = VALUES(gap_expiry_date),
+        farmer_id = VALUES(farmer_id),
+        land_id = VALUES(land_id),
+        crop_id = VALUES(crop_id),
+        fetch_at = VALUES(fetch_at)
+    `;
+
+    // Use validGapCertificates directly
+    const [result] = await connection.query(sql, [validGapCertificates]);
+
+    console.timeEnd("Bulk database operation");
+
+    // Get count after operation
+    const [countAfter] = await connection.query(
+      "SELECT COUNT(*) as count FROM gap"
+    );
+    const afterCount = countAfter[0].count;
+
+    const actualInserts = afterCount - beforeCount;
+    const actualUpdates = validGapCertificates.length - actualInserts;
+
+    console.log(
+      `📊 Bulk operation: ${actualInserts} inserted, ${actualUpdates} updated`
+    );
+
     return {
-      operation: OPERATIONS.ERROR,
-      gapCertNumber: gap.gapCertNumber,
-      error: err.message,
+      inserted: actualInserts,
+      updated: actualUpdates,
+      errors: 0,
+      skipped: skippedGapCertificates.length,
+      totalProcessed: gapCertificates.length,
+      affectedRows: result.affectedRows,
+    };
+  } catch (error) {
+    console.error("❌ Bulk GAP insert/update error:", error);
+    return {
+      inserted: 0,
+      updated: 0,
+      errors: gapCertificates.length,
+      skipped: 0,
+      totalProcessed: gapCertificates.length,
+      error: error.message,
     };
   }
-};
+}
 
-// ===================== Exports =====================
-module.exports = {
-  insertOrUpdateGap,
-};
+// Export the validation function as well
+export { getValidLandIds };

@@ -1,14 +1,14 @@
 // ===================== Imports =====================
 // Import API clients for fetching crop data
-const { getCrops, getCropHarvests } = require("../api/crops");
+import { getCrops, getCropHarvests } from "../api/crops.js";
 // Import DB helper for upserting crop records
-const { insertOrUpdateCrop, ensureRefCode } = require("../db/cropsDb");
+import { bulkInsertOrUpdateCrops } from "../db/cropsDb.js";
 // Import DB connection for direct queries
-const { connectionDB } = require("../../config/db/db.conf.js");
+import { connectionDB } from "../../config/db/db.conf.js";
 // Import config constants and operation enums
-const { CROPS_CONFIG, OPERATIONS } = require("../../utils/constants");
+import { CROPS_CONFIG, OPERATIONS } from "../../utils/constants.js";
 // Import logger for structured process logging
-const CropsLogger = require("./cropsLogger");
+import CropsLogger from "./cropsLogger.js";
 
 // ===================== Processor =====================
 // CropsProcessor handles fetching, merging, deduplication, and DB upserts for crops.
@@ -20,28 +20,21 @@ class CropsProcessor {
   static async fetchAndProcessData() {
     // Initialize counters for BOTH APIs
     const metrics = {
-      allCropsFromGetCrops: [], // Data from GetCrops API (paginated)
-      allCropsFromGetCropHarvests: [], // Data from GetCropHarvests API (single call)
-      allCropsAllPages: [], // Combined data from both APIs
-      insertCount: 0,
-      updateCount: 0,
-      errorCount: 0,
-      processedRecIds: new Set(),
-      newRecIds: [],
-      updatedRecIds: [],
-      errorRecIds: [],
+      allCropsFromGetCrops: [],
+      allCropsFromGetCropHarvests: [],
+      allCropsAllPages: [],
     };
 
     // Get database count before processing
     const dbCountBefore = await this._getDatabaseCount();
 
-    // 🔧 Fetch data from GetCrops API (with pagination)
+    // Fetch data from GetCrops API (with pagination)
     await this._fetchGetCropsPages(metrics);
 
-    // 🔧 Fetch data from GetCropHarvests API (loop by year and page)
+    // Fetch data from GetCropHarvests API (loop by year and page)
     await this._fetchGetCropHarvests(metrics);
 
-    // 🔧 Combine and merge records from both APIs by cropId
+    // Combine and merge records from both APIs by cropId
     const mergedCrops = this._mergeRecordsFromBothAPIs(
       metrics.allCropsFromGetCrops,
       metrics.allCropsFromGetCropHarvests
@@ -51,6 +44,7 @@ class CropsProcessor {
 
     // Process unique crops (using cropId as unique identifier)
     const uniqueCrops = this._getUniqueCrops(metrics.allCropsAllPages);
+
     CropsLogger.logApiSummary(
       metrics.allCropsAllPages.length,
       uniqueCrops.length,
@@ -58,17 +52,28 @@ class CropsProcessor {
       metrics.allCropsFromGetCropHarvests.length
     );
 
-    // Process each unique crop record into crops table
-    await this._processUniqueCrops(uniqueCrops, metrics);
+    console.log(
+      `🚀 Processing ${uniqueCrops.length} unique crops using BULK operations...`
+    );
+
+    // BULK PROCESSING - Single operation for all crops
+    const result = await bulkInsertOrUpdateCrops(uniqueCrops);
 
     // Get database count after processing
     const dbCountAfter = await this._getDatabaseCount();
 
-    // Build and return a detailed result object
-    return this._buildResult(metrics, dbCountBefore, dbCountAfter);
+    return {
+      inserted: result.inserted,
+      updated: result.updated,
+      errors: result.errors,
+      skipped: result.skipped,
+      totalAfter: dbCountAfter,
+      processingMethod: "BULK_UPSERT",
+      skippedDetails: result.skippedDetails,
+    };
   }
 
-  // 🔧 Fetch from GetCrops API (paginated)
+  // Fetch from GetCrops API (paginated)
   static async _fetchGetCropsPages(metrics) {
     console.log(``);
     console.log(
@@ -90,10 +95,6 @@ class CropsProcessor {
           pageSize: CROPS_CONFIG.DEFAULT_PAGE_SIZE,
         };
 
-        // const customHeaders = {
-        //   Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-        // };
-
         const crops = await getCrops(requestBody);
         const cropsCurPage = crops.data || [];
         metrics.allCropsFromGetCrops =
@@ -104,11 +105,21 @@ class CropsProcessor {
 
         if (cropsCurPage.length === 0) hasMore = false;
         page++;
+
+        // ✅ ADD: Small delay to prevent rate limiting
+        if (hasMore) {
+          await new Promise((resolve) => setTimeout(resolve, 300)); // 300ms (was 100ms)
+        }
+      }
+
+      // INCREASE: Bigger delay between years
+      if (year < CROPS_CONFIG.END_YEAR) {
+        await new Promise((resolve) => setTimeout(resolve, 500)); // 500ms (was 200ms)
       }
     }
   }
 
-  // 🔧 Fetch from GetCropHarvests API (loop by year and page)
+  // Fetch from GetCropHarvests API (loop by year and page)
   static async _fetchGetCropHarvests(metrics) {
     console.log(
       `📞 Sending request to GetCropHarvests API (paginated, by year ${CROPS_CONFIG.START_YEAR}-${CROPS_CONFIG.END_YEAR})...`
@@ -150,7 +161,7 @@ class CropsProcessor {
     metrics.allCropsFromGetCropHarvests = allHarvests;
   }
 
-  // 🔧 Merge records from both APIs by cropId
+  // Merge records from both APIs by cropId
   static _mergeRecordsFromBothAPIs(getCropsData, getCropHarvestsData) {
     console.log(``);
     console.log("🔗 Merging records from both APIs by cropId...");
@@ -188,7 +199,6 @@ class CropsProcessor {
         gapExpiryDate: crop.gapExpiryDate,
         createdTime: crop.createdTime,
         updatedTime: crop.updatedTime,
-        // Initialize lotNumber as null (will be filled by GetCropHarvests)
         lotNumber: null,
       });
     });
@@ -245,59 +255,9 @@ class CropsProcessor {
     return mergedArray;
   }
 
-  // 🔧 Get unique crops (already unique by cropId from merge)
+  // Get unique crops (already unique by cropId from merge)
   static _getUniqueCrops(allCrops) {
     return allCrops; // Already unique from merge process
-  }
-
-  // 🔧 Process all unique crops into single crops table
-  static async _processUniqueCrops(uniqueCrops, metrics) {
-    for (const crop of uniqueCrops) {
-      // Ensure breedId is set from reference data (plain number, no prefix)
-      const breedId = crop.breedName
-        ? await ensureRefCode(
-            "ref_breeds",
-            "breed_name",
-            "breed_id",
-            crop.breedName,
-            "" // plain numbers
-          )
-        : null;
-
-      // Ensure durianStageId is set from reference data (plain number, no prefix)
-      const durianStageId = crop.durianStageName
-        ? await ensureRefCode(
-            "ref_durian_stages",
-            "stage_name_th",
-            "stage_id",
-            crop.durianStageName,
-            "" // plain numbers
-          )
-        : null;
-
-      // Upsert crop record with resolved breedId and durianStageId
-      const cropData = { ...crop, breedId, durianStageId };
-      const result = await insertOrUpdateCrop(cropData);
-
-      const cropId = crop.cropId;
-
-      switch (result.operation) {
-        case "INSERT":
-          metrics.insertCount++;
-          metrics.newRecIds.push(cropId);
-          break;
-        case "UPDATE":
-          metrics.updateCount++;
-          metrics.updatedRecIds.push(cropId);
-          break;
-        case "ERROR":
-          metrics.errorCount++;
-          metrics.errorRecIds.push(cropId);
-          break;
-      }
-
-      metrics.processedRecIds.add(cropId);
-    }
   }
 
   static async _getDatabaseCount() {
@@ -306,47 +266,6 @@ class CropsProcessor {
       .query("SELECT COUNT(*) as total FROM crops");
     return result[0].total;
   }
-
-  static _buildResult(metrics, dbCountBefore, dbCountAfter) {
-    return {
-      // Database metrics
-      totalBefore: dbCountBefore,
-      totalAfter: dbCountAfter,
-      inserted: metrics.insertCount,
-      updated: metrics.updateCount,
-      errors: metrics.errorCount,
-      growth: dbCountAfter - dbCountBefore,
-
-      // API metrics
-      totalFromAPI: metrics.allCropsAllPages.length,
-      totalFromGetCrops: metrics.allCropsFromGetCrops.length,
-      totalFromGetCropHarvests: metrics.allCropsFromGetCropHarvests.length,
-      uniqueFromAPI: metrics.allCropsAllPages.length, // Already unique from merge
-      duplicatedDataAmount: 0, // No duplicates after merge
-
-      // Record tracking
-      newRecIds: metrics.newRecIds,
-      updatedRecIds: metrics.updatedRecIds,
-      errorRecIds: metrics.errorRecIds,
-      processedRecIds: Array.from(metrics.processedRecIds),
-
-      // Additional insights
-      recordsInDbNotInAPI: dbCountBefore - metrics.updateCount,
-      totalProcessingOperations:
-        metrics.insertCount + metrics.updateCount + metrics.errorCount,
-
-      // API breakdown
-      apiSources: {
-        getCrops: metrics.allCropsFromGetCrops.length,
-        getCropHarvests: metrics.allCropsFromGetCropHarvests.length,
-        merged: metrics.allCropsAllPages.length,
-      },
-
-      // For compatibility
-      allCropsAllPages: metrics.allCropsAllPages,
-    };
-  }
 }
 
-// ===================== Exports =====================
-module.exports = CropsProcessor;
+export default CropsProcessor;

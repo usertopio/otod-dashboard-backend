@@ -1,13 +1,11 @@
-// app/services/db/locationHelper.js
-
-const { connectionDB } = require("../../config/db/db.conf.js");
+import { connectionDB } from "../../config/db/db.conf.js";
 
 /**
  * Helper to get or insert a province based on Thai name
  * @param {string} provinceName
  * @returns {Promise<Object>} { province_code, province_name_th }
  */
-async function getOrInsertProvince(provinceName) {
+export async function getOrInsertProvince(provinceName) {
   // Check if the province already exists
   const [rows] = await connectionDB
     .promise()
@@ -40,7 +38,7 @@ async function getOrInsertProvince(provinceName) {
  * Helper to get or insert a district
  * Requires a valid province_code (must be checked/inserted before)
  */
-async function getOrInsertDistrict(districtName, provinceCode) {
+export async function getOrInsertDistrict(districtName, provinceCode) {
   const [rows] = await connectionDB
     .promise()
     .query(
@@ -70,7 +68,7 @@ async function getOrInsertDistrict(districtName, provinceCode) {
  * Helper to get or insert a subdistrict
  * Requires a valid district_code (must be checked/inserted before)
  */
-async function getOrInsertSubdistrict(
+export async function getOrInsertSubdistrict(
   subdistrictName,
   districtCode,
   postCode = null
@@ -99,9 +97,3 @@ async function getOrInsertSubdistrict(
 
   return { subdistrict_code: nextCode, subdistrict_name_th: subdistrictName };
 }
-
-module.exports = {
-  getOrInsertProvince,
-  getOrInsertDistrict,
-  getOrInsertSubdistrict,
-};

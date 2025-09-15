@@ -1,134 +1,202 @@
 // ===================== Imports =====================
 // Import DB connection for executing SQL queries
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { OPERATIONS } = require("../../utils/constants");
+import { connectionDB } from "../../config/db/db.conf.js";
 
-// ===================== Reference Lookup =====================
 /**
- * Looks up or generates a province code for a given province name.
- * @param {string} provinceName - Province name in Thai.
- * @returns {Promise<string|null>} - Province code.
+ * Get Bangkok timezone timestamp as MySQL-compatible string
  */
-const convertProvinceNameToCode = async (provinceName) => {
-  if (!provinceName) return null;
+const getBangkokTime = () => {
+  return new Date()
+    .toLocaleString("sv-SE", {
+      timeZone: "Asia/Bangkok",
+    })
+    .replace(" ", "T");
+};
+
+/**
+ * Bulk ensure reference codes for a list of names
+ */
+async function bulkEnsureRefCodes(
+  table,
+  nameColumn,
+  codeColumn,
+  names,
+  prefix
+) {
+  if (!names || names.length === 0) return new Map();
 
   try {
+    // Get existing codes in one query
     const [existing] = await connectionDB
       .promise()
       .query(
-        `SELECT province_code FROM ref_provinces WHERE province_name_th = ? LIMIT 1`,
-        [provinceName]
+        `SELECT ${nameColumn}, ${codeColumn} FROM ${table} WHERE ${nameColumn} IN (?)`,
+        [names]
       );
 
-    if (existing.length > 0) {
-      return existing[0].province_code;
-    } else {
+    const codeMap = new Map();
+    existing.forEach((row) => {
+      codeMap.set(row[nameColumn], row[codeColumn]);
+    });
+
+    // Find missing names
+    const missingNames = names.filter((name) => !codeMap.has(name));
+
+    if (missingNames.length > 0) {
+      // Generate codes for missing names
       const [maxResult] = await connectionDB
         .promise()
         .query(
-          `SELECT province_code FROM ref_provinces ORDER BY province_code DESC LIMIT 1`
+          `SELECT ${codeColumn} FROM ${table} WHERE ${codeColumn} LIKE '${prefix}%' ORDER BY ${codeColumn} DESC LIMIT 1`
         );
 
-      let newProvinceCode;
+      let nextNumber = 1;
       if (maxResult.length > 0) {
-        const lastCode = maxResult[0].province_code;
-        const lastNumber = parseInt(lastCode.replace("P", ""));
-        newProvinceCode = `P${String(lastNumber + 1).padStart(3, "0")}`;
-      } else {
-        newProvinceCode = "P001";
+        const lastCode = maxResult[0][codeColumn];
+        nextNumber = parseInt(lastCode.replace(prefix, "")) + 1;
       }
 
-      await connectionDB.promise().query(
-        `INSERT INTO ref_provinces (province_code, province_name_th, source) 
-         VALUES (?, ?, 'generated')`,
-        [newProvinceCode, provinceName]
-      );
+      // Bulk insert missing codes
+      const insertData = missingNames.map((name, index) => {
+        const code = `${prefix}${String(nextNumber + index).padStart(3, "0")}`;
+        codeMap.set(name, code);
+        return [code, name, "generated"];
+      });
 
-      console.log(
-        `🆕 Created new province: ${newProvinceCode} = "${provinceName}"`
-      );
-      return newProvinceCode;
+      const insertQuery = `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES ?`;
+      await connectionDB.promise().query(insertQuery, [insertData]);
+
+      console.log(`🆕 Created ${insertData.length} new ${table} codes`);
     }
+
+    return codeMap;
   } catch (err) {
-    console.error("Province lookup error:", err.message);
-    return null;
+    console.error(`Bulk ${table} lookup error:`, err);
+    return new Map();
   }
-};
+}
 
-// ===================== Insert/Update =====================
 /**
- * Inserts or updates a substance usage summary record in the database.
- * Maps province name to code, checks for existence, and upserts accordingly.
- * @param {object} substance - Substance usage summary data object.
- * @returns {Promise<object>} - Operation result.
+ * Bulk process reference codes for all substances at once
  */
-const insertOrUpdateSubstance = async (substance) => {
+export async function bulkProcessReferenceCodes(substances) {
+  console.time("⏱️ Reference codes processing");
+
   try {
-    // Convert province name to code
-    const provinceCode = await convertProvinceNameToCode(
-      substance.provinceName
+    // Extract unique province names from substances
+    const provinces = [
+      ...new Set(substances.map((s) => s.provinceName).filter(Boolean)),
+    ];
+
+    // Process reference codes for provinces
+    const provinceCodes = await bulkEnsureRefCodes(
+      "ref_provinces",
+      "province_name_th",
+      "province_code",
+      provinces,
+      "GPROV"
     );
 
-    // Check if substance record already exists based on unique combination
-    const [existing] = await connectionDB.promise().query(
-      `SELECT id FROM substance 
-         WHERE crop_year = ? AND province_code = ? AND substance = ? 
-         AND oper_month = STR_TO_DATE(CONCAT(?, '-01'), '%Y-%m-%d')
-         LIMIT 1`,
-      [
-        substance.cropYear,
-        provinceCode,
-        substance.substance,
-        substance.operMonth,
-      ]
+    console.timeEnd("⏱️ Reference codes processing");
+    return { provinceCodes };
+  } catch (error) {
+    console.error("❌ Error in bulkProcessReferenceCodes:", error);
+    console.timeEnd("⏱️ Reference codes processing");
+    return { provinceCodes: new Map() };
+  }
+}
+
+/**
+ * Bulk insert or update substances using INSERT ... ON DUPLICATE KEY UPDATE
+ * @param {Array} substances - Array of substance objects
+ * @returns {Promise<object>} - Bulk operation result
+ */
+export async function bulkInsertOrUpdateSubstances(substances) {
+  if (!substances || substances.length === 0) {
+    return { inserted: 0, updated: 0, errors: 0 };
+  }
+
+  try {
+    console.time("⏱️ Reference codes processing");
+
+    // BULK process all reference codes at once
+    const { provinceCodes } = await bulkProcessReferenceCodes(substances);
+
+    console.timeEnd("⏱️ Reference codes processing");
+    console.time("⏱️ Data preparation");
+
+    // Get current count before operation
+    const [countBefore] = await connectionDB
+      .promise()
+      .query("SELECT COUNT(*) as count FROM substance");
+    const beforeCount = countBefore[0].count;
+
+    // Get Bangkok time
+    const bangkokTime = getBangkokTime();
+
+    // Prepare substance data
+    const substanceData = substances.map((substance) => [
+      substance.cropYear,
+      provinceCodes.get(substance.provinceName) || null, 
+      substance.substance,
+      `${substance.operMonth}-01`,
+      substance.totalRecords || 0,
+      bangkokTime,
+    ]);
+
+    console.timeEnd("⏱️ Data preparation");
+    console.time("⏱️ Bulk database operation");
+
+    const insertQuery = `
+      INSERT INTO substance (
+        crop_year, province_code, substance, oper_month, total_records, fetch_at
+      ) VALUES ?
+      ON DUPLICATE KEY UPDATE
+        total_records = VALUES(total_records),
+        fetch_at = VALUES(fetch_at)
+    `;
+
+    // Use substanceData directly
+    const [result] = await connectionDB
+      .promise()
+      .query(insertQuery, [substanceData]);
+
+    console.timeEnd("⏱️ Bulk database operation");
+
+    // Get count after operation
+    const [countAfter] = await connectionDB
+      .promise()
+      .query("SELECT COUNT(*) as count FROM substance");
+    const afterCount = countAfter[0].count;
+
+    // Calculate actual inserts and updates
+    const actualInserts = afterCount - beforeCount;
+    const actualUpdates = substances.length - actualInserts;
+
+    console.log(
+      `📊 Bulk operation: ${actualInserts} inserted, ${actualUpdates} updated`
+    );
+    console.log(
+      `📊 Database: ${beforeCount} → ${afterCount} (${
+        actualInserts > 0 ? "+" + actualInserts : "no change"
+      })`
     );
 
-    if (existing.length > 0) {
-      // UPDATE existing substance record
-      await connectionDB.promise().query(
-        `UPDATE substance SET 
-         total_records = ?, 
-         fetch_at = NOW()
-         WHERE crop_year = ? AND province_code = ? AND substance = ? 
-         AND oper_month = STR_TO_DATE(CONCAT(?, '-01'), '%Y-%m-%d')`,
-        [
-          substance.totalRecords || 0,
-          substance.cropYear,
-          provinceCode,
-          substance.substance,
-          substance.operMonth,
-        ]
-      );
-
-      return { operation: OPERATIONS.UPDATE, substance: substance.substance };
-    } else {
-      // INSERT new substance record
-      await connectionDB.promise().query(
-        `INSERT INTO substance 
-         (crop_year, province_code, substance, oper_month, total_records, fetch_at) 
-         VALUES (?, ?, ?, STR_TO_DATE(CONCAT(?, '-01'), '%Y-%m-%d'), ?, NOW())`,
-        [
-          substance.cropYear,
-          provinceCode,
-          substance.substance,
-          substance.operMonth,
-          substance.totalRecords || 0,
-        ]
-      );
-
-      return { operation: OPERATIONS.INSERT, substance: substance.substance };
-    }
-  } catch (err) {
-    console.error("Substance insert/update error:", err);
     return {
-      operation: OPERATIONS.ERROR,
-      substance: substance.substance,
-      error: err.message,
+      operation: "BULK_UPSERT",
+      inserted: actualInserts,
+      updated: Math.max(0, actualUpdates),
+      errors: 0,
+      totalProcessed: substances.length,
+    };
+  } catch (err) {
+    console.error("Bulk substance insert/update error:", err);
+    return {
+      operation: "BULK_ERROR",
+      inserted: 0,
+      updated: 0,
+      errors: substances.length,
+      totalProcessed: substances.length,
     };
   }
-};
-
-// ===================== Exports =====================
-module.exports = {
-  insertOrUpdateSubstance,
-};
+}

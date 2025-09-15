@@ -1,13 +1,11 @@
 // ===================== Imports =====================
-// Import DB connection for executing SQL queries
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { SUBSTANCE_CONFIG, STATUS } = require("../../utils/constants");
-const SubstanceProcessor = require("./substanceProcessor");
-const SubstanceLogger = require("./substanceLogger");
+import { connectionDB } from "../../config/db/db.conf.js";
+import { SUBSTANCE_CONFIG, STATUS } from "../../utils/constants.js";
+import SubstanceProcessor from "./substanceProcessor.js";
+import SubstanceLogger from "./substanceLogger.js";
 
 // ===================== Service =====================
-// SubstanceService handles the business logic for fetching, resetting, and managing substance records.
-class SubstanceService {
+export default class SubstanceService {
   /**
    * Resets only the substance table in the database.
    * - Disables foreign key checks to allow truncation.
@@ -39,14 +37,10 @@ class SubstanceService {
       throw error;
     }
   }
-
   /**
-   * Main entry point for fetching substance usage summary from the API and storing it in the database.
-   * - Resets the substance table before starting.
-   * - Loops up to maxAttempts, fetching and processing data each time.
-   * - Logs progress and metrics for each attempt.
-   * - Stops early if no new records are inserted.
-   * - Returns a summary result object.
+   * Fetches ALL substance from the API and stores it in the database.
+   * Loops up to maxAttempts, stops early if no new records are inserted.
+   * Returns a summary result object.
    * @param {number} maxAttempts - The maximum number of fetch attempts.
    */
   static async fetchAllSubstance(
@@ -60,9 +54,7 @@ class SubstanceService {
     let totalErrors = 0;
     let hasMoreData = true;
 
-    console.log(
-      `🧪 Fetching ALL substance records, Max attempts: ${maxAttempts}`
-    );
+    console.log(`🧪 Fetching ALL substance, Max attempts: ${maxAttempts}`);
 
     while (attempt <= maxAttempts && hasMoreData) {
       SubstanceLogger.logAttemptStart(attempt, maxAttempts);
@@ -75,8 +67,25 @@ class SubstanceService {
       totalUpdated += result.updated || 0;
       totalErrors += result.errors || 0;
 
-      // Only continue if new records were inserted in this attempt
+      // ✅ STANDARD TERMINATION: Same as other modules
       hasMoreData = (result.inserted || 0) > 0;
+
+      // ✅ ADD: Early termination for efficiency
+      if (
+        attempt === 1 &&
+        (result.inserted || 0) > 0 &&
+        (result.errors || 0) === 0
+      ) {
+        console.log(
+          `✅ First attempt successful with ${result.inserted} records - stopping`
+        );
+        hasMoreData = false;
+      }
+
+      console.log(
+        `🔍 Attempt ${attempt}: Inserted ${result.inserted}, Continue: ${hasMoreData}`
+      );
+
       attempt++;
     }
 
@@ -124,8 +133,13 @@ class SubstanceService {
    */
   static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
     const finalCount = await this._getDatabaseCount();
-    const status =
-      finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    let status;
+    // All handle "ALL" target correctly
+    if (targetCount === "ALL") {
+      status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    } else {
+      status = finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    }
 
     SubstanceLogger.logFinalResults(
       targetCount,
@@ -146,6 +160,3 @@ class SubstanceService {
     };
   }
 }
-
-// ===================== Exports =====================
-module.exports = SubstanceService;

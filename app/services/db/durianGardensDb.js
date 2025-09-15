@@ -1,270 +1,278 @@
 // ===================== Imports =====================
 // Import DB connection for executing SQL queries
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { OPERATIONS } = require("../../utils/constants");
+import { connectionDB } from "../../config/db/db.conf.js";
+
+/**
+ * Get Bangkok timezone timestamp as MySQL-compatible string
+ */
+const getBangkokTime = () => {
+  return new Date()
+    .toLocaleString("sv-SE", {
+      timeZone: "Asia/Bangkok",
+    })
+    .replace(" ", "T");
+};
 
 // ===================== DB Utilities =====================
 // Provides helper functions for reference code lookup and upserting durian gardens
 
 /**
- * Ensures a reference code exists in the table, inserts if not found.
- * @param {string} table - Reference table name.
- * @param {string} nameColumn - Column for the name.
- * @param {string} codeColumn - Column for the code.
- * @param {string} name - Name to look up or insert.
- * @param {string} generatedCodePrefix - Prefix for generated codes.
- * @returns {Promise<string>} - The code.
+ * Bulk ensure reference codes for a list of names
  */
-async function ensureRefCode(
+async function bulkEnsureRefCodes(
   table,
   nameColumn,
   codeColumn,
-  name,
-  generatedCodePrefix
+  names,
+  prefix
 ) {
-  if (!name) return null;
+  if (!names.length) return {};
 
-  try {
-    // Check if name exists in reference table
-    const [existing] = await connectionDB
+  // Get existing codes in one query
+  const [existing] = await connectionDB
+    .promise()
+    .query(
+      `SELECT ${nameColumn}, ${codeColumn} FROM ${table} WHERE ${nameColumn} IN (?)`,
+      [names]
+    );
+
+  const codeMap = {};
+  existing.forEach((row) => {
+    codeMap[row[nameColumn]] = row[codeColumn];
+  });
+
+  // Find missing names
+  const missingNames = names.filter((name) => !codeMap[name]);
+
+  if (missingNames.length > 0) {
+    // Generate codes for missing names
+    const [maxResult] = await connectionDB
       .promise()
       .query(
-        `SELECT ${codeColumn} FROM ${table} WHERE ${nameColumn} = ? LIMIT 1`,
-        [name]
+        `SELECT ${codeColumn} FROM ${table} WHERE ${codeColumn} LIKE '${prefix}%' ORDER BY ${codeColumn} DESC LIMIT 1`
       );
 
-    if (existing.length > 0) {
-      return existing[0][codeColumn];
-    } else {
-      // Generate new code if not found
-      const [maxResult] = await connectionDB
-        .promise()
-        .query(
-          `SELECT ${codeColumn} FROM ${table} ORDER BY ${codeColumn} DESC LIMIT 1`
-        );
-
-      let newCode;
-      if (maxResult.length > 0) {
-        const lastCode = maxResult[0][codeColumn];
-        const lastNumber = parseInt(lastCode.replace(generatedCodePrefix, ""));
-        newCode = `${generatedCodePrefix}${String(lastNumber + 1).padStart(
-          3,
-          "0"
-        )}`;
-      } else {
-        newCode = `${generatedCodePrefix}001`;
-      }
-
-      await connectionDB.promise().query(
-        `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) 
-         VALUES (?, ?, 'generated')`,
-        [newCode, name]
-      );
-
-      console.log(`🆕 Created new ${table}: ${newCode} = "${name}"`);
-      return newCode;
+    let nextNumber = 1;
+    if (maxResult.length > 0) {
+      const lastCode = maxResult[0][codeColumn];
+      nextNumber = parseInt(lastCode.replace(prefix, "")) + 1;
     }
-  } catch (err) {
-    console.error(`${table} lookup error:`, err.message);
-    return null;
+
+    // Bulk insert missing codes
+    const insertData = missingNames.map((name, index) => {
+      const code = `${prefix}${String(nextNumber + index).padStart(3, "0")}`;
+      codeMap[name] = code;
+      return [code, name, "generated"];
+    });
+
+    await connectionDB
+      .promise()
+      .query(
+        `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES ?`,
+        [insertData]
+      );
+
+    console.log(`🆕 Created ${insertData.length} new ${table} codes`);
   }
+
+  return codeMap;
 }
 
 /**
- * Inserts or updates a durian garden record in the database.
- * Maps reference codes, checks for existence, and upserts accordingly.
- * @param {object} garden - Durian garden data object.
- * @returns {Promise<object>} - Operation result.
+ * Bulk process reference codes for durian gardens at once
  */
-async function insertOrUpdateDurianGarden(garden) {
+export async function bulkProcessReferenceCodes(gardens) {
+  // Get unique values
+  const provinces = [
+    ...new Set(gardens.map((g) => g.province).filter(Boolean)),
+  ];
+  const districts = [...new Set(gardens.map((g) => g.amphur).filter(Boolean))];
+  const subdistricts = [
+    ...new Set(gardens.map((g) => g.tambon).filter(Boolean)),
+  ];
+  const landTypes = [
+    ...new Set(gardens.map((g) => g.landType).filter(Boolean)),
+  ];
+
+  // Bulk lookup/create all reference codes
+  const [provinceCodes, districtCodes, subdistrictCodes, landTypeCodes] =
+    await Promise.all([
+      bulkEnsureRefCodes(
+        "ref_provinces",
+        "province_name_th",
+        "province_code",
+        provinces,
+        "GPROV"
+      ),
+      bulkEnsureRefCodes(
+        "ref_districts",
+        "district_name_th",
+        "district_code",
+        districts,
+        "GDIST"
+      ),
+      bulkEnsureRefCodes(
+        "ref_subdistricts",
+        "subdistrict_name_th",
+        "subdistrict_code",
+        subdistricts,
+        "GSUBDIST"
+      ),
+      // Use the correct column names for land types
+      bulkEnsureRefCodes(
+        "ref_land_types",
+        "land_type",
+        "land_type_id",
+        landTypes,
+        "GLTYPE"
+      ),
+    ]);
+
+  return { provinceCodes, districtCodes, subdistrictCodes, landTypeCodes };
+}
+
+/**
+ * Bulk insert or update durian gardens using INSERT ... ON DUPLICATE KEY UPDATE
+ * @param {Array} gardens - Array of garden objects
+ * @returns {Promise<object>} - Bulk operation result
+ */
+export async function bulkInsertOrUpdateDurianGardens(gardens) {
+  if (!gardens || gardens.length === 0) {
+    return { inserted: 0, updated: 0, errors: 0 };
+  }
+
   try {
-    // === Map province, district, subdistrict, land type to codes ===
-    const provinceCode = await ensureRefCode(
-      "ref_provinces",
-      "province_name_th",
-      "province_code",
-      garden.province,
-      "GPROV"
-    );
+    console.time("⏱️ Reference codes processing");
 
-    const districtCode = await ensureRefCode(
-      "ref_districts",
-      "district_name_th",
-      "district_code",
-      garden.amphur,
-      "GDIST"
-    );
+    // BULK process all reference codes at once
+    const { provinceCodes, districtCodes, subdistrictCodes, landTypeCodes } =
+      await bulkProcessReferenceCodes(gardens);
 
-    const subdistrictCode = await ensureRefCode(
-      "ref_subdistricts",
-      "subdistrict_name_th",
-      "subdistrict_code",
-      garden.tambon,
-      "GSUBDIST"
-    );
+    console.timeEnd("⏱️ Reference codes processing");
+    console.time("⏱️ Data preparation");
 
-    const landTypeId = await ensureRefCode(
-      "ref_land_types",
-      "land_type",
-      "land_type_id",
-      garden.landType,
-      "GLAND"
-    );
-
-    // Handle geojson field
-    let geoJsonValue = null;
-    if (garden.geojson) {
-      if (typeof garden.geojson === "string") {
-        try {
-          const parsed = JSON.parse(garden.geojson);
-          geoJsonValue = JSON.stringify(parsed);
-        } catch (e) {
-          geoJsonValue = JSON.stringify({
-            type: "FeatureCollection",
-            features: [
-              {
-                type: "Feature",
-                properties: { originalData: garden.geojson },
-                geometry: null,
-              },
-            ],
-          });
-        }
-      } else if (typeof garden.geojson === "object") {
-        geoJsonValue = JSON.stringify(garden.geojson);
-      }
-    }
-
-    // Generate rec_id if not provided - use land_id as fallback
-    const recId =
-      garden.recId ||
-      garden.landId ||
-      `DURIAN_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    // Prepare values in fixed order
-    const values = {
-      rec_id: recId,
-      farmer_id: garden.farmerId,
-      land_id: garden.landId,
-      garden_province_code: provinceCode || "UNKNOWN",
-      garden_district_code: districtCode || "UNKNOWN",
-      garden_subdistrict_code: subdistrictCode || "UNKNOWN",
-      land_type_id: landTypeId || "UNKNOWN",
-      lat: garden.lat || null,
-      lon: garden.lon || null,
-      no_of_rais: garden.noOfRais ?? 0,
-      no_of_ngan: garden.noOfNgan ?? 0,
-      no_of_wah: garden.noOfWah ?? 0,
-      kml: garden.kml || null,
-      geojson: geoJsonValue,
-      created_at: garden.createdTime || null,
-      updated_at: garden.updatedTime || null,
-      company_id: garden.companyId || null,
-      fetch_at: new Date(),
-    };
-
-    // Handle date formatting for MySQL
-    if (values.created_at && typeof values.created_at === "string") {
-      try {
-        values.created_at = new Date(values.created_at);
-      } catch (e) {
-        values.created_at = null;
-      }
-    }
-    if (values.updated_at && typeof values.updated_at === "string") {
-      try {
-        values.updated_at = new Date(values.updated_at);
-      } catch (e) {
-        values.updated_at = null;
-      }
-    }
-
-    // Check for existing land_id (unique key)
-    const [existing] = await connectionDB
+    // Get current count before operation
+    const [countBefore] = await connectionDB
       .promise()
-      .query(`SELECT id FROM durian_gardens WHERE land_id = ? LIMIT 1`, [
-        garden.landId,
-      ]);
+      .query("SELECT COUNT(*) as count FROM durian_gardens");
+    const beforeCount = countBefore[0].count;
 
-    if (existing.length > 0) {
-      // Direct SQL UPDATE
-      await connectionDB.promise().query(
-        `UPDATE durian_gardens SET 
-          rec_id = ?, farmer_id = ?, garden_province_code = ?, garden_district_code = ?, 
-          garden_subdistrict_code = ?, land_type_id = ?, lat = ?, lon = ?, no_of_rais = ?, 
-          no_of_ngan = ?, no_of_wah = ?, kml = ?, geojson = ?, updated_at = ?, company_id = ?, fetch_at = ?
-         WHERE land_id = ?`,
-        [
-          values.rec_id,
-          values.farmer_id,
-          values.garden_province_code,
-          values.garden_district_code,
-          values.garden_subdistrict_code,
-          values.land_type_id,
-          values.lat,
-          values.lon,
-          values.no_of_rais,
-          values.no_of_ngan,
-          values.no_of_wah,
-          values.kml,
-          values.geojson,
-          values.updated_at,
-          values.company_id,
-          values.fetch_at,
-          garden.landId,
-        ]
-      );
-      return { operation: OPERATIONS.UPDATE, landId: garden.landId };
-    } else {
-      // Direct SQL INSERT
-      await connectionDB.promise().query(
-        `INSERT INTO durian_gardens 
-          (rec_id, farmer_id, land_id, garden_province_code, garden_district_code, garden_subdistrict_code, 
-           land_type_id, lat, lon, no_of_rais, no_of_ngan, no_of_wah, kml, geojson, created_at, updated_at, company_id, fetch_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          values.rec_id,
-          values.farmer_id,
-          values.land_id,
-          values.garden_province_code,
-          values.garden_district_code,
-          values.garden_subdistrict_code,
-          values.land_type_id,
-          values.lat,
-          values.lon,
-          values.no_of_rais,
-          values.no_of_ngan,
-          values.no_of_wah,
-          values.kml,
-          values.geojson,
-          values.created_at,
-          values.updated_at,
-          values.company_id,
-          values.fetch_at,
-        ]
-      );
-      return { operation: OPERATIONS.INSERT, landId: garden.landId };
-    }
-  } catch (err) {
-    console.error("🔧 Durian garden insert/update error:", err);
-    console.error("🔧 Garden data causing error:", {
-      landId: garden.landId,
-      farmerId: garden.farmerId,
-      province: garden.province,
-      amphur: garden.amphur,
-      tambon: garden.tambon,
-      landType: garden.landType,
-      hasGeojson: !!garden.geojson,
+    // Get Bangkok time
+    const bangkokTime = getBangkokTime();
+
+    // Prepare garden data with rec_id generation
+    const processedGardens = gardens.map((garden, index) => {
+      // Handle GeoJSON parsing
+      let geoJsonValue = null;
+      if (garden.geojson) {
+        try {
+          geoJsonValue =
+            typeof garden.geojson === "string"
+              ? garden.geojson
+              : JSON.stringify(garden.geojson);
+        } catch (err) {
+          console.warn(
+            `Invalid GeoJSON for garden ${garden.landId}:`,
+            err.message
+          );
+          geoJsonValue = null;
+        }
+      }
+
+      // Generate rec_id if missing
+      const recId =
+        garden.recId || garden.landId || `DG_${beforeCount + index + 1}`;
+
+      return [
+        recId,
+        garden.farmerId,
+        garden.landId,
+        provinceCodes[garden.province] || "UNKNOWN",
+        districtCodes[garden.amphur] || "UNKNOWN",
+        subdistrictCodes[garden.tambon] || "UNKNOWN",
+        landTypeCodes[garden.landType] || "UNKNOWN",
+        garden.lat || null,
+        garden.lon || null,
+        garden.noOfRais ?? 0,
+        garden.noOfNgan ?? 0,
+        garden.noOfWah ?? 0,
+        garden.kml || null,
+        geoJsonValue,
+        garden.createdTime || null,
+        garden.updatedTime || null,
+        garden.companyId || null,
+        bangkokTime,
+      ];
     });
+
+    console.timeEnd("⏱️ Data preparation");
+    console.time("⏱️ Bulk database operation");
+
+    const query = `
+      INSERT INTO durian_gardens (
+        rec_id, farmer_id, land_id, garden_province_code, garden_district_code, 
+        garden_subdistrict_code, land_type_id, lat, lon, no_of_rais, no_of_ngan, 
+        no_of_wah, kml, geojson, created_at, updated_at, company_id, fetch_at
+      ) VALUES ? 
+      ON DUPLICATE KEY UPDATE
+        farmer_id = VALUES(farmer_id),
+        garden_province_code = VALUES(garden_province_code),
+        garden_district_code = VALUES(garden_district_code),
+        garden_subdistrict_code = VALUES(garden_subdistrict_code),
+        land_type_id = VALUES(land_type_id),
+        lat = VALUES(lat),
+        lon = VALUES(lon),
+        no_of_rais = VALUES(no_of_rais),
+        no_of_ngan = VALUES(no_of_ngan),
+        no_of_wah = VALUES(no_of_wah),
+        kml = VALUES(kml),
+        geojson = VALUES(geojson),
+        updated_at = VALUES(updated_at),
+        company_id = VALUES(company_id),
+        fetch_at = VALUES(fetch_at)
+    `;
+
+    // Use processedGardens directly
+    const [result] = await connectionDB
+      .promise()
+      .query(query, [processedGardens]);
+
+    console.timeEnd("⏱️ Bulk database operation");
+
+    // Get count after operation
+    const [countAfter] = await connectionDB
+      .promise()
+      .query("SELECT COUNT(*) as count FROM durian_gardens");
+    const afterCount = countAfter[0].count;
+
+    // Calculate actual inserts and updates
+    const actualInserts = afterCount - beforeCount;
+    const actualUpdates = gardens.length - actualInserts;
+
+    console.log(
+      `📊 Bulk operation: ${actualInserts} inserted, ${actualUpdates} updated`
+    );
+    console.log(
+      `📊 Database: ${beforeCount} → ${afterCount} (${
+        actualInserts > 0 ? "+" + actualInserts : "no change"
+      })`
+    );
+
     return {
-      operation: OPERATIONS.ERROR,
-      landId: garden.landId,
+      operation: "BULK_UPSERT",
+      inserted: actualInserts,
+      updated: Math.max(0, actualUpdates),
+      errors: 0,
+      totalProcessed: gardens.length,
+    };
+  } catch (err) {
+    console.error("Bulk durian garden insert/update error:", err);
+    return {
+      operation: "BULK_ERROR",
+      inserted: 0,
+      updated: 0,
+      errors: gardens.length,
       error: err.message,
     };
   }
 }
-
-// ===================== Exports =====================
-module.exports = {
-  insertOrUpdateDurianGarden,
-};

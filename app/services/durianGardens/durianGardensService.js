@@ -1,16 +1,12 @@
 // ===================== Imports =====================
-// Import DB connection for executing SQL queries
-const { connectionDB } = require("../../config/db/db.conf.js");
-// Import configuration constants and status enums
-const { DURIAN_GARDENS_CONFIG, STATUS } = require("../../utils/constants");
-// Import the processor for handling API data and DB upserts
-const DurianGardensProcessor = require("./durianGardensProcessor");
-// Import the logger for structured logging of the fetch process
-const DurianGardensLogger = require("./durianGardensLogger");
+import { connectionDB } from "../../config/db/db.conf.js";
+import { DURIAN_GARDENS_CONFIG, STATUS } from "../../utils/constants.js";
+import DurianGardensProcessor from "./durianGardensProcessor.js";
+import DurianGardensLogger from "./durianGardensLogger.js";
 
 // ===================== Service =====================
 // DurianGardensService handles the business logic for fetching, resetting, and managing durian garden records.
-class DurianGardensService {
+export default class DurianGardensService {
   /**
    * Resets only the durian_gardens table in the database.
    * - Disables foreign key checks to allow truncation.
@@ -22,7 +18,6 @@ class DurianGardensService {
     const connection = connectionDB.promise();
 
     try {
-      // Log the start of the reset operation
       console.log("==========================================");
       console.log(
         `📩 Sending request to API Endpoint: {{LOCAL_HOST}}/api/fetchDurianGardens`
@@ -31,76 +26,17 @@ class DurianGardensService {
 
       console.log("🧹 Resetting ONLY durian_gardens table...");
 
-      // Disable foreign key checks to allow truncation
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
-
-      // Truncate the durian_gardens table (delete all records, reset auto-increment)
       await connection.query("TRUNCATE TABLE durian_gardens");
-
-      // Re-enable foreign key checks after truncation
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
 
-      // Log completion
       console.log("✅ Only durian_gardens table reset - next ID will be 1");
       return { success: true, message: "Only durian_gardens table reset" };
     } catch (error) {
-      // Always re-enable foreign key checks even if error occurs
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-      // Log the error
       console.error("❌ Error resetting durian_gardens table:", error);
       throw error;
     }
-  }
-
-  /**
-   * Main entry point for fetching durian gardens from APIs and storing them in the database.
-   * - Resets the durian_gardens table before starting.
-   * - Loops up to maxAttempts, fetching and processing data each time.
-   * - Logs progress and metrics for each attempt.
-   * - Stops early if the target number of gardens is reached.
-   * - Returns a summary result object.
-   * @param {number} targetCount - The number of gardens to fetch and store.
-   * @param {number} maxAttempts - The maximum number of fetch attempts.
-   */
-  static async fetchDurianGardens(targetCount, maxAttempts) {
-    // Reset the durian_gardens table before fetching new data
-    await this.resetOnlyDurianGardensTable();
-
-    let attempt = 1;
-    let currentCount = 0;
-    let attemptsUsed = 0;
-
-    // Log the fetch target and attempt limit
-    console.log(
-      `🌿 Target: ${targetCount} durian gardens (GetLands + GetLandGeoJSON), Max attempts: ${maxAttempts}`
-    );
-
-    // Main fetch/process loop
-    while (attempt <= maxAttempts) {
-      DurianGardensLogger.logAttemptStart(attempt, maxAttempts);
-
-      currentCount = await this._getDatabaseCount();
-      DurianGardensLogger.logCurrentStatus(
-        currentCount,
-        targetCount,
-        "durian gardens (from both APIs)"
-      );
-
-      attemptsUsed++;
-      const result = await DurianGardensProcessor.fetchAndProcessData();
-
-      DurianGardensLogger.logAttemptResults(attempt, result);
-
-      currentCount = result.totalAfter;
-      attempt++;
-
-      if (currentCount >= targetCount) {
-        DurianGardensLogger.logTargetReached(targetCount, attemptsUsed);
-        break;
-      }
-    }
-
-    return this._buildFinalResult(targetCount, attemptsUsed, maxAttempts);
   }
 
   /**
@@ -133,34 +69,25 @@ class DurianGardensService {
       totalUpdated += result.updated || 0;
       totalErrors += result.errors || 0;
 
-      // Only continue if new records were inserted in this attempt
-      hasMoreData = (result.inserted || 0) > 0;
+      const hasNewData = (result.inserted || 0) > 0;
+      hasMoreData = hasNewData;
+
+      console.log(
+        `🔍 Attempt ${attempt}: Inserted ${result.inserted}, Continue: ${hasMoreData}`
+      );
+
       attempt++;
     }
 
+    // Pass the actual final count, not "ALL"
     const finalCount = await this._getDatabaseCount();
-
-    DurianGardensLogger.logFinalResults(
-      "ALL",
-      finalCount,
+    const result = await this._buildFinalResult(
+      finalCount, // ← Pass the actual number like other modules
       attempt - 1,
-      maxAttempts,
-      STATUS.SUCCESS
+      maxAttempts
     );
 
-    return {
-      message: `Fetch loop completed - ALL records fetched`,
-      achieved: finalCount,
-      attemptsUsed: attempt - 1,
-      maxAttempts: maxAttempts,
-      inserted: totalInserted,
-      updated: totalUpdated,
-      errors: totalErrors,
-      status: STATUS.SUCCESS,
-      reachedTarget: true,
-      apis: ["GetLands", "GetLandGeoJSON"],
-      table: "durian_gardens",
-    };
+    return result; // ← Return the result from _buildFinalResult
   }
 
   /**
@@ -183,8 +110,14 @@ class DurianGardensService {
    */
   static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
     const finalCount = await this._getDatabaseCount();
-    const status =
-      finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+
+    let status;
+    // All handle "ALL" target correctly
+    if (targetCount === "ALL") {
+      status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    } else {
+      status = finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
+    }
 
     DurianGardensLogger.logFinalResults(
       targetCount,
@@ -207,7 +140,3 @@ class DurianGardensService {
     };
   }
 }
-
-// ===================== Exports =====================
-// Export the DurianGardensService class for use in controllers and routes
-module.exports = DurianGardensService;

@@ -1,206 +1,231 @@
 // ===================== Imports =====================
 // Import DB connection for executing SQL queries
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { OPERATIONS } = require("../../utils/constants");
-
-// ===================== DB Utilities =====================
-// Provides helper functions for reference code lookup and upserting communities
+import { connectionDB } from "../../config/db/db.conf.js";
 
 /**
- * Ensures a reference code exists in the table, inserts if not found.
- * @param {string} table - Reference table name.
- * @param {string} nameColumn - Column for the name.
- * @param {string} codeColumn - Column for the code.
- * @param {string} name - Name to look up or insert.
- * @param {string} generatedCodePrefix - Prefix for generated codes.
- * @returns {Promise<string>} - The code.
+ * Get Bangkok timezone timestamp as MySQL-compatible string
  */
-async function ensureRefCode(
+const getBangkokTime = () => {
+  return new Date()
+    .toLocaleString("sv-SE", {
+      timeZone: "Asia/Bangkok",
+    })
+    .replace(" ", "T");
+};
+
+/**
+ * Bulk ensure reference codes for a list of names
+ */
+const bulkEnsureRefCodes = async (
   table,
   nameColumn,
   codeColumn,
-  name,
-  generatedCodePrefix
-) {
-  if (!name) return null;
+  names,
+  prefix
+) => {
+  if (!names.length) return new Map();
 
   try {
-    // Check if name exists in reference table
+    // Get existing codes in one query
     const [existing] = await connectionDB
       .promise()
       .query(
-        `SELECT ${codeColumn} FROM ${table} WHERE ${nameColumn} = ? LIMIT 1`,
-        [name]
+        `SELECT ${nameColumn}, ${codeColumn} FROM ${table} WHERE ${nameColumn} IN (?)`,
+        [names]
       );
 
-    if (existing.length > 0) {
-      return existing[0][codeColumn];
-    } else {
-      // Generate new code if not found
+    const codeMap = new Map();
+    existing.forEach((row) => {
+      codeMap.set(row[nameColumn], row[codeColumn]);
+    });
+
+    // Find missing names
+    const missingNames = names.filter((name) => !codeMap.has(name));
+
+    if (missingNames.length > 0) {
+      // Generate codes for missing names
       const [maxResult] = await connectionDB
         .promise()
         .query(
-          `SELECT ${codeColumn} FROM ${table} ORDER BY ${codeColumn} DESC LIMIT 1`
+          `SELECT ${codeColumn} FROM ${table} WHERE ${codeColumn} LIKE '${prefix}%' ORDER BY ${codeColumn} DESC LIMIT 1`
         );
 
-      let newCode;
+      let nextNumber = 1;
       if (maxResult.length > 0) {
         const lastCode = maxResult[0][codeColumn];
-        const lastNumber = parseInt(lastCode.replace(generatedCodePrefix, ""));
-        newCode = `${generatedCodePrefix}${String(lastNumber + 1).padStart(
-          3,
-          "0"
-        )}`;
-      } else {
-        newCode = `${generatedCodePrefix}001`;
+        nextNumber = parseInt(lastCode.replace(prefix, "")) + 1;
       }
 
-      await connectionDB.promise().query(
-        `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) 
-         VALUES (?, ?, 'generated')`,
-        [newCode, name]
-      );
+      // Bulk insert missing codes
+      const insertData = missingNames.map((name, index) => {
+        const code = `${prefix}${String(nextNumber + index).padStart(3, "0")}`;
+        codeMap.set(name, code);
+        return [code, name, "generated"];
+      });
 
-      console.log(`🆕 Created new ${table}: ${newCode} = "${name}"`);
-      return newCode;
+      const insertQuery = `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES ?`;
+      await connectionDB.promise().query(insertQuery, [insertData]);
+
+      console.log(`🆕 Created ${insertData.length} new ${table} codes`);
     }
+
+    return codeMap;
   } catch (err) {
-    console.error(`${table} lookup error:`, err.message);
-    return null;
+    console.error(`Bulk ${table} lookup error:`, err);
+    return new Map();
+  }
+};
+
+/**
+ * Processes reference codes in bulk for all communities
+ */
+export async function bulkProcessReferenceCodes(communities) {
+  console.time("Reference codes processing");
+
+  try {
+    const provinces = [
+      ...new Set(communities.map((c) => c.province).filter(Boolean)),
+    ];
+    const districts = [
+      ...new Set(communities.map((c) => c.amphur).filter(Boolean)),
+    ];
+    const subdistricts = [
+      ...new Set(communities.map((c) => c.tambon).filter(Boolean)),
+    ];
+
+    const [provinceCodes, districtCodes, subdistrictCodes] = await Promise.all([
+      bulkEnsureRefCodes(
+        "ref_provinces",
+        "province_name_th",
+        "province_code",
+        provinces,
+        "GPROV"
+      ),
+      bulkEnsureRefCodes(
+        "ref_districts",
+        "district_name_th",
+        "district_code",
+        districts,
+        "GDIST"
+      ),
+      bulkEnsureRefCodes(
+        "ref_subdistricts",
+        "subdistrict_name_th",
+        "subdistrict_code",
+        subdistricts,
+        "GSUBDIST"
+      ),
+    ]);
+
+    console.timeEnd("Reference codes processing");
+    return [provinceCodes, districtCodes, subdistrictCodes];
+  } catch (error) {
+    console.error("❌ Error in bulkProcessReferenceCodes:", error);
+    console.timeEnd("Reference codes processing");
+    return [new Map(), new Map(), new Map()];
   }
 }
 
 /**
- * Inserts or updates a community record in the database.
- * Maps reference codes, checks for existence, and upserts accordingly.
- * @param {object} community - Community data object.
- * @returns {Promise<object>} - Operation result.
+ * Bulk insert or update communities in the database
  */
-const insertOrUpdateCommunity = async (community) => {
+export async function bulkInsertOrUpdateCommunities(communities) {
+  const connection = connectionDB.promise();
+
   try {
-    // Map province, district, subdistrict to codes
-    const provinceCode = await ensureRefCode(
-      "ref_provinces",
-      "province_name_th",
-      "province_code",
-      community.province,
-      "GPROV"
+    const [provinceCodes, districtCodes, subdistrictCodes] =
+      await bulkProcessReferenceCodes(communities);
+
+    console.time("Data preparation");
+
+    // Get Bangkok time
+    const bangkokTime = getBangkokTime();
+
+    const communityData = communities.map((community) => [
+      community.recId,
+      community.postCode,
+      community.commId,
+      community.commName,
+      community.totalMembers,
+      community.noOfRais,
+      community.noOfTrees,
+      community.forecastYield,
+      community.createdTime,
+      community.updatedTime,
+      provinceCodes.get(community.province) || null,
+      districtCodes.get(community.amphur) || null,
+      subdistrictCodes.get(community.tambon) || null,
+      bangkokTime,
+    ]);
+
+    console.timeEnd("Data preparation");
+    console.time("Bulk database operation");
+
+    const [beforeResult] = await connection.query(
+      "SELECT COUNT(*) as count FROM communities"
     );
-    const districtCode = await ensureRefCode(
-      "ref_districts",
-      "district_name_th",
-      "district_code",
-      community.amphur,
-      "GDIST"
+    const countBefore = beforeResult[0].count;
+
+    const sql = `
+      INSERT INTO communities (
+        rec_id, post_code, comm_id, comm_name, total_members, no_of_rais, no_of_trees,
+        forecast_yield, created_at, updated_at,
+        community_province_code, community_district_code, community_subdistrict_code,
+        fetch_at
+      ) VALUES ?
+      ON DUPLICATE KEY UPDATE
+        post_code = VALUES(post_code),
+        comm_id = VALUES(comm_id),
+        comm_name = VALUES(comm_name),
+        total_members = VALUES(total_members),
+        no_of_rais = VALUES(no_of_rais),
+        no_of_trees = VALUES(no_of_trees),
+        forecast_yield = VALUES(forecast_yield),
+        created_at = VALUES(created_at),
+        updated_at = VALUES(updated_at),
+        community_province_code = VALUES(community_province_code),
+        community_district_code = VALUES(community_district_code),
+        community_subdistrict_code = VALUES(community_subdistrict_code),
+        fetch_at = VALUES(fetch_at)  -- ✅ CHANGED: Use VALUES(fetch_at) like farmers
+    `;
+
+    // Use communityData directly
+    const [result] = await connection.query(sql, [communityData]);
+
+    const [afterResult] = await connection.query(
+      "SELECT COUNT(*) as count FROM communities"
     );
-    const subdistrictCode = await ensureRefCode(
-      "ref_subdistricts",
-      "subdistrict_name_th",
-      "subdistrict_code",
-      community.tambon,
-      "GSUBDIST"
+    const countAfter = afterResult[0].count;
+
+    console.timeEnd("Bulk database operation");
+
+    const actualInserted = countAfter - countBefore;
+    const actualUpdated = communities.length - actualInserted;
+
+    console.log(
+      `📊 Bulk operation: ${actualInserted} inserted, ${actualUpdated} updated`
+    );
+    console.log(
+      `📊 Database: ${countBefore} → ${countAfter} (+${actualInserted})`
     );
 
-    // === Prepare values ===
-    const values = {
-      rec_id: community.recId,
-      community_province_code: provinceCode,
-      community_district_code: districtCode,
-      community_subdistrict_code: subdistrictCode,
-      post_code: community.postCode || null,
-      comm_id: community.commId,
-      comm_name: community.commName || null,
-      total_members: community.totalMembers || null,
-      no_of_rais: community.noOfRais || null,
-      no_of_trees: community.noOfTrees || null,
-      forecast_yield: community.forecastYield || null,
-      created_at: community.createdTime || null,
-      updated_at: community.updatedTime || null,
-      fetch_at: new Date(),
-    };
-
-    // Check if community already exists
-    const [existing] = await connectionDB
-      .promise()
-      .query(`SELECT id FROM communities WHERE rec_id = ? LIMIT 1`, [
-        values.rec_id,
-      ]);
-
-    if (existing.length > 0) {
-      // UPDATE existing community
-      await connectionDB.promise().query(
-        `UPDATE communities SET 
-         community_province_code = ?, 
-         community_district_code = ?, 
-         community_subdistrict_code = ?, 
-         post_code = ?, 
-         comm_id = ?, 
-         comm_name = ?, 
-         total_members = ?, 
-         no_of_rais = ?, 
-         no_of_trees = ?, 
-         forecast_yield = ?, 
-         updated_at = ?, 
-         fetch_at = ?
-         WHERE rec_id = ?`,
-        [
-          values.community_province_code,
-          values.community_district_code,
-          values.community_subdistrict_code,
-          values.post_code,
-          values.comm_id,
-          values.comm_name,
-          values.total_members,
-          values.no_of_rais,
-          values.no_of_trees,
-          values.forecast_yield,
-          values.updated_at,
-          values.fetch_at,
-          values.rec_id,
-        ]
-      );
-
-      return { operation: OPERATIONS.UPDATE, recId: values.rec_id };
-    } else {
-      // INSERT new community
-      await connectionDB.promise().query(
-        `INSERT INTO communities 
-         (rec_id, community_province_code, community_district_code, 
-          community_subdistrict_code, post_code, comm_id, comm_name, 
-          total_members, no_of_rais, no_of_trees, forecast_yield, 
-          created_at, updated_at, fetch_at) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          values.rec_id,
-          values.community_province_code,
-          values.community_district_code,
-          values.community_subdistrict_code,
-          values.post_code,
-          values.comm_id,
-          values.comm_name,
-          values.total_members,
-          values.no_of_rais,
-          values.no_of_trees,
-          values.forecast_yield,
-          values.created_at,
-          values.updated_at,
-          values.fetch_at,
-        ]
-      );
-
-      return { operation: OPERATIONS.INSERT, recId: values.rec_id };
-    }
-  } catch (err) {
-    console.error("Community insert/update error:", err);
     return {
-      operation: OPERATIONS.ERROR,
-      recId: community.recId,
-      error: err.message,
+      inserted: actualInserted,
+      updated: actualUpdated,
+      errors: 0,
+      affectedRows: result.affectedRows,
+      totalProcessed: communities.length,
+    };
+  } catch (error) {
+    console.error("❌ Bulk community insert/update error:", error);
+
+    return {
+      inserted: 0,
+      updated: 0,
+      errors: communities.length,
+      affectedRows: 0,
+      totalProcessed: communities.length,
+      error: error.message,
     };
   }
-};
-
-// ===================== Exports =====================
-module.exports = {
-  insertOrUpdateCommunity,
-};
+}

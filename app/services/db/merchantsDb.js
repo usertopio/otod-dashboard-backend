@@ -1,195 +1,232 @@
 // ===================== Imports =====================
 // Import DB connection for executing SQL queries
-const { connectionDB } = require("../../config/db/db.conf.js");
-const { OPERATIONS } = require("../../utils/constants");
-
-// ===================== DB Utilities =====================
-// Provides helper functions for reference code lookup and upserting merchants
+import { connectionDB } from "../../config/db/db.conf.js";
 
 /**
- * Ensures a reference code exists in the table, inserts if not found.
- * @param {string} table - Reference table name.
- * @param {string} nameColumn - Column for the name.
- * @param {string} codeColumn - Column for the code.
- * @param {string} name - Name to look up or insert.
- * @param {string} generatedCodePrefix - Prefix for generated codes.
- * @returns {Promise<string>} - The code.
+ * Get Bangkok timezone timestamp as MySQL-compatible string
  */
-async function ensureRefCode(
+const getBangkokTime = () => {
+  return new Date()
+    .toLocaleString("sv-SE", {
+      timeZone: "Asia/Bangkok",
+    })
+    .replace(" ", "T");
+};
+
+/**
+ * Bulk ensure reference codes for a list of names
+ */
+async function bulkEnsureRefCodes(
   table,
   nameColumn,
   codeColumn,
-  name,
-  generatedCodePrefix
+  names,
+  prefix
 ) {
-  if (!name) return null;
+  if (!names || names.length === 0) return new Map();
 
   try {
-    // Check if name exists in reference table
+    // Get existing codes in one query
     const [existing] = await connectionDB
       .promise()
       .query(
-        `SELECT ${codeColumn} FROM ${table} WHERE ${nameColumn} = ? LIMIT 1`,
-        [name]
+        `SELECT ${nameColumn}, ${codeColumn} FROM ${table} WHERE ${nameColumn} IN (?)`,
+        [names]
       );
 
-    if (existing.length > 0) {
-      return existing[0][codeColumn];
-    } else {
-      // Generate new code if not found
+    const codeMap = new Map();
+    existing.forEach((row) => {
+      codeMap.set(row[nameColumn], row[codeColumn]);
+    });
+
+    // Find missing names
+    const missingNames = names.filter((name) => !codeMap.has(name));
+
+    if (missingNames.length > 0) {
+      // Generate codes for missing names
       const [maxResult] = await connectionDB
         .promise()
         .query(
-          `SELECT ${codeColumn} FROM ${table} ORDER BY ${codeColumn} DESC LIMIT 1`
+          `SELECT ${codeColumn} FROM ${table} WHERE ${codeColumn} LIKE '${prefix}%' ORDER BY ${codeColumn} DESC LIMIT 1`
         );
 
-      let newCode;
+      let nextNumber = 1;
       if (maxResult.length > 0) {
         const lastCode = maxResult[0][codeColumn];
-        const lastNumber = parseInt(lastCode.replace(generatedCodePrefix, ""));
-        newCode = `${generatedCodePrefix}${String(lastNumber + 1).padStart(
-          3,
-          "0"
-        )}`;
-      } else {
-        newCode = `${generatedCodePrefix}001`;
+        nextNumber = parseInt(lastCode.replace(prefix, "")) + 1;
       }
 
-      await connectionDB.promise().query(
-        `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) 
-         VALUES (?, ?, 'generated')`,
-        [newCode, name]
-      );
+      // Bulk insert missing codes
+      const insertData = missingNames.map((name, index) => {
+        const code = `${prefix}${String(nextNumber + index).padStart(3, "0")}`;
+        codeMap.set(name, code);
+        return [code, name, "generated"];
+      });
 
-      console.log(`🆕 Created new ${table}: ${newCode} = "${name}"`);
-      return newCode;
+      const insertQuery = `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES ?`;
+      await connectionDB.promise().query(insertQuery, [insertData]);
+
+      console.log(`🆕 Created ${insertData.length} new ${table} codes`);
     }
+
+    return codeMap;
   } catch (err) {
-    console.error(`${table} lookup error:`, err.message);
-    return null;
+    console.error(`Bulk ${table} lookup error:`, err);
+    return new Map();
   }
 }
 
 /**
- * Inserts or updates a merchant record in the database.
- * Maps reference codes, checks for existence, and upserts accordingly.
- * @param {object} merchant - Merchant data object.
- * @returns {Promise<object>} - Operation result.
+ * Bulk process reference codes for all merchants at once
  */
-const insertOrUpdateMerchant = async (merchant) => {
-  try {
-    // Map province, district, subdistrict to codes
-    const provinceCode = await ensureRefCode(
-      "ref_provinces",
-      "province_name_th",
-      "province_code",
-      merchant.province,
-      "GPROV"
-    );
+export async function bulkProcessReferenceCodes(merchants) {
+  // Get unique values
+  const provinces = [
+    ...new Set(merchants.map((m) => m.province).filter(Boolean)),
+  ];
+  const districts = [
+    ...new Set(merchants.map((m) => m.district).filter(Boolean)),
+  ];
+  const subdistricts = [
+    ...new Set(merchants.map((m) => m.subdistrict).filter(Boolean)),
+  ];
 
-    const districtCode = await ensureRefCode(
+  // Bulk lookup/create all reference codes
+  const [provinceCodes, districtCodes, subdistrictCodes] = await Promise.all([
+    bulkEnsureRefCodes(
+      "ref_provinces",
+      "province_name",
+      "province_code",
+      provinces,
+      "GPROV"
+    ),
+    bulkEnsureRefCodes(
       "ref_districts",
       "district_name_th",
       "district_code",
-      merchant.amphur,
+      districts,
       "GDIST"
-    );
-
-    const subdistrictCode = await ensureRefCode(
+    ),
+    bulkEnsureRefCodes(
       "ref_subdistricts",
       "subdistrict_name_th",
       "subdistrict_code",
-      merchant.tambon,
+      subdistricts,
       "GSUBDIST"
+    ),
+  ]);
+
+  return { provinceCodes, districtCodes, subdistrictCodes };
+}
+
+/**
+ * Bulk insert or update merchants using INSERT ... ON DUPLICATE KEY UPDATE
+ * @param {Array} merchants - Array of merchant objects
+ * @returns {Promise<object>} - Bulk operation result
+ */
+export async function bulkInsertOrUpdateMerchants(merchants) {
+  if (!merchants || merchants.length === 0) {
+    return { inserted: 0, updated: 0, errors: 0 };
+  }
+
+  try {
+    console.time("⏱️ Reference codes processing");
+
+    // BULK process all reference codes at once
+    const { provinceCodes, districtCodes, subdistrictCodes } =
+      await bulkProcessReferenceCodes(merchants);
+
+    console.timeEnd("⏱️ Reference codes processing");
+    console.time("⏱️ Data preparation");
+
+    // Get current count before operation
+    const [countBefore] = await connectionDB
+      .promise()
+      .query("SELECT COUNT(*) as count FROM merchants");
+    const beforeCount = countBefore[0].count;
+
+    // Get Bangkok time
+    const bangkokTime = getBangkokTime();
+
+    // Prepare merchant data
+    const merchantData = merchants.map((merchant) => [
+      merchant.recId,
+      merchant.merchantName,
+      provinceCodes.get(merchant.province) || null,
+      districtCodes.get(merchant.district) || null,
+      subdistrictCodes.get(merchant.subdistrict) || null,
+      merchant.lat,
+      merchant.lon,
+      merchant.createdTime,
+      merchant.updatedTime,
+      merchant.companyId,
+      merchant.companyName,
+      bangkokTime,
+    ]);
+
+    console.timeEnd("⏱️ Data preparation");
+    console.time("⏱️ Bulk database operation");
+
+    const insertQuery = `
+      INSERT INTO merchants (
+        rec_id, merchant_name, province_code, district_code, subdistrict_code,
+        lat, lon, created_time, updated_time, company_id, company_name, fetch_at
+      ) VALUES ? 
+      ON DUPLICATE KEY UPDATE
+        merchant_name = VALUES(merchant_name),
+        province_code = VALUES(province_code),
+        district_code = VALUES(district_code),
+        subdistrict_code = VALUES(subdistrict_code),
+        lat = VALUES(lat),
+        lon = VALUES(lon),
+        created_time = VALUES(created_time),
+        updated_time = VALUES(updated_time),
+        company_id = VALUES(company_id),
+        company_name = VALUES(company_name),
+        fetch_at = VALUES(fetch_at)
+    `;
+
+    // Use merchantData directly
+    const [result] = await connectionDB
+      .promise()
+      .query(insertQuery, [merchantData]);
+
+    console.timeEnd("⏱️ Bulk database operation");
+
+    // Get count after operation
+    const [countAfter] = await connectionDB
+      .promise()
+      .query("SELECT COUNT(*) as count FROM merchants");
+    const afterCount = countAfter[0].count;
+
+    // Calculate actual inserts and updates
+    const actualInserts = afterCount - beforeCount;
+    const actualUpdates = merchants.length - actualInserts;
+
+    console.log(
+      `📊 Bulk operation: ${actualInserts} inserted, ${actualUpdates} updated`
+    );
+    console.log(
+      `📊 Database: ${beforeCount} → ${afterCount} (${
+        actualInserts > 0 ? "+" + actualInserts : "no change"
+      })`
     );
 
-    // === Prepare values ===
-    const values = {
-      rec_id: merchant.recId,
-      merchant_province_code: provinceCode,
-      merchant_district_code: districtCode,
-      merchant_subdistrict_code: subdistrictCode,
-      post_code: merchant.postCode || null,
-      merchant_id: merchant.merchantId,
-      merchant_name: merchant.merchantName || null,
-      address: merchant.addr || null,
-      created_at: merchant.createdTime || null,
-      updated_at: merchant.updatedTime || null,
-      fetch_at: new Date(),
-    };
-
-    // Check if merchant already exists
-    const [existing] = await connectionDB
-      .promise()
-      .query(`SELECT id FROM merchants WHERE rec_id = ? LIMIT 1`, [
-        values.rec_id,
-      ]);
-
-    if (existing.length > 0) {
-      // UPDATE existing merchant
-      await connectionDB.promise().query(
-        `UPDATE merchants SET 
-         merchant_province_code = ?, 
-         merchant_district_code = ?, 
-         merchant_subdistrict_code = ?, 
-         post_code = ?, 
-         merchant_id = ?, 
-         merchant_name = ?, 
-         address = ?, 
-         updated_at = ?, 
-         fetch_at = ?
-         WHERE rec_id = ?`,
-        [
-          values.merchant_province_code,
-          values.merchant_district_code,
-          values.merchant_subdistrict_code,
-          values.post_code,
-          values.merchant_id,
-          values.merchant_name,
-          values.address,
-          values.updated_at,
-          values.fetch_at,
-          values.rec_id,
-        ]
-      );
-
-      return { operation: OPERATIONS.UPDATE, recId: values.rec_id };
-    } else {
-      // INSERT new merchant
-      await connectionDB.promise().query(
-        `INSERT INTO merchants 
-         (rec_id, merchant_province_code, merchant_district_code, 
-          merchant_subdistrict_code, post_code, merchant_id, merchant_name, 
-          address, created_at, updated_at, fetch_at) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
-          values.rec_id,
-          values.merchant_province_code,
-          values.merchant_district_code,
-          values.merchant_subdistrict_code,
-          values.post_code,
-          values.merchant_id,
-          values.merchant_name,
-          values.address,
-          values.created_at,
-          values.updated_at,
-          values.fetch_at,
-        ]
-      );
-
-      return { operation: OPERATIONS.INSERT, recId: values.rec_id };
-    }
-  } catch (err) {
-    console.error("Merchant insert/update error:", err);
     return {
-      operation: OPERATIONS.ERROR,
-      recId: merchant.recId,
-      error: err.message,
+      operation: "BULK_UPSERT",
+      inserted: actualInserts,
+      updated: Math.max(0, actualUpdates),
+      errors: 0,
+      totalProcessed: merchants.length,
+    };
+  } catch (err) {
+    console.error("Bulk merchant insert/update error:", err);
+    return {
+      operation: "BULK_ERROR",
+      inserted: 0,
+      updated: 0,
+      errors: merchants.length,
+      totalProcessed: merchants.length,
     };
   }
-};
-
-// ===================== Exports =====================
-module.exports = {
-  insertOrUpdateMerchant,
-};
+}

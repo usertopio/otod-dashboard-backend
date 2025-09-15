@@ -1,9 +1,10 @@
-const CronService = require("../services/scheduler/cronService");
+// controllers/cronController.js (ESM)
+import CronService from "../services/scheduler/cronService.js";
 
 /**
  * Manually trigger the 5-minute data fetch
  */
-async function triggerManualFetch(req, res) {
+export async function triggerManualFetch(req, res) {
   try {
     await CronService.triggerManualFetch();
     res.status(200).json({
@@ -21,7 +22,7 @@ async function triggerManualFetch(req, res) {
 /**
  * Get cron job status
  */
-async function getCronStatus(req, res) {
+export async function getCronStatus(req, res) {
   try {
     res.status(200).json({
       message: "Cron service is running",
@@ -35,8 +36,3 @@ async function getCronStatus(req, res) {
     });
   }
 }
-
-module.exports = {
-  triggerManualFetch,
-  getCronStatus,
-};
