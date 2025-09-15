@@ -2,11 +2,11 @@ version: "3.8"
 
 services:
   app:
-    build:
+    build:  
       context: .
       dockerfile: dockerFile # (make sure the filename matches exactly: "Dockerfile")
-    image: otod-dashboard-backend:latest2 # optional: tag the built image
-    container_name: otod-backend-backend-latest2
+    image: otod-dashboard-backend:v2.3.0 # optional: tag the built image
+    container_name: otod-backend-backend-v2.3.0
     ports:
       - "5000:5000"
     env_file: .env
