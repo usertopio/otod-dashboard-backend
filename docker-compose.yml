@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: dockerFile # (make sure the filename matches exactly: "Dockerfile")
     image: otod-dashboard-backend:v2.3.1 # optional: tag the built image
-    container_name: otod-backend-backend-v2.3.1
+    container_name: otod-dashboard-backend-v2.3.1
     ports:
       - "9000:9000"
     env_file: .env
