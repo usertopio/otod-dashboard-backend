@@ -89,7 +89,7 @@ class CronService {
     });
 
     console.log(
-      "⌚Scheduled tasks initialized: run every 1 minute and 30 seconds at second 0 (Asia/Bangkok)"
+      "⌚Scheduled tasks initialized: run every 13:47 daily (Asia/Bangkok)"
     );
   }
 
