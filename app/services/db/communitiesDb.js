@@ -127,105 +127,60 @@ export async function bulkProcessReferenceCodes(communities) {
 }
 
 /**
- * Bulk insert or update communities in the database
+ * Bulk insert or update communities using INSERT ... ON DUPLICATE KEY UPDATE
+ * @param {Array} communities - Array of community objects
+ * @returns {Promise<object>} - Bulk operation result
  */
 export async function bulkInsertOrUpdateCommunities(communities) {
-  const connection = connectionDB.promise();
+  const bangkokTime = getBangkokTime();
 
-  try {
-    const [provinceCodes, districtCodes, subdistrictCodes] =
-      await bulkProcessReferenceCodes(communities);
+  const processedCommunities = communities.map((community) => [
+    community.recId,
+    community.province,
+    community.district,
+    community.subdistrict,
+    community.postCode,
+    community.commId,
+    community.commName ?? null,
+    community.totalMembers ?? null,
+    community.noOfRais ?? null,
+    community.noOfTrees ?? null,
+    community.forecastYield ?? null,
+    community.createdTime ?? null,
+    community.updatedTime ?? null,
+    bangkokTime,
+  ]);
 
-    console.time("Data preparation");
+  const query = `
+    INSERT INTO communities (
+      rec_id, province, district, subdistrict, post_code, comm_id, comm_name,
+      total_members, no_of_rais, no_of_trees, forecast_yield,
+      created_at, updated_at, fetch_at
+    ) VALUES ?
+    ON DUPLICATE KEY UPDATE
+      province = VALUES(province),
+      district = VALUES(district),
+      subdistrict = VALUES(subdistrict),
+      post_code = VALUES(post_code),
+      comm_id = VALUES(comm_id),
+      comm_name = VALUES(comm_name),
+      total_members = VALUES(total_members),
+      no_of_rais = VALUES(no_of_rais),
+      no_of_trees = VALUES(no_of_trees),
+      forecast_yield = VALUES(forecast_yield),
+      created_at = VALUES(created_at),
+      updated_at = VALUES(updated_at),
+      fetch_at = VALUES(fetch_at)
+  `;
 
-    // Get Bangkok time
-    const bangkokTime = getBangkokTime();
+  const [result] = await connectionDB
+    .promise()
+    .query(query, [processedCommunities]);
 
-    const communityData = communities.map((community) => [
-      community.recId,
-      community.postCode,
-      community.commId,
-      community.commName,
-      community.totalMembers,
-      community.noOfRais,
-      community.noOfTrees,
-      community.forecastYield,
-      community.createdTime,
-      community.updatedTime,
-      provinceCodes.get(community.province) || null,
-      districtCodes.get(community.amphur) || null,
-      subdistrictCodes.get(community.tambon) || null,
-      bangkokTime,
-    ]);
-
-    console.timeEnd("Data preparation");
-    console.time("Bulk database operation");
-
-    const [beforeResult] = await connection.query(
-      "SELECT COUNT(*) as count FROM communities"
-    );
-    const countBefore = beforeResult[0].count;
-
-    const sql = `
-      INSERT INTO communities (
-        rec_id, post_code, comm_id, comm_name, total_members, no_of_rais, no_of_trees,
-        forecast_yield, created_at, updated_at,
-        community_province_code, community_district_code, community_subdistrict_code,
-        fetch_at
-      ) VALUES ?
-      ON DUPLICATE KEY UPDATE
-        post_code = VALUES(post_code),
-        comm_id = VALUES(comm_id),
-        comm_name = VALUES(comm_name),
-        total_members = VALUES(total_members),
-        no_of_rais = VALUES(no_of_rais),
-        no_of_trees = VALUES(no_of_trees),
-        forecast_yield = VALUES(forecast_yield),
-        created_at = VALUES(created_at),
-        updated_at = VALUES(updated_at),
-        community_province_code = VALUES(community_province_code),
-        community_district_code = VALUES(community_district_code),
-        community_subdistrict_code = VALUES(community_subdistrict_code),
-        fetch_at = VALUES(fetch_at)  -- ✅ CHANGED: Use VALUES(fetch_at) like farmers
-    `;
-
-    // Use communityData directly
-    const [result] = await connection.query(sql, [communityData]);
-
-    const [afterResult] = await connection.query(
-      "SELECT COUNT(*) as count FROM communities"
-    );
-    const countAfter = afterResult[0].count;
-
-    console.timeEnd("Bulk database operation");
-
-    const actualInserted = countAfter - countBefore;
-    const actualUpdated = communities.length - actualInserted;
-
-    console.log(
-      `📊 Bulk operation: ${actualInserted} inserted, ${actualUpdated} updated`
-    );
-    console.log(
-      `📊 Database: ${countBefore} → ${countAfter} (+${actualInserted})`
-    );
-
-    return {
-      inserted: actualInserted,
-      updated: actualUpdated,
-      errors: 0,
-      affectedRows: result.affectedRows,
-      totalProcessed: communities.length,
-    };
-  } catch (error) {
-    console.error("❌ Bulk community insert/update error:", error);
-
-    return {
-      inserted: 0,
-      updated: 0,
-      errors: communities.length,
-      affectedRows: 0,
-      totalProcessed: communities.length,
-      error: error.message,
-    };
-  }
+  return {
+    inserted: result.affectedRows,
+    updated: 0,
+    errors: 0,
+    totalAfter: processedCommunities.length,
+  };
 }
