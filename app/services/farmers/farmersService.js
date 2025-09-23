@@ -156,3 +156,17 @@ export default class FarmersService {
     };
   }
 }
+
+/**
+ * Syncs farmers data from the API to the database.
+ * Logs the start and completion of the sync process.
+ * @returns {Promise<object>} - The result of the sync operation.
+ */
+export async function syncFarmersFromApi() {
+  console.log("🔄 Starting farmer sync from API...");
+  const result = await FarmersProcessor.fetchAndProcessData();
+  console.log(
+    `✅ Farmer sync complete. Inserted: ${result.inserted}, Updated: ${result.updated}, Errors: ${result.errors}, Total in DB: ${result.totalAfter}`
+  );
+  return result;
+}
