@@ -153,7 +153,7 @@ export async function bulkInsertOrUpdateNews(newsRecords) {
     // Validate and prepare news data
     const validNews = newsRecords.map((news) => [
       news.recId,
-      provinceCodes.get(news.province) || null,
+      news.province,
       news.newsId,
       news.announceDate || null,
       newsGroupCodes.get(news.newsGroup) || null,
@@ -181,12 +181,12 @@ export async function bulkInsertOrUpdateNews(newsRecords) {
 
       const sql = `
         INSERT INTO news (
-          rec_id, news_province_code, news_id, announce_date, news_group_id,
+          rec_id, province, news_id, announce_date, news_group_id,
           news_topic, news_detail, no_of_like, no_of_comments,
           created_at, updated_at, company_id, fetch_at
         ) VALUES ? 
         ON DUPLICATE KEY UPDATE
-          news_province_code = VALUES(news_province_code),
+          province = VALUES(province),
           news_id = VALUES(news_id),
           announce_date = VALUES(announce_date),
           news_group_id = VALUES(news_group_id),
