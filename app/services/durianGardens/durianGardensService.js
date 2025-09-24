@@ -5,12 +5,6 @@ import DurianGardensProcessor from "./durianGardensProcessor.js";
 import DurianGardensLogger from "./durianGardensLogger.js";
 
 // ===================== Service =====================
-
-/**
- * Syncs durian gardens data from the API to the database.
- * Logs the start and completion of the sync process.
- * @returns {Promise<object>} - The result of the sync operation.
- */
 export async function syncDurianGardensFromApi() {
   console.log("🔄 Starting durian gardens sync from API...");
   const result = await DurianGardensProcessor.fetchAndProcessData();
@@ -20,31 +14,28 @@ export async function syncDurianGardensFromApi() {
   return result;
 }
 
-// DurianGardensService handles the business logic for fetching, resetting, and managing durian garden records.
 export default class DurianGardensService {
   /**
-   * Resets only the durian_gardens table in the database.
-   * - Disables foreign key checks to allow truncation.
-   * - Truncates the durian_gardens table, leaving related tables untouched.
-   * - Re-enables foreign key checks after operation.
-   * - Logs the process and returns a status object.
+   * 1. Reset only the durian_gardens table in the database
+   * 2. Fetch all durian gardens from API and store in DB (loop with maxAttempts)
+   * 3. Log attempt start/results and final results
+   * 4. Return summary result object
+   * 5. Get database count method
    */
+
+  // 1. Reset only the durian_gardens table in the database
   static async resetOnlyDurianGardensTable() {
     const connection = connectionDB.promise();
-
     try {
       console.log("==========================================");
       console.log(
         `📩 Sending request to API Endpoint: {{LOCAL_HOST}}/api/fetchDurianGardens`
       );
       console.log("==========================================\n");
-
       console.log("🧹 Resetting ONLY durian_gardens table...");
-
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
       await connection.query("TRUNCATE TABLE durian_gardens");
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-
       console.log("✅ Only durian_gardens table reset - next ID will be 1");
       return { success: true, message: "Only durian_gardens table reset" };
     } catch (error) {
@@ -54,12 +45,9 @@ export default class DurianGardensService {
     }
   }
 
-  /**
-   * Fetches ALL durian gardens from both APIs and stores them in the database.
-   * Loops up to maxAttempts, stops early if no new records are inserted.
-   * Returns a summary result object.
-   * @param {number} maxAttempts - The maximum number of fetch attempts.
-   */
+  // 2. Fetch all durian gardens from API and store in DB (loop with maxAttempts)
+  // 3. Log attempt start/results and final results
+  // 4. Return summary result object
   static async fetchAllDurianGardens(
     maxAttempts = DURIAN_GARDENS_CONFIG.DEFAULT_MAX_ATTEMPTS
   ) {
@@ -95,6 +83,7 @@ export default class DurianGardensService {
     }
 
     const finalCount = await this._getDatabaseCount();
+
     DurianGardensLogger.logFinalResults(
       "ALL",
       finalCount,
@@ -118,10 +107,7 @@ export default class DurianGardensService {
     };
   }
 
-  /**
-   * Returns the current count of durian_gardens records in the database.
-   * @returns {Promise<number>} - The total number of gardens in the DB.
-   */
+  // 5. Get database count method
   static async _getDatabaseCount() {
     const [result] = await connectionDB
       .promise()

@@ -8,28 +8,26 @@ import MerchantsLogger from "./merchantsLogger.js";
 // MerchantsService handles the business logic for fetching, resetting, and managing merchant records.
 export default class MerchantsService {
   /**
-   * Resets only the merchants table in the database.
-   * - Disables foreign key checks to allow truncation.
-   * - Truncates the merchants table, leaving related tables untouched.
-   * - Re-enables foreign key checks after operation.
-   * - Logs the process and returns a status object.
+   * 1. Reset only the merchants table in the database
+   * 2. Fetch all merchants from API and store in DB (loop with maxAttempts)
+   * 3. Log attempt start/results and final results
+   * 4. Return summary result object
+   * 5. Get database count method
    */
+
+  // 1. Reset only the merchants table in the database
   static async resetOnlyMerchantsTable() {
     const connection = connectionDB.promise();
-
     try {
       console.log("==========================================");
       console.log(
         `📩 Sending request to API Endpoint: {{LOCAL_HOST}}/api/fetchMerchants`
       );
       console.log("==========================================\n");
-
       console.log("🧹 Resetting ONLY merchants table...");
-
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
       await connection.query("TRUNCATE TABLE merchants");
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-
       console.log("✅ Only merchants table reset - next ID will be 1");
       return { success: true, message: "Only merchants table reset" };
     } catch (error) {
@@ -39,12 +37,9 @@ export default class MerchantsService {
     }
   }
 
-  /**
-   * Fetches ALL merchants from the API and stores them in the database.
-   * Loops up to maxAttempts, stops early if no new records are inserted.
-   * Returns a summary result object.
-   * @param {number} maxAttempts - The maximum number of fetch attempts.
-   */
+  // 2. Fetch all merchants from API and store in DB (loop with maxAttempts)
+  // 3. Log attempt start/results and final results
+  // 4. Return summary result object
   static async fetchAllMerchants(
     maxAttempts = MERCHANTS_CONFIG.DEFAULT_MAX_ATTEMPTS
   ) {
@@ -114,10 +109,7 @@ export default class MerchantsService {
     };
   }
 
-  /**
-   * Returns the current count of merchants records in the database.
-   * @returns {Promise<number>} - The total number of merchants in the DB.
-   */
+  // 5. Get database count method
   static async _getDatabaseCount() {
     const [result] = await connectionDB
       .promise()
