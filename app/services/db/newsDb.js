@@ -156,7 +156,7 @@ export async function bulkInsertOrUpdateNews(newsRecords) {
       news.province,
       news.newsId,
       news.announceDate || null,
-      newsGroupCodes.get(news.newsGroup) || null,
+      news.newsGroup ?? null,
       news.newsTopic || news.newsTitle || null,
       news.newsDetail || news.newsContent || null,
       news.noOfLike || 0,
@@ -181,7 +181,7 @@ export async function bulkInsertOrUpdateNews(newsRecords) {
 
       const sql = `
         INSERT INTO news (
-          rec_id, province, news_id, announce_date, news_group_id,
+          rec_id, province, news_id, announce_date, news_group,
           news_topic, news_detail, no_of_like, no_of_comments,
           created_at, updated_at, company_id, fetch_at
         ) VALUES ? 
@@ -189,7 +189,7 @@ export async function bulkInsertOrUpdateNews(newsRecords) {
           province = VALUES(province),
           news_id = VALUES(news_id),
           announce_date = VALUES(announce_date),
-          news_group_id = VALUES(news_group_id),
+          news_group = VALUES(news_group),
           news_topic = VALUES(news_topic),
           news_detail = VALUES(news_detail),
           no_of_like = VALUES(no_of_like),
