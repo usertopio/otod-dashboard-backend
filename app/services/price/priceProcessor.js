@@ -107,7 +107,7 @@ export default class PriceProcessor {
   static async _getDatabaseCount() {
     const [result] = await connectionDB
       .promise()
-      .query("SELECT COUNT(*) as total FROM avg_price");
+      .query("SELECT COUNT(*) as total FROM price");
     return result[0].total;
   }
 }
