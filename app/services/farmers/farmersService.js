@@ -9,27 +9,21 @@ import FarmersLogger from "./farmersLogger.js";
 export default class FarmersService {
   /**
    * Resets only the farmers table in the database.
-   * - Disables foreign key checks to allow truncation.
-   * - Truncates the farmers table, leaving related tables untouched.
-   * - Re-enables foreign key checks after operation.
-   * - Logs the process and returns a status object.
+   * Uses DELETE and resets AUTO_INCREMENT for FK safety.
    */
   static async resetOnlyFarmersTable() {
     const connection = connectionDB.promise();
-
     try {
       console.log("==========================================");
       console.log(
         `📩 Sending request to API Endpoint: {{LOCAL_HOST}}/api/fetchFarmers`
       );
       console.log("==========================================\n");
-
       console.log("🧹 Resetting ONLY farmers table...");
-
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
-      await connection.query("TRUNCATE TABLE farmers");
+      await connection.query("DELETE FROM farmers");
+      await connection.query("ALTER TABLE farmers AUTO_INCREMENT = 1");
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-
       console.log("✅ Only farmers table reset - next ID will be 1");
       return { success: true, message: "Only farmers table reset" };
     } catch (error) {
@@ -118,49 +112,13 @@ export default class FarmersService {
       .query("SELECT COUNT(*) as total FROM farmers");
     return result[0].total;
   }
-
-  /**
-   * Builds and logs the final result summary after the fetch loop.
-   * @param {number} targetCount - The target number of farmers.
-   * @param {number} attemptsUsed - The number of attempts used.
-   * @param {number} maxAttempts - The maximum allowed attempts.
-   * @returns {object} - Summary of the fetch operation.
-   */
-  static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
-    const finalCount = await this._getDatabaseCount();
-    let status;
-
-    // All handle "ALL" target correctly
-    if (targetCount === "ALL") {
-      status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
-    } else {
-      status = finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
-    }
-
-    FarmersLogger.logFinalResults(
-      targetCount,
-      finalCount,
-      attemptsUsed,
-      maxAttempts,
-      status
-    );
-
-    return {
-      message: `Fetch loop completed - ${status}`,
-      target: targetCount,
-      achieved: finalCount,
-      attemptsUsed: attemptsUsed,
-      maxAttempts: maxAttempts,
-      status: status,
-      reachedTarget: finalCount >= targetCount,
-    };
-  }
 }
 
 /**
- * Syncs farmers data from the API to the database.
- * Logs the start and completion of the sync process.
- * @returns {Promise<object>} - The result of the sync operation.
+ * Syncs farmers data from the API, inserting new records and updating
+ * existing ones as necessary. Logs the result of the sync operation.
+ * @returns {Promise<Object>} - The result of the sync operation,
+ * including counts of inserted, updated, and errored records.
  */
 export async function syncFarmersFromApi() {
   console.log("🔄 Starting farmer sync from API...");
