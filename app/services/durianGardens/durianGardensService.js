@@ -4,6 +4,20 @@ import { DURIAN_GARDENS_CONFIG, STATUS } from "../../utils/constants.js";
 import DurianGardensProcessor from "./durianGardensProcessor.js";
 import DurianGardensLogger from "./durianGardensLogger.js";
 
+/**
+ * Syncs durian gardens data from the API to the database.
+ * Logs the start and completion of the sync process.
+ * @returns {Promise<object>} - The result of the sync operation.
+ */
+export async function syncDurianGardensFromApi() {
+  console.log("🔄 Starting durian gardens sync from API...");
+  const result = await DurianGardensProcessor.fetchAndProcessData();
+  console.log(
+    `✅ Durian gardens sync complete. Inserted: ${result.inserted}, Updated: ${result.updated}, Errors: ${result.errors}, Total in DB: ${result.totalAfter}`
+  );
+  return result;
+}
+
 // ===================== Service =====================
 // DurianGardensService handles the business logic for fetching, resetting, and managing durian garden records.
 export default class DurianGardensService {

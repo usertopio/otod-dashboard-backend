@@ -174,3 +174,17 @@ export default class CommunitiesService {
     };
   }
 }
+
+/**
+ * Syncs communities data from the API to the database.
+ * Logs the start and completion of the sync process.
+ * @returns {Promise<object>} - The result of the sync operation.
+ */
+export async function syncCommunitiesFromApi() {
+  console.log("🔄 Starting communities sync from API...");
+  const result = await CommunitiesProcessor.fetchAndProcessData();
+  console.log(
+    `✅ Communities sync complete. Inserted: ${result.inserted}, Updated: ${result.updated}, Errors: ${result.errors}, Total in DB: ${result.totalAfter}`
+  );
+  return result;
+}

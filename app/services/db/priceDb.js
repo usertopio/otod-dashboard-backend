@@ -91,20 +91,20 @@ export async function bulkInsertOrUpdateAvgPrice(avgPrices) {
     const bangkokTime = getBangkokTime();
     const avgPriceData = avgPrices.map((item) => [
       item.appPriceId,
-      provinceCodes.get(item.province) || null,
-      item.region || null,
-      breedCodes.get(item.breedName) || null,
-      item.priceDate || null,
+      item.province ?? null, // <-- use 'province'
+      item.region ?? null,
+      item.breed_id ?? null,
+      item.priceDate ?? null,
       item.avgPrice ?? null,
-      item.dataSource || null,
+      item.dataSource ?? null,
       bangkokTime,
     ]);
     const sql = `
       INSERT INTO price (
-        app_price_id, province_code, region, breed_id, price_date, avg_price, data_source, fetch_at
+        app_price_id, province, region, breed_id, price_date, avg_price, data_source, fetch_at
       ) VALUES ?
       ON DUPLICATE KEY UPDATE
-        province_code = VALUES(province_code),
+        province = VALUES(province),
         region = VALUES(region),
         breed_id = VALUES(breed_id),
         price_date = VALUES(price_date),

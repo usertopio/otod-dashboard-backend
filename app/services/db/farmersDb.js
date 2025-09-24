@@ -5,14 +5,11 @@ import { connectionDB } from "../../config/db/db.conf.js";
 /**
  * Get Bangkok timezone timestamp as MySQL-compatible string
  */
-const getBangkokTime = () => {
-  // ✅ FIX: Proper format for MySQL
+function getBangkokTime() {
   return new Date()
-    .toLocaleString("sv-SE", {
-      timeZone: "Asia/Bangkok",
-    })
+    .toLocaleString("sv-SE", { timeZone: "Asia/Bangkok" })
     .replace(" ", "T");
-};
+}
 
 // ===================== DB Utilities =====================
 // Provides helper functions for reference code lookup and upserting farmers
@@ -135,130 +132,76 @@ const bulkProcessReferenceCodes = async (farmers) => {
  * @param {Array} farmers - Array of farmer objects
  * @returns {Promise<object>} - Bulk operation result
  */
-const bulkInsertOrUpdateFarmers = async (farmers) => {
-  if (!farmers || farmers.length === 0) {
-    return { inserted: 0, updated: 0, errors: 0 };
-  }
+export async function bulkInsertOrUpdateFarmers(farmers) {
+  const bangkokTime = getBangkokTime();
 
-  try {
-    // BULK process all reference codes at once
-    const { provinceCodes, districtCodes, subdistrictCodes } =
-      await bulkProcessReferenceCodes(farmers);
+  const processedFarmers = farmers.map((farmer) => [
+    farmer.recId,
+    farmer.province,
+    farmer.amphur,
+    farmer.tambon,
+    farmer.farmerId,
+    farmer.title || null,
+    farmer.firstName,
+    farmer.lastName,
+    farmer.gender || null,
+    farmer.dateOfBirth || null,
+    farmer.idCard,
+    farmer.idCardExpiryDate || null,
+    farmer.addr || null,
+    farmer.postCode,
+    farmer.email || null,
+    farmer.mobileNo,
+    farmer.lineId || null,
+    farmer.farmerRegistNumber || null,
+    farmer.farmerRegistType || null,
+    farmer.companyId,
+    farmer.createdTime,
+    farmer.updatedTime,
+    bangkokTime,
+  ]);
 
-    console.time("⏱️ Data preparation");
+  const query = `
+    INSERT INTO farmers (
+      rec_id, province, district, subdistrict, 
+      farmer_id, title, first_name, last_name, gender, date_of_birth, id_card, 
+      id_card_expiry_date, address, post_code, email, mobile_no, line_id, 
+      farmer_regist_number, farmer_regist_type, company_id, created_at, updated_at, fetch_at
+    ) VALUES ? 
+    ON DUPLICATE KEY UPDATE
+      province = VALUES(province),
+      district = VALUES(district),
+      subdistrict = VALUES(subdistrict),
+      farmer_id = VALUES(farmer_id),
+      title = VALUES(title),
+      first_name = VALUES(first_name),
+      last_name = VALUES(last_name), 
+      gender = VALUES(gender),
+      date_of_birth = VALUES(date_of_birth),
+      id_card = VALUES(id_card),
+      id_card_expiry_date = VALUES(id_card_expiry_date),
+      address = VALUES(address),
+      post_code = VALUES(post_code),
+      email = VALUES(email),
+      mobile_no = VALUES(mobile_no),
+      line_id = VALUES(line_id),
+      farmer_regist_number = VALUES(farmer_regist_number),
+      farmer_regist_type = VALUES(farmer_regist_type),
+      company_id = VALUES(company_id),
+      updated_at = VALUES(updated_at),
+      fetch_at = VALUES(fetch_at)
+  `;
 
-    // Get current count before operation
-    const [countBefore] = await connectionDB
-      .promise()
-      .query("SELECT COUNT(*) as count FROM farmers");
-    const beforeCount = countBefore[0].count;
+  const [result] = await connectionDB
+    .promise()
+    .query(query, [processedFarmers]);
 
-    // Use Bangkok timezone for fetch_at
-    const bangkokTime = getBangkokTime();
+  return {
+    inserted: result.affectedRows,
+    updated: 0,
+    errors: 0,
+    totalAfter: processedFarmers.length,
+  };
+}
 
-    // Prepare farmer data (now much faster - no individual queries)
-    const processedFarmers = farmers.map((farmer) => [
-      farmer.recId,
-      provinceCodes[farmer.province] || null,
-      districtCodes[farmer.amphur] || null,
-      subdistrictCodes[farmer.tambon] || null,
-      farmer.farmerId,
-      farmer.title || null,
-      farmer.firstName,
-      farmer.lastName,
-      farmer.gender || null,
-      farmer.dateOfBirth || null,
-      farmer.idCard,
-      farmer.idCardExpiryDate || null,
-      farmer.addr || null,
-      farmer.postCode,
-      farmer.email || null,
-      farmer.mobileNo,
-      farmer.lineId || null,
-      farmer.farmerRegistNumber || null,
-      farmer.farmerRegistType || null,
-      farmer.companyId,
-      farmer.createdTime,
-      farmer.updatedTime,
-      bangkokTime,
-    ]);
-
-    console.timeEnd("⏱️ Data preparation");
-    console.time("⏱️ Bulk database operation");
-
-    const query = `
-      INSERT INTO farmers (
-        rec_id, farmer_province_code, farmer_district_code, farmer_subdistrict_code, 
-        farmer_id, title, first_name, last_name, gender, date_of_birth, id_card, 
-        id_card_expiry_date, address, post_code, email, mobile_no, line_id, 
-        farmer_regist_number, farmer_regist_type, company_id, created_at, updated_at, fetch_at
-      ) VALUES ? 
-      ON DUPLICATE KEY UPDATE
-        farmer_province_code = VALUES(farmer_province_code),
-        farmer_district_code = VALUES(farmer_district_code), 
-        farmer_subdistrict_code = VALUES(farmer_subdistrict_code),
-        farmer_id = VALUES(farmer_id),
-        title = VALUES(title),
-        first_name = VALUES(first_name),
-        last_name = VALUES(last_name), 
-        gender = VALUES(gender),
-        date_of_birth = VALUES(date_of_birth),
-        id_card = VALUES(id_card),
-        id_card_expiry_date = VALUES(id_card_expiry_date),
-        address = VALUES(address),
-        post_code = VALUES(post_code),
-        email = VALUES(email),
-        mobile_no = VALUES(mobile_no),
-        line_id = VALUES(line_id),
-        farmer_regist_number = VALUES(farmer_regist_number),
-        farmer_regist_type = VALUES(farmer_regist_type),
-        company_id = VALUES(company_id),
-        updated_at = VALUES(updated_at),
-        fetch_at = VALUES(fetch_at)
-    `;
-
-    const [result] = await connectionDB
-      .promise()
-      .query(query, [processedFarmers]);
-
-    console.timeEnd("⏱️ Bulk database operation");
-
-    // Get count after operation
-    const [countAfter] = await connectionDB
-      .promise()
-      .query("SELECT COUNT(*) as count FROM farmers");
-    const afterCount = countAfter[0].count;
-
-    const actualInserts = afterCount - beforeCount;
-    const actualUpdates = farmers.length - actualInserts;
-
-    console.log(
-      `📊 Bulk operation: ${actualInserts} inserted, ${actualUpdates} updated`
-    );
-    console.log(
-      `📊 Database: ${beforeCount} → ${afterCount} (${
-        actualInserts > 0 ? "+" + actualInserts : "no change"
-      })`
-    );
-
-    return {
-      operation: "BULK_UPSERT",
-      inserted: actualInserts,
-      updated: Math.max(0, actualUpdates),
-      errors: 0,
-      totalProcessed: farmers.length,
-    };
-  } catch (err) {
-    console.error("Bulk farmer insert/update error:", err);
-    return {
-      operation: "BULK_ERROR",
-      inserted: 0,
-      updated: 0,
-      errors: farmers.length,
-      totalProcessed: farmers.length,
-      error: err.message,
-    };
-  }
-};
-
-export { bulkInsertOrUpdateFarmers, bulkProcessReferenceCodes };
+export { bulkProcessReferenceCodes };
