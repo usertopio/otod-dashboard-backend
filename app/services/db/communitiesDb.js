@@ -137,8 +137,8 @@ export async function bulkInsertOrUpdateCommunities(communities) {
   const processedCommunities = communities.map((community) => [
     community.recId,
     community.province,
-    community.district,
-    community.subdistrict,
+    community.amphur,
+    community.tambon,
     community.postCode,
     community.commId,
     community.commName ?? null,
