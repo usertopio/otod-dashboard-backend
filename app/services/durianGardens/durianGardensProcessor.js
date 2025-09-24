@@ -7,7 +7,7 @@ import { bulkInsertOrUpdateDurianGardens } from "../db/durianGardensDb.js";
 // Import DB connection for direct queries
 import { connectionDB } from "../../config/db/db.conf.js";
 // Import config constants and operation enums
-import { DURIAN_GARDENS_CONFIG, OPERATIONS } from "../../utils/constants.js";
+import { DURIAN_GARDENS_CONFIG } from "../../utils/constants.js";
 // Import logger for structured process logging
 import DurianGardensLogger from "./durianGardensLogger.js";
 
@@ -15,52 +15,28 @@ import DurianGardensLogger from "./durianGardensLogger.js";
 // DurianGardensProcessor handles fetching, merging, deduplication, and DB upserts for durian gardens.
 export default class DurianGardensProcessor {
   /**
-   * Fetches all durian garden data from both APIs, merges, deduplicates, and upserts into DB.
-   * Returns a result object with metrics and tracking info.
+   * Main entry point: fetch, deduplicate, and upsert durian gardens.
    */
   static async fetchAndProcessData() {
-    const metrics = {
-      allGardensFromGetLands: [],
-      allGardensFromGetLandGeoJSON: [],
-      allGardensAllPages: [],
-    };
-
-    // Get database count before processing
+    // 1. Get DB count before processing (optional)
     const dbCountBefore = await this._getDatabaseCount();
 
-    // Fetch from GetLands API (paginated)
-    await this._fetchGetLandsPages(metrics);
+    // 2. Fetch all gardens from both APIs
+    const allGardens = await this._fetchAllPages();
 
-    // Fetch from GetLandGeoJSON API (single call, no pagination)
-    await this._fetchGetLandGeoJSON(metrics);
+    // 3. Deduplicate gardens (already unique by landId after merge)
+    const uniqueGardens = this._getUniqueGardens(allGardens);
 
-    const mergedGardens = this._mergeRecordsFromBothAPIs(
-      metrics.allGardensFromGetLands,
-      metrics.allGardensFromGetLandGeoJSON
-    );
+    // 4. Log summary (optional)
+    DurianGardensLogger.logApiSummary(allGardens.length, uniqueGardens.length);
 
-    metrics.allGardensAllPages = mergedGardens;
-
-    // Process unique gardens (using landId as unique identifier)
-    const uniqueGardens = this._getUniqueGardens(metrics.allGardensAllPages);
-
-    DurianGardensLogger.logApiSummary(
-      metrics.allGardensAllPages.length,
-      uniqueGardens.length,
-      metrics.allGardensFromGetLands.length,
-      metrics.allGardensFromGetLandGeoJSON.length
-    );
-
-    console.log(
-      `🚀 Processing ${uniqueGardens.length} unique durian gardens using BULK operations...`
-    );
-
-    // BULK PROCESSING - Single operation for all gardens
+    // 5. Bulk upsert to DB
     const result = await bulkInsertOrUpdateDurianGardens(uniqueGardens);
 
-    // Get database count after processing
+    // 6. Get DB count after processing
     const dbCountAfter = await this._getDatabaseCount();
 
+    // 7. Return result
     return {
       inserted: result.inserted,
       updated: result.updated,
@@ -70,13 +46,13 @@ export default class DurianGardensProcessor {
     };
   }
 
-  // Fetch from GetLands API (paginated)
-  static async _fetchGetLandsPages(metrics) {
-    console.log("");
-    console.log("📞 Sending request to GetLands API (paginated)...");
-
-    let year = 1; // If you don't have a year loop, keep as 1
+  /**
+   * Fetches all gardens from both APIs and merges them.
+   */
+  static async _fetchAllPages() {
+    // Fetch from GetLands API (paginated)
     let page = 1;
+    let allGardensFromGetLands = [];
     let hasMore = true;
     while (hasMore) {
       const requestBody = {
@@ -84,42 +60,24 @@ export default class DurianGardensProcessor {
         pageIndex: page,
         pageSize: DURIAN_GARDENS_CONFIG.DEFAULT_PAGE_SIZE,
       };
-
-      // const customHeaders = {
-      //   Authorization: `Bearer ${process.env.ACCESS_TOKEN}`,
-      // };
-
       const lands = await getLands(requestBody);
       const landsCurPage = lands.data || [];
-      metrics.allGardensFromGetLands =
-        metrics.allGardensFromGetLands.concat(landsCurPage);
-
-      // Standardized log
-      DurianGardensLogger.logPageInfo(year, page, landsCurPage);
-
-      // Stop if no more data
-      if (landsCurPage.length < DURIAN_GARDENS_CONFIG.DEFAULT_PAGE_SIZE) {
-        hasMore = false;
-      } else {
-        page++;
-      }
+      allGardensFromGetLands = allGardensFromGetLands.concat(landsCurPage);
+      DurianGardensLogger.logPageInfo(1, page, landsCurPage);
+      hasMore = landsCurPage.length === DURIAN_GARDENS_CONFIG.DEFAULT_PAGE_SIZE;
+      page++;
     }
-  }
 
-  // Fetch from GetLandGeoJSON API (single call, no pagination)
-  static async _fetchGetLandGeoJSON(metrics) {
-    console.log("📞 Sending request to GetLandGeoJSON API (single call)...");
-
-    const requestBody = {
+    // Fetch from GetLandGeoJSON API (single call)
+    const requestBodyGeo = {
       province: "",
       amphur: "",
       tambon: "",
       landType: "",
     };
+    const landGeoJSON = await getLandGeoJSON(requestBodyGeo);
 
-    const landGeoJSON = await getLandGeoJSON(requestBody);
-
-    // Transform nested farmers.lands structure to flat array
+    // Flatten nested farmers.lands structure
     const flattenedLands = [];
     if (landGeoJSON.farmers && landGeoJSON.farmers.length > 0) {
       landGeoJSON.farmers.forEach((farmer) => {
@@ -127,7 +85,6 @@ export default class DurianGardensProcessor {
           farmer.lands.forEach((land) => {
             flattenedLands.push({
               ...land,
-              // Add farmer info to land record
               farmer_id: farmer.farmerId,
               farmer_title: farmer.title,
               farmer_firstName: farmer.firstName,
@@ -140,17 +97,19 @@ export default class DurianGardensProcessor {
         }
       });
     }
-
-    metrics.allGardensFromGetLandGeoJSON = flattenedLands;
     DurianGardensLogger.logPageInfo(1, 1, flattenedLands);
+
+    // Merge records from both APIs by landId
+    return this._mergeRecordsFromBothAPIs(
+      allGardensFromGetLands,
+      flattenedLands
+    );
   }
 
-  // Merge records from both APIs by landId
+  /**
+   * Merges records from both APIs by landId.
+   */
   static _mergeRecordsFromBothAPIs(getLandsData, getLandGeoJSONData) {
-    console.log(``);
-    console.log("🔗 Merging records from both APIs...");
-
-    // Start with GetLands data as base (has most fields)
     const mergedMap = new Map();
 
     // Add all GetLands records
@@ -185,7 +144,6 @@ export default class DurianGardensProcessor {
         updatedTime: land.updatedTime,
         companyId: land.companyId,
         companyName: land.companyName,
-        // Initialize geojson as null (will be filled by GetLandGeoJSON)
         geojson: null,
       });
     });
@@ -193,16 +151,14 @@ export default class DurianGardensProcessor {
     // Merge GetLandGeoJSON data (only geojson field)
     getLandGeoJSONData.forEach((geoLand) => {
       if (mergedMap.has(geoLand.landId)) {
-        // Update existing record with geojson from GetLandGeoJSON
         const existing = mergedMap.get(geoLand.landId);
         existing.geojson = geoLand.geojson;
         existing.source = "Both APIs";
         mergedMap.set(geoLand.landId, existing);
       } else {
-        // Create new record from GetLandGeoJSON only
         mergedMap.set(geoLand.landId, {
           source: "GetLandGeoJSON",
-          recId: null, // No recId from GetLandGeoJSON
+          recId: null,
           farmerId: geoLand.farmer_id,
           landId: geoLand.landId,
           province: geoLand.farmer_province,
@@ -230,24 +186,24 @@ export default class DurianGardensProcessor {
           updatedTime: null,
           companyId: null,
           companyName: null,
-          geojson: geoLand.geojson, // From GetLandGeoJSON
+          geojson: geoLand.geojson,
         });
       }
     });
 
-    const mergedArray = Array.from(mergedMap.values());
-    console.log(
-      `🔗 Merged ${mergedArray.length} unique gardens from both APIs`
-    );
-
-    return mergedArray;
+    return Array.from(mergedMap.values());
   }
 
-  // Get unique gardens (already unique by landId from merge)
+  /**
+   * Deduplicates gardens (already unique by landId after merge).
+   */
   static _getUniqueGardens(allGardens) {
-    return allGardens; // Already unique from merge process
+    return allGardens;
   }
 
+  /**
+   * Gets the current count of durian gardens in the DB.
+   */
   static async _getDatabaseCount() {
     const [result] = await connectionDB
       .promise()
