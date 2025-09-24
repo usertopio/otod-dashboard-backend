@@ -124,41 +124,4 @@ export default class MerchantsService {
       .query("SELECT COUNT(*) as total FROM merchants");
     return result[0].total;
   }
-
-  /**
-   * Builds and logs the final result summary after the fetch loop.
-   * @param {number} targetCount - The target number of merchants.
-   * @param {number} attemptsUsed - The number of attempts used.
-   * @param {number} maxAttempts - The maximum allowed attempts.
-   * @returns {object} - Summary of the fetch operation.
-   */
-  static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
-    const finalCount = await this._getDatabaseCount();
-    let status;
-
-    // All handle "ALL" target correctly
-    if (targetCount === "ALL") {
-      status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
-    } else {
-      status = finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
-    }
-
-    MerchantsLogger.logFinalResults(
-      targetCount,
-      finalCount,
-      attemptsUsed,
-      maxAttempts,
-      status
-    );
-
-    return {
-      message: `Fetch loop completed - ${status}`,
-      target: targetCount,
-      achieved: finalCount,
-      attemptsUsed: attemptsUsed,
-      maxAttempts: maxAttempts,
-      status: status,
-      reachedTarget: finalCount >= targetCount,
-    };
-  }
 }
