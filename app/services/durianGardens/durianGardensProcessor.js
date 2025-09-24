@@ -13,7 +13,7 @@ import DurianGardensLogger from "./durianGardensLogger.js";
 
 // ===================== Processor =====================
 // DurianGardensProcessor handles fetching, merging, deduplication, and DB upserts for durian gardens.
-class DurianGardensProcessor {
+export default class DurianGardensProcessor {
   /**
    * Fetches all durian garden data from both APIs, merges, deduplicates, and upserts into DB.
    * Returns a result object with metrics and tracking info.
@@ -254,46 +254,4 @@ class DurianGardensProcessor {
       .query("SELECT COUNT(*) as total FROM durian_gardens");
     return result[0].total;
   }
-
-  static _buildResult(metrics, dbCountBefore, dbCountAfter) {
-    return {
-      // Database metrics
-      totalBefore: dbCountBefore,
-      totalAfter: dbCountAfter,
-      inserted: metrics.insertCount,
-      updated: metrics.updateCount,
-      errors: metrics.errorCount,
-      growth: dbCountAfter - dbCountBefore,
-
-      // API metrics
-      totalFromAPI: metrics.allGardensAllPages.length,
-      totalFromGetLands: metrics.allGardensFromGetLands.length,
-      totalFromGetLandGeoJSON: metrics.allGardensFromGetLandGeoJSON.length,
-      uniqueFromAPI: metrics.allGardensAllPages.length, // Already unique from merge
-      duplicatedDataAmount: 0, // No duplicates after merge
-
-      // Record tracking
-      newRecIds: metrics.newRecIds,
-      updatedRecIds: metrics.updatedRecIds,
-      errorRecIds: metrics.errorRecIds,
-      processedRecIds: Array.from(metrics.processedRecIds),
-
-      // Additional insights
-      recordsInDbNotInAPI: dbCountBefore - metrics.updateCount,
-      totalProcessingOperations:
-        metrics.insertCount + metrics.updateCount + metrics.errorCount,
-
-      // API breakdown
-      apiSources: {
-        getLands: metrics.allGardensFromGetLands.length,
-        getLandGeoJSON: metrics.allGardensFromGetLandGeoJSON.length,
-        merged: metrics.allGardensAllPages.length,
-      },
-
-      // For compatibility
-      allGardensAllPages: metrics.allGardensAllPages,
-    };
-  }
 }
-
-export default DurianGardensProcessor;

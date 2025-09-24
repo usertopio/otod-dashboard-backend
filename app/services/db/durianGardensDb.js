@@ -13,6 +13,8 @@ const getBangkokTime = () => {
     .replace(" ", "T");
 };
 
+// ===================== DB Utilities =====================
+
 /**
  * Bulk insert or update durian gardens using INSERT ... ON DUPLICATE KEY UPDATE
  * @param {Array} gardens - Array of garden objects

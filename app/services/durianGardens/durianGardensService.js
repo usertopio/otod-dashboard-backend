@@ -4,6 +4,8 @@ import { DURIAN_GARDENS_CONFIG, STATUS } from "../../utils/constants.js";
 import DurianGardensProcessor from "./durianGardensProcessor.js";
 import DurianGardensLogger from "./durianGardensLogger.js";
 
+// ===================== Service =====================
+
 /**
  * Syncs durian gardens data from the API to the database.
  * Logs the start and completion of the sync process.
@@ -18,7 +20,6 @@ export async function syncDurianGardensFromApi() {
   return result;
 }
 
-// ===================== Service =====================
 // DurianGardensService handles the business logic for fetching, resetting, and managing durian garden records.
 export default class DurianGardensService {
   /**
@@ -93,15 +94,28 @@ export default class DurianGardensService {
       attempt++;
     }
 
-    // Pass the actual final count, not "ALL"
     const finalCount = await this._getDatabaseCount();
-    const result = await this._buildFinalResult(
-      finalCount, // ← Pass the actual number like other modules
+    DurianGardensLogger.logFinalResults(
+      "ALL",
+      finalCount,
       attempt - 1,
-      maxAttempts
+      maxAttempts,
+      STATUS.SUCCESS
     );
 
-    return result; // ← Return the result from _buildFinalResult
+    return {
+      message: `Fetch loop completed - ALL records fetched`,
+      achieved: finalCount,
+      attemptsUsed: attempt - 1,
+      maxAttempts: maxAttempts,
+      inserted: totalInserted,
+      updated: totalUpdated,
+      errors: totalErrors,
+      status: STATUS.SUCCESS,
+      reachedTarget: true,
+      apis: ["GetLands", "GetLandGeoJSON"],
+      table: "durian_gardens",
+    };
   }
 
   /**
@@ -113,44 +127,5 @@ export default class DurianGardensService {
       .promise()
       .query("SELECT COUNT(*) as total FROM durian_gardens");
     return result[0].total;
-  }
-
-  /**
-   * Builds and logs the final result summary after the fetch loop.
-   * @param {number} targetCount - The target number of gardens.
-   * @param {number} attemptsUsed - The number of attempts used.
-   * @param {number} maxAttempts - The maximum allowed attempts.
-   * @returns {object} - Summary of the fetch operation.
-   */
-  static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
-    const finalCount = await this._getDatabaseCount();
-
-    let status;
-    // All handle "ALL" target correctly
-    if (targetCount === "ALL") {
-      status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
-    } else {
-      status = finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
-    }
-
-    DurianGardensLogger.logFinalResults(
-      targetCount,
-      finalCount,
-      attemptsUsed,
-      maxAttempts,
-      status
-    );
-
-    return {
-      message: `Fetch loop completed - ${status}`,
-      target: targetCount,
-      achieved: finalCount,
-      attemptsUsed: attemptsUsed,
-      maxAttempts: maxAttempts,
-      status: status,
-      reachedTarget: finalCount >= targetCount,
-      apis: ["GetLands", "GetLandGeoJSON"],
-      table: "durian_gardens",
-    };
   }
 }

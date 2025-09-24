@@ -5,6 +5,22 @@ import FarmersProcessor from "./farmersProcessor.js";
 import FarmersLogger from "./farmersLogger.js";
 
 // ===================== Service =====================
+
+/**
+ * Syncs farmers data from the API, inserting new records and updating
+ * existing ones as necessary. Logs the result of the sync operation.
+ * @returns {Promise<Object>} - The result of the sync operation,
+ * including counts of inserted, updated, and errored records.
+ */
+export async function syncFarmersFromApi() {
+  console.log("🔄 Starting farmer sync from API...");
+  const result = await FarmersProcessor.fetchAndProcessData();
+  console.log(
+    `✅ Farmer sync complete. Inserted: ${result.inserted}, Updated: ${result.updated}, Errors: ${result.errors}, Total in DB: ${result.totalAfter}`
+  );
+  return result;
+}
+
 // FarmersService handles the business logic for fetching, resetting, and managing farmer records.
 export default class FarmersService {
   /**
@@ -112,19 +128,4 @@ export default class FarmersService {
       .query("SELECT COUNT(*) as total FROM farmers");
     return result[0].total;
   }
-}
-
-/**
- * Syncs farmers data from the API, inserting new records and updating
- * existing ones as necessary. Logs the result of the sync operation.
- * @returns {Promise<Object>} - The result of the sync operation,
- * including counts of inserted, updated, and errored records.
- */
-export async function syncFarmersFromApi() {
-  console.log("🔄 Starting farmer sync from API...");
-  const result = await FarmersProcessor.fetchAndProcessData();
-  console.log(
-    `✅ Farmer sync complete. Inserted: ${result.inserted}, Updated: ${result.updated}, Errors: ${result.errors}, Total in DB: ${result.totalAfter}`
-  );
-  return result;
 }
