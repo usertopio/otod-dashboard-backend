@@ -33,7 +33,7 @@ export async function bulkInsertOrUpdateDurianGardens(gardens) {
       garden.province,
       garden.amphur, // API 'amphur' → DB 'district'
       garden.tambon, // API 'tambon' → DB 'subdistrict'
-      garden.landTypeId,
+      garden.landType,
       garden.lat ?? null,
       garden.lon ?? null,
       garden.noOfRais ?? null,
@@ -49,7 +49,7 @@ export async function bulkInsertOrUpdateDurianGardens(gardens) {
 
     const query = `
       INSERT INTO durian_gardens (
-        rec_id, farmer_id, land_id, province, district, subdistrict, land_type_id,
+        rec_id, farmer_id, land_id, province, district, subdistrict, land_type,
         lat, lon, no_of_rais, no_of_ngan, no_of_wah, kml, geojson,
         created_at, updated_at, company_id, fetch_at
       ) VALUES ?
@@ -59,7 +59,7 @@ export async function bulkInsertOrUpdateDurianGardens(gardens) {
         province = VALUES(province),
         district = VALUES(district),
         subdistrict = VALUES(subdistrict),
-        land_type_id = VALUES(land_type_id),
+        land_type = VALUES(land_type),
         lat = VALUES(lat),
         lon = VALUES(lon),
         no_of_rais = VALUES(no_of_rais),
