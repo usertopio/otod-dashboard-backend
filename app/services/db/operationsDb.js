@@ -188,7 +188,7 @@ export async function bulkInsertOrUpdateOperations(operations) {
 
       validOperations.push([
         operation.recId,
-        provinceCode,
+        operation.provinceName,
         operation.cropYear ?? null,
         operation.operId,
         operation.cropId,
@@ -232,12 +232,12 @@ export async function bulkInsertOrUpdateOperations(operations) {
       // Execute bulk insert with ON DUPLICATE KEY UPDATE
       const sql = `
         INSERT INTO operations (
-          rec_id, operation_province_code, crop_year, oper_id, crop_id, operation_type_id, 
+          rec_id, province, crop_year, oper_id, crop_id, operation_type_id, 
           oper_date, no_of_workers, worker_cost, fertilizer_cost, equipment_cost,
           created_at, updated_at, company_id, fetch_at
         ) VALUES ? 
         ON DUPLICATE KEY UPDATE
-          operation_province_code = VALUES(operation_province_code),
+          province = VALUES(province),
           crop_year = VALUES(crop_year),
           oper_id = VALUES(oper_id),
           crop_id = VALUES(crop_id),
