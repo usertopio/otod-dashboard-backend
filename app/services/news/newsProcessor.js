@@ -12,39 +12,36 @@ import NewsLogger from "./newsLogger.js";
 
 // ===================== Processor =====================
 // NewsProcessor handles fetching, deduplication, and DB upserts for news.
-class NewsProcessor {
+export default class NewsProcessor {
   /**
-   * Fetches all news data from the API, deduplicates, and upserts into DB.
-   * Returns a result object with metrics and tracking info.
+   * 1. Get DB count before processing
+   * 2. Fetch all news data from API (paginated)
+   * 3. Deduplicate records
+   * 4. Log summary
+   * 5. Bulk upsert to DB
+   * 6. Get DB count after processing
+   * 7. Return result object
    */
   static async fetchAndProcessData() {
-    // Get database count before processing
+    // 1. Get database count before processing
     const dbCountBefore = await this._getDatabaseCount();
 
-    // Initialize metrics
-    const metrics = {
-      allNewsAllPages: [],
-    };
+    // 2. Fetch all news data from API (paginated)
+    const allNews = await this._fetchAllPages();
 
-    // Fetch data from all pages
-    await this._fetchNewsPages(metrics);
+    // 3. Deduplicate records
+    const uniqueNews = this._getUniqueNews(allNews);
 
-    // Process unique news
-    const uniqueNews = this._getUniqueNews(metrics.allNewsAllPages);
+    // 4. Log summary
+    NewsLogger.logApiSummary(allNews.length, uniqueNews.length);
 
-    NewsLogger.logApiSummary(metrics.allNewsAllPages.length, uniqueNews.length);
-
-    // Process all news at once
-    console.log(
-      `🚀 Processing ${uniqueNews.length} unique news records using BULK operations...`
-    );
-
+    // 5. Bulk upsert to DB
     const bulkResult = await bulkInsertOrUpdateNews(uniqueNews);
 
-    // Get database count after processing
+    // 6. Get database count after processing
     const dbCountAfter = await this._getDatabaseCount();
 
-    // Return simplified result compatible with service
+    // 7. Return result object
     return {
       inserted: bulkResult.inserted || 0,
       updated: bulkResult.updated || 0,
@@ -53,20 +50,17 @@ class NewsProcessor {
       totalBefore: dbCountBefore,
       totalAfter: dbCountAfter,
       growth: dbCountAfter - dbCountBefore,
-
-      // Keep existing properties for compatibility
-      allNewsAllPages: metrics.allNewsAllPages,
+      totalFromAPI: allNews.length,
       uniqueFromAPI: uniqueNews.length,
-      totalFromAPI: metrics.allNewsAllPages.length,
     };
   }
 
   /**
-   * Fetches all pages of news from the API and logs each page.
-   * @param {object} metrics - Metrics object to accumulate results.
+   * Fetches all pages of news from the API (paginated).
    */
-  static async _fetchNewsPages(metrics) {
+  static async _fetchAllPages() {
     let page = 1;
+    let allNews = [];
     let hasMore = true;
     while (hasMore) {
       const requestBody = {
@@ -76,37 +70,31 @@ class NewsProcessor {
         pageIndex: page,
         pageSize: NEWS_CONFIG.DEFAULT_PAGE_SIZE,
       };
-
       const news = await getNews(requestBody);
-      const allNewsCurPage = news.data || [];
-      metrics.allNewsAllPages = metrics.allNewsAllPages.concat(allNewsCurPage);
-
-      NewsLogger.logPageInfo(page, allNewsCurPage);
-
-      // Stop if no more data
-      if (allNewsCurPage.length < NEWS_CONFIG.DEFAULT_PAGE_SIZE) {
-        hasMore = false;
-      } else {
-        page++;
-      }
+      const newsCurPage = news.data || [];
+      allNews = allNews.concat(newsCurPage);
+      NewsLogger.logPageInfo(page, newsCurPage);
+      hasMore = newsCurPage.length === NEWS_CONFIG.DEFAULT_PAGE_SIZE;
+      page++;
     }
+    return allNews;
   }
 
   /**
    * Deduplicates news by recId.
-   * @param {Array} allNews - Array of all news from API.
-   * @returns {Array} - Array of unique news.
    */
   static _getUniqueNews(allNews) {
-    return allNews.filter(
-      (news, index, self) =>
-        index === self.findIndex((n) => n.recId === news.recId)
-    );
+    const uniqueMap = new Map();
+    for (const news of allNews) {
+      if (news.recId && !uniqueMap.has(news.recId)) {
+        uniqueMap.set(news.recId, news);
+      }
+    }
+    return Array.from(uniqueMap.values());
   }
 
   /**
-   * Gets the current count of news in the DB.
-   * @returns {Promise<number>} - Total number of news.
+   * Gets the current count of news records in the DB.
    */
   static async _getDatabaseCount() {
     const [result] = await connectionDB
@@ -115,6 +103,3 @@ class NewsProcessor {
     return result[0].total;
   }
 }
-
-// ===================== Exports =====================
-export default NewsProcessor;

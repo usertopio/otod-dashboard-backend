@@ -198,7 +198,13 @@ export default class DurianGardensProcessor {
    * Deduplicates gardens (already unique by landId after merge).
    */
   static _getUniqueGardens(allGardens) {
-    return allGardens;
+    const uniqueMap = new Map();
+    for (const garden of allGardens) {
+      if (garden.landId && !uniqueMap.has(garden.landId)) {
+        uniqueMap.set(garden.landId, garden);
+      }
+    }
+    return Array.from(uniqueMap.values());
   }
 
   /**
