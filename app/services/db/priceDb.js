@@ -67,8 +67,8 @@ export async function bulkProcessReferenceCodes(avgPrices) {
     ),
     bulkEnsureRefCodes(
       "ref_breeds",
-      "breed_name",
-      "breed_id",
+      "breed_name", // name column
+      "breed_id", // code column (FIXED: was 'breed_name')
       breeds,
       "GBREED"
     ),
@@ -89,24 +89,24 @@ export async function bulkInsertOrUpdateAvgPrice(avgPrices) {
       .query("SELECT COUNT(*) as count FROM price");
     const beforeCount = countBefore[0].count;
     const bangkokTime = getBangkokTime();
-    const avgPriceData = avgPrices.map((item) => [
-      item.appPriceId,
-      item.province ?? null, // <-- use 'province'
-      item.region ?? null,
-      item.breed_id ?? null,
-      item.priceDate ?? null,
-      item.avgPrice ?? null,
-      item.dataSource ?? null,
+    const avgPriceData = avgPrices.map((price) => [
+      price.appPriceId,
+      price.province ?? null,
+      price.region ?? null,
+      price.breedName ?? null,
+      price.priceDate ?? null,
+      price.avgPrice ?? null,
+      price.dataSource ?? null,
       bangkokTime,
     ]);
     const sql = `
       INSERT INTO price (
-        app_price_id, province, region, breed_id, price_date, avg_price, data_source, fetch_at
+        app_price_id, province, region, breed_name, price_date, avg_price, data_source, fetch_at
       ) VALUES ?
       ON DUPLICATE KEY UPDATE
         province = VALUES(province),
         region = VALUES(region),
-        breed_id = VALUES(breed_id),
+        breed_name = VALUES(breed_name),
         price_date = VALUES(price_date),
         avg_price = VALUES(avg_price),
         data_source = VALUES(data_source),
