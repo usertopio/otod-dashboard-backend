@@ -92,7 +92,7 @@ export async function bulkProcessReferenceCodes(substances) {
     const provinceCodes = await bulkEnsureRefCodes(
       "ref_provinces",
       "province_name_th",
-      "province_code",
+      "province",
       provinces,
       "GPROV"
     );
@@ -137,7 +137,7 @@ export async function bulkInsertOrUpdateSubstances(substances) {
     // Prepare substance data
     const substanceData = substances.map((substance) => [
       substance.cropYear,
-      provinceCodes.get(substance.provinceName) || null, 
+      substance.provinceName,
       substance.substance,
       `${substance.operMonth}-01`,
       substance.totalRecords || 0,
@@ -149,7 +149,7 @@ export async function bulkInsertOrUpdateSubstances(substances) {
 
     const insertQuery = `
       INSERT INTO substance (
-        crop_year, province_code, substance, oper_month, total_records, fetch_at
+        crop_year, province, substance, oper_month, total_records, fetch_at
       ) VALUES ?
       ON DUPLICATE KEY UPDATE
         total_records = VALUES(total_records),
