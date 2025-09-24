@@ -92,7 +92,7 @@ export async function bulkInsertOrUpdateAvgPrice(avgPrices) {
     const avgPriceData = avgPrices.map((item) => [
       item.appPriceId,
       item.province ?? null, // <-- use 'province'
-      item.region_code ?? null,
+      item.region ?? null,
       item.breed_id ?? null,
       item.priceDate ?? null,
       item.avgPrice ?? null,
@@ -101,15 +101,15 @@ export async function bulkInsertOrUpdateAvgPrice(avgPrices) {
     ]);
     const sql = `
       INSERT INTO price (
-        appPriceId, province, region_code, breed_id, priceDate, avgPrice, dataSource, fetch_at
+        app_price_id, province, region, breed_id, price_date, avg_price, data_source, fetch_at
       ) VALUES ?
       ON DUPLICATE KEY UPDATE
         province = VALUES(province),
-        region_code = VALUES(region_code),
+        region = VALUES(region),
         breed_id = VALUES(breed_id),
-        priceDate = VALUES(priceDate),
-        avgPrice = VALUES(avgPrice),
-        dataSource = VALUES(dataSource),
+        price_date = VALUES(price_date),
+        avg_price = VALUES(avg_price),
+        data_source = VALUES(data_source),
         fetch_at = VALUES(fetch_at)
     `;
     const [result] = await connectionDB.promise().query(sql, [avgPriceData]);
