@@ -91,25 +91,25 @@ export async function bulkInsertOrUpdateAvgPrice(avgPrices) {
     const bangkokTime = getBangkokTime();
     const avgPriceData = avgPrices.map((item) => [
       item.appPriceId,
-      provinceCodes.get(item.province) || null,
-      item.region || null,
-      breedCodes.get(item.breedName) || null,
-      item.priceDate || null,
+      item.province ?? null, // <-- use 'province'
+      item.region_code ?? null,
+      item.breed_id ?? null,
+      item.priceDate ?? null,
       item.avgPrice ?? null,
-      item.dataSource || null,
+      item.dataSource ?? null,
       bangkokTime,
     ]);
     const sql = `
       INSERT INTO price (
-        app_price_id, province_code, region, breed_id, price_date, avg_price, data_source, fetch_at
+        appPriceId, province, region_code, breed_id, priceDate, avgPrice, dataSource, fetch_at
       ) VALUES ?
       ON DUPLICATE KEY UPDATE
-        province_code = VALUES(province_code),
-        region = VALUES(region),
+        province = VALUES(province),
+        region_code = VALUES(region_code),
         breed_id = VALUES(breed_id),
-        price_date = VALUES(price_date),
-        avg_price = VALUES(avg_price),
-        data_source = VALUES(data_source),
+        priceDate = VALUES(priceDate),
+        avgPrice = VALUES(avgPrice),
+        dataSource = VALUES(dataSource),
         fetch_at = VALUES(fetch_at)
     `;
     const [result] = await connectionDB.promise().query(sql, [avgPriceData]);
