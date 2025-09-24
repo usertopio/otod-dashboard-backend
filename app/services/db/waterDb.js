@@ -137,7 +137,7 @@ export async function bulkInsertOrUpdateWater(waterRecords) {
     // Prepare water data for bulk insert
     const waterData = waterRecords.map((water) => [
       water.cropYear,
-      provinceCodes.get(water.provinceName) || null,
+      water.provinceName,
       water.operMonth ? `${water.operMonth}-01` : null,
       water.totalLitre || 0,
       bangkokTime,
@@ -148,7 +148,7 @@ export async function bulkInsertOrUpdateWater(waterRecords) {
 
     const insertQuery = `
       INSERT INTO water (
-        crop_year, water_province_code, oper_month, total_litre, fetch_at
+        crop_year, province, oper_month, total_litre, fetch_at
       ) VALUES ?
       ON DUPLICATE KEY UPDATE
         total_litre = VALUES(total_litre),
