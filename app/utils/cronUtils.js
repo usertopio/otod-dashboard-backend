@@ -1,5 +1,4 @@
 export const SCHEDULES_CONFIG = {
-  // Every 60 seconds
-  SCHEDULE_1: "*/60 * * * * *",
-  // SCHEDULE_1340: "0 47 13 * * *",
+  // Every day at 5:00 AM
+  SCHEDULE_1: "0 0 5 * * *",
 };
