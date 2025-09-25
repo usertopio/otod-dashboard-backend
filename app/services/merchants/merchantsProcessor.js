@@ -5,6 +5,7 @@ import { getMerchants } from "../api/merchants.js";
 import { bulkInsertOrUpdateMerchants } from "../db/merchantsDb.js";
 // Import logger for structured process logging
 import MerchantsLogger from "./merchantsLogger.js";
+import { connectionDB } from "../../config/db/db.conf.js";
 
 // ===================== Processor =====================
 // MerchantsProcessor handles fetching, deduplication, and DB upserts for merchants.
@@ -66,7 +67,7 @@ export default class MerchantsProcessor {
    * Gets the current count of merchants in the DB.
    */
   static async _getDatabaseCount() {
-    const [result] = await bulkInsertOrUpdateMerchants.connectionDB
+    const [result] = await connectionDB
       .promise()
       .query("SELECT COUNT(*) as total FROM merchants");
     return result[0].total;

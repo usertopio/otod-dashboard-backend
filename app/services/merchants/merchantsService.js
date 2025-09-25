@@ -4,7 +4,6 @@ import { MERCHANTS_CONFIG, STATUS } from "../../utils/constants.js";
 import MerchantsProcessor from "./merchantsProcessor.js";
 import MerchantsLogger from "./merchantsLogger.js";
 
-console.log("connectionDB in merchantsService:", connectionDB);
 // ===================== Service =====================
 // MerchantsService handles the business logic for fetching, resetting, and managing merchant records.
 export default class MerchantsService {
@@ -18,6 +17,7 @@ export default class MerchantsService {
 
   // 1. Reset only the merchants table in the database
   static async resetOnlyMerchantsTable() {
+    console.log("connectionDB before .promise():", connectionDB);
     const connection = connectionDB.promise();
     try {
       console.log("==========================================");
