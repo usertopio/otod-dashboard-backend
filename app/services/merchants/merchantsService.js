@@ -4,6 +4,7 @@ import { MERCHANTS_CONFIG, STATUS } from "../../utils/constants.js";
 import MerchantsProcessor from "./merchantsProcessor.js";
 import MerchantsLogger from "./merchantsLogger.js";
 
+console.log("connectionDB in merchantsService:", connectionDB);
 // ===================== Service =====================
 // MerchantsService handles the business logic for fetching, resetting, and managing merchant records.
 export default class MerchantsService {
