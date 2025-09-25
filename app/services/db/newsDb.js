@@ -14,111 +14,6 @@ const getBangkokTime = () => {
 };
 
 /**
- * Bulk ensure reference codes for a list of names
- */
-async function bulkEnsureRefCodes(
-  table,
-  nameColumn,
-  codeColumn,
-  names,
-  prefix
-) {
-  if (!names || names.length === 0) return new Map();
-
-  try {
-    // Get existing codes in one query
-    const [existing] = await connectionDB
-      .promise()
-      .query(
-        `SELECT ${nameColumn}, ${codeColumn} FROM ${table} WHERE ${nameColumn} IN (?)`,
-        [names]
-      );
-
-    const codeMap = new Map();
-    existing.forEach((row) => {
-      codeMap.set(row[nameColumn], row[codeColumn]);
-    });
-
-    // Find missing names
-    const missingNames = names.filter((name) => !codeMap.has(name));
-
-    if (missingNames.length > 0) {
-      // Generate codes for missing names
-      const [maxResult] = await connectionDB
-        .promise()
-        .query(
-          `SELECT ${codeColumn} FROM ${table} WHERE ${codeColumn} LIKE '${prefix}%' ORDER BY ${codeColumn} DESC LIMIT 1`
-        );
-
-      let nextNumber = 1;
-      if (maxResult.length > 0) {
-        const lastCode = maxResult[0][codeColumn];
-        nextNumber = parseInt(lastCode.replace(prefix, "")) + 1;
-      }
-
-      // Bulk insert missing codes
-      const insertData = missingNames.map((name, index) => {
-        const code = `${prefix}${String(nextNumber + index).padStart(3, "0")}`;
-        codeMap.set(name, code);
-        return [code, name, "generated"];
-      });
-
-      const insertQuery = `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES ?`;
-      await connectionDB.promise().query(insertQuery, [insertData]);
-
-      console.log(`🆕 Created ${insertData.length} new ${table} codes`);
-    }
-
-    return codeMap;
-  } catch (err) {
-    console.error(`Bulk ${table} lookup error:`, err);
-    return new Map();
-  }
-}
-
-/**
- * Bulk process reference codes for all news at once
- */
-export async function bulkProcessReferenceCodes(newsRecords) {
-  console.time("Reference codes processing");
-
-  try {
-    // Get unique values
-    const provinces = [
-      ...new Set(newsRecords.map((n) => n.province).filter(Boolean)),
-    ];
-    const newsGroups = [
-      ...new Set(newsRecords.map((n) => n.newsGroup).filter(Boolean)),
-    ];
-
-    // Bulk lookup/create all reference codes
-    const [provinceCodes, newsGroupCodes] = await Promise.all([
-      bulkEnsureRefCodes(
-        "ref_provinces",
-        "province_name_th",
-        "province_code",
-        provinces,
-        "GPROV"
-      ),
-      bulkEnsureRefCodes(
-        "ref_news_groups",
-        "news_group_name",
-        "news_group_id",
-        newsGroups,
-        "NG"
-      ),
-    ]);
-
-    console.timeEnd("Reference codes processing");
-    return { provinceCodes, newsGroupCodes };
-  } catch (error) {
-    console.error("❌ Error in bulkProcessReferenceCodes:", error);
-    console.timeEnd("Reference codes processing");
-    return { provinceCodes: new Map(), newsGroupCodes: new Map() };
-  }
-}
-
-/**
  * Bulk insert or update news using INSERT ... ON DUPLICATE KEY UPDATE
  * @param {Array} newsRecords - Array of news objects
  * @returns {Promise<object>} - Bulk operation result
@@ -131,14 +26,6 @@ export async function bulkInsertOrUpdateNews(newsRecords) {
   const connection = connectionDB.promise();
 
   try {
-    console.time("Reference codes processing");
-
-    // BULK process all reference codes at once
-    const { provinceCodes, newsGroupCodes } = await bulkProcessReferenceCodes(
-      newsRecords
-    );
-
-    console.timeEnd("Reference codes processing");
     console.time("Data preparation");
 
     // Get current count before operation
