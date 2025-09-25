@@ -29,8 +29,20 @@ npm install
 
 ## Usage
 
+### Run locally
+
+Configure .env → select the correct database connection (Localhost).
+
 ```sh
 npm start
+```
+
+### Run with Docker
+
+Configure .env → make sure database connection matches your environment.
+
+```sh
+docker compose up --build -d
 ```
 
 ## Author
