@@ -8,61 +8,54 @@ import GapLogger from "./gapLogger.js";
 
 // ===================== Processor =====================
 // GapProcessor handles fetching, deduplication, and DB upserts for GAP certificates.
-class GapProcessor {
+export default class GapProcessor {
   /**
-   * Fetches all GAP certificate data from the API, deduplicates, and upserts into DB.
-   * Returns a result object with metrics and tracking info.
+   * 1. Get DB count before processing
+   * 2. Fetch all GAP certificate data from API (by year, paginated)
+   * 3. Deduplicate records
+   * 4. Log summary
+   * 5. Bulk upsert to DB
+   * 6. Get DB count after processing
+   * 7. Return result object
    */
   static async fetchAndProcessData() {
-    // Get database count before processing
+    // 1. Get database count before processing
     const dbCountBefore = await this._getDatabaseCount();
 
-    // Initialize metrics
-    const metrics = {
-      allGapAllPages: [],
-    };
+    // 2. Fetch all GAP certificate data from API (by year, paginated)
+    const allGap = await this._fetchAllPages();
 
-    // Fetch data from all pages (extracts GAP certificates from crops)
-    await this._fetchGapPages(metrics);
+    // 3. Deduplicate records
+    const uniqueGap = this._getUniqueGap(allGap);
 
-    // Process unique GAP certificates
-    const uniqueGap = this._getUniqueGap(metrics.allGapAllPages);
+    // 4. Log summary
+    GapLogger.logApiSummary(allGap.length, uniqueGap.length);
 
-    GapLogger.logApiSummary(metrics.allGapAllPages.length, uniqueGap.length);
-
-    // Process all GAP certificates at once
-    console.log(
-      `🚀 Processing ${uniqueGap.length} unique GAP certificates using BULK operations...`
-    );
-
+    // 5. Bulk upsert to DB
     const bulkResult = await bulkInsertOrUpdateGap(uniqueGap);
 
-    // Get database count after processing
+    // 6. Get database count after processing
     const dbCountAfter = await this._getDatabaseCount();
 
-    // Return simplified result compatible with service
+    // 7. Return result object
     return {
       inserted: bulkResult.inserted || 0,
       updated: bulkResult.updated || 0,
       errors: bulkResult.errors || 0,
-      skipped: bulkResult.skipped || 0,
       totalProcessed: uniqueGap.length,
       totalBefore: dbCountBefore,
       totalAfter: dbCountAfter,
       growth: dbCountAfter - dbCountBefore,
-
-      // Keep existing properties for compatibility
-      allGapAllPages: metrics.allGapAllPages,
-      totalFromAPI: metrics.allGapAllPages.length,
+      totalFromAPI: allGap.length,
       uniqueFromAPI: uniqueGap.length,
     };
   }
 
   /**
-   * Fetches all pages of crops from the API and extracts GAP certificates.
-   * @param {object} metrics - Metrics object to accumulate results.
+   * Fetches all GAP certificate data from API (by year, paginated).
    */
-  static async _fetchGapPages(metrics) {
+  static async _fetchAllPages() {
+    let allGap = [];
     for (
       let year = GAP_CONFIG.START_YEAR;
       year <= GAP_CONFIG.END_YEAR;
@@ -77,68 +70,46 @@ class GapProcessor {
           pageIndex: page,
           pageSize: GAP_CONFIG.DEFAULT_PAGE_SIZE,
         };
-
         const crops = await getCrops(requestBody);
-        const allCropsCurPage = crops.data || [];
-
-        // Extract gap certificates from crops
-        const gapCertificates = this._extractGapCertificates(allCropsCurPage);
-        metrics.allGapAllPages = metrics.allGapAllPages.concat(gapCertificates);
-
-        // Standardized log
+        const cropsCurPage = crops.data || [];
+        const gapCertificates = cropsCurPage
+          .filter((crop) => crop.gapCertNumber)
+          .map((crop) => ({
+            recId: crop.recId,
+            cropId: crop.cropId,
+            gapCertNumber: crop.gapCertNumber,
+            gapCertType: crop.gapCertType,
+            gapIssuedDate: crop.gapIssuedDate,
+            gapExpiryDate: crop.gapExpiryDate,
+            farmerId: crop.farmerId,
+            province: crop.province,
+            amphur: crop.amphur,
+            tambon: crop.tambon,
+          }));
+        allGap = allGap.concat(gapCertificates);
         GapLogger.logPageInfo(year, page, gapCertificates);
-
-        // Stop if no more data
-        if (gapCertificates.length < GAP_CONFIG.DEFAULT_PAGE_SIZE) {
-          hasMore = false;
-        } else {
-          page++;
-        }
+        hasMore = cropsCurPage.length === GAP_CONFIG.DEFAULT_PAGE_SIZE;
+        page++;
       }
     }
-  }
-
-  /**
-   * Extracts GAP certificates from crop records.
-   * @param {Array} crops - Array of crop records.
-   * @returns {Array} - Array of GAP certificate objects.
-   */
-  static _extractGapCertificates(crops) {
-    const gapCertificates = [];
-
-    crops.forEach((crop) => {
-      // Only extract crops that have GAP certificate data
-      if (crop.gapCertNumber && crop.gapCertNumber.trim() !== "") {
-        gapCertificates.push({
-          recId: crop.gapCertNumber, // Use gapCertNumber as recId for consistency
-          gapCertNumber: crop.gapCertNumber,
-          gapCertType: crop.gapCertType,
-          gapIssuedDate: crop.gapIssuedDate,
-          gapExpiryDate: crop.gapExpiryDate,
-          farmerId: crop.farmerId,
-          landId: crop.landId,
-        });
-      }
-    });
-
-    return gapCertificates;
+    return allGap;
   }
 
   /**
    * Deduplicates GAP certificates by recId.
-   * @param {Array} allGap - Array of all GAP certificates from API.
-   * @returns {Array} - Array of unique GAP certificates.
    */
   static _getUniqueGap(allGap) {
-    return allGap.filter(
-      (gap, index, self) =>
-        index === self.findIndex((g) => g.recId === gap.recId)
-    );
+    const uniqueMap = new Map();
+    for (const gap of allGap) {
+      if (gap.recId && !uniqueMap.has(gap.recId)) {
+        uniqueMap.set(gap.recId, gap);
+      }
+    }
+    return Array.from(uniqueMap.values());
   }
 
   /**
    * Gets the current count of GAP certificates in the DB.
-   * @returns {Promise<number>} - Total number of GAP certificates.
    */
   static async _getDatabaseCount() {
     const [result] = await connectionDB
@@ -147,4 +118,3 @@ class GapProcessor {
     return result[0].total;
   }
 }
-export default GapProcessor;

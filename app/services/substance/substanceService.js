@@ -7,28 +7,26 @@ import SubstanceLogger from "./substanceLogger.js";
 // ===================== Service =====================
 export default class SubstanceService {
   /**
-   * Resets only the substance table in the database.
-   * - Disables foreign key checks to allow truncation.
-   * - Truncates the substance table, leaving related tables untouched.
-   * - Re-enables foreign key checks after operation.
-   * - Logs the process and returns a status object.
+   * 1. Reset only the substance table in the database
+   * 2. Fetch all substance from API and store in DB (loop with maxAttempts)
+   * 3. Log attempt start/results and final results
+   * 4. Return summary result object
+   * 5. Get database count method
    */
+
+  // 1. Reset only the substance table in the database
   static async resetOnlySubstanceTable() {
     const connection = connectionDB.promise();
-
     try {
       console.log("==========================================");
       console.log(
         `📩 Sending request to API Endpoint: {{LOCAL_HOST}}/api/fetchSubstance`
       );
       console.log("==========================================\n");
-
       console.log("🧹 Resetting ONLY substance table...");
-
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
       await connection.query("TRUNCATE TABLE substance");
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-
       console.log("✅ Only substance table reset - next ID will be 1");
       return { success: true, message: "Only substance table reset" };
     } catch (error) {
@@ -37,12 +35,10 @@ export default class SubstanceService {
       throw error;
     }
   }
-  /**
-   * Fetches ALL substance from the API and stores it in the database.
-   * Loops up to maxAttempts, stops early if no new records are inserted.
-   * Returns a summary result object.
-   * @param {number} maxAttempts - The maximum number of fetch attempts.
-   */
+
+  // 2. Fetch all substance from API and store in DB (loop with maxAttempts)
+  // 3. Log attempt start/results and final results
+  // 4. Return summary result object
   static async fetchAllSubstance(
     maxAttempts = SUBSTANCE_CONFIG.DEFAULT_MAX_ATTEMPTS
   ) {
@@ -67,20 +63,8 @@ export default class SubstanceService {
       totalUpdated += result.updated || 0;
       totalErrors += result.errors || 0;
 
-      // ✅ STANDARD TERMINATION: Same as other modules
-      hasMoreData = (result.inserted || 0) > 0;
-
-      // ✅ ADD: Early termination for efficiency
-      if (
-        attempt === 1 &&
-        (result.inserted || 0) > 0 &&
-        (result.errors || 0) === 0
-      ) {
-        console.log(
-          `✅ First attempt successful with ${result.inserted} records - stopping`
-        );
-        hasMoreData = false;
-      }
+      const hasNewData = (result.inserted || 0) > 0;
+      hasMoreData = hasNewData;
 
       console.log(
         `🔍 Attempt ${attempt}: Inserted ${result.inserted}, Continue: ${hasMoreData}`
@@ -113,50 +97,11 @@ export default class SubstanceService {
     };
   }
 
-  /**
-   * Returns the current count of substance records in the database.
-   * @returns {Promise<number>} - The total number of substance records in the DB.
-   */
+  // 5. Get database count method
   static async _getDatabaseCount() {
     const [result] = await connectionDB
       .promise()
       .query("SELECT COUNT(*) as total FROM substance");
     return result[0].total;
-  }
-
-  /**
-   * Builds and logs the final result summary after the fetch loop.
-   * @param {number} targetCount - The target number of records.
-   * @param {number} attemptsUsed - The number of attempts used.
-   * @param {number} maxAttempts - The maximum allowed attempts.
-   * @returns {object} - Summary of the fetch operation.
-   */
-  static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
-    const finalCount = await this._getDatabaseCount();
-    let status;
-    // All handle "ALL" target correctly
-    if (targetCount === "ALL") {
-      status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
-    } else {
-      status = finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
-    }
-
-    SubstanceLogger.logFinalResults(
-      targetCount,
-      finalCount,
-      attemptsUsed,
-      maxAttempts,
-      status
-    );
-
-    return {
-      message: `Fetch loop completed - ${status}`,
-      target: targetCount,
-      achieved: finalCount,
-      attemptsUsed: attemptsUsed,
-      maxAttempts: maxAttempts,
-      status: status,
-      reachedTarget: finalCount >= targetCount,
-    };
   }
 }

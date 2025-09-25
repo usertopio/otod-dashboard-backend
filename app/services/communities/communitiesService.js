@@ -5,31 +5,37 @@ import CommunitiesProcessor from "./communitiesProcessor.js";
 import CommunitiesLogger from "./communitiesLogger.js";
 
 // ===================== Service =====================
-// CommunitiesService handles the business logic for fetching, resetting, and managing community records.
+export async function syncCommunitiesFromApi() {
+  console.log("🔄 Starting communities sync from API...");
+  const result = await CommunitiesProcessor.fetchAndProcessData();
+  console.log(
+    `✅ Communities sync complete. Inserted: ${result.inserted}, Updated: ${result.updated}, Errors: ${result.errors}, Total in DB: ${result.totalAfter}`
+  );
+  return result;
+}
+
 export default class CommunitiesService {
   /**
-   * Resets only the communities table in the database.
-   * - Disables foreign key checks to allow truncation.
-   * - Truncates the communities table, leaving related tables untouched.
-   * - Re-enables foreign key checks after operation.
-   * - Logs the process and returns a status object.
+   * 1. Reset only the communities table in the database
+   * 2. Fetch all communities from API and store in DB (loop with maxAttempts)
+   * 3. Log attempt start/results and final results
+   * 4. Return summary result object
+   * 5. Get database count method
    */
+
+  // 1. Reset only the communities table in the database
   static async resetOnlyCommunitiesTable() {
     const connection = connectionDB.promise();
-
     try {
       console.log("==========================================");
       console.log(
         `📩 Sending request to API Endpoint: {{LOCAL_HOST}}/api/fetchCommunities`
       );
       console.log("==========================================\n");
-
       console.log("🧹 Resetting ONLY communities table...");
-
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
       await connection.query("TRUNCATE TABLE communities");
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-
       console.log("✅ Only communities table reset - next ID will be 1");
       return { success: true, message: "Only communities table reset" };
     } catch (error) {
@@ -39,12 +45,9 @@ export default class CommunitiesService {
     }
   }
 
-  /**
-   * Fetches ALL communities from the API and stores them in the database.
-   * Loops up to maxAttempts, stops early if no new records are inserted.
-   * Returns a summary result object.
-   * @param {number} maxAttempts - The maximum number of fetch attempts.
-   */
+  // 2. Fetch all communities from API and store in DB (loop with maxAttempts)
+  // 3. Log attempt start/results and final results
+  // 4. Return summary result object
   static async fetchAllCommunities(
     maxAttempts = COMMUNITIES_CONFIG.DEFAULT_MAX_ATTEMPTS
   ) {
@@ -71,6 +74,7 @@ export default class CommunitiesService {
 
       hasMoreData = (result.inserted || 0) > 0;
 
+      // Early termination for efficiency
       if (
         attempt === 1 &&
         (result.inserted || 0) > 0 &&
@@ -89,7 +93,7 @@ export default class CommunitiesService {
       attempt++;
     }
 
-    const finalCount = await this.getCount();
+    const finalCount = await this._getDatabaseCount();
 
     CommunitiesLogger.logFinalResults(
       "ALL",
@@ -113,78 +117,11 @@ export default class CommunitiesService {
     };
   }
 
-  /**
-   * Returns the current count of communities records in the database.
-   * Direct database operation in service layer
-   */
-  static async getCount() {
-    try {
-      const [result] = await connectionDB
-        .promise()
-        .query("SELECT COUNT(*) as total FROM communities");
-      return result[0].total;
-    } catch (error) {
-      console.error("❌ Error getting communities count:", error);
-      return 0;
-    }
-  }
-
-  /**
-   * Direct database operation in service layer (for consistency)
-   * @private
-   */
+  // 5. Get database count method
   static async _getDatabaseCount() {
-    return await this.getCount();
+    const [result] = await connectionDB
+      .promise()
+      .query("SELECT COUNT(*) as total FROM communities");
+    return result[0].total;
   }
-
-  /**
-   * Builds and logs the final result summary after the fetch loop.
-   * @param {number} targetCount - The target number of communities.
-   * @param {number} attemptsUsed - The number of attempts used.
-   * @param {number} maxAttempts - The maximum allowed attempts.
-   * @returns {object} - Summary of the fetch operation.
-   */
-  static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
-    const finalCount = await this.getCount();
-    let status;
-
-    // ll handle "ALL" target correctly
-    if (targetCount === "ALL") {
-      status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
-    } else {
-      status = finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
-    }
-
-    CommunitiesLogger.logFinalResults(
-      targetCount,
-      finalCount,
-      attemptsUsed,
-      maxAttempts,
-      status
-    );
-
-    return {
-      message: `Fetch loop completed - ${status}`,
-      target: targetCount,
-      achieved: finalCount,
-      attemptsUsed: attemptsUsed,
-      maxAttempts: maxAttempts,
-      status: status,
-      reachedTarget: finalCount >= targetCount,
-    };
-  }
-}
-
-/**
- * Syncs communities data from the API to the database.
- * Logs the start and completion of the sync process.
- * @returns {Promise<object>} - The result of the sync operation.
- */
-export async function syncCommunitiesFromApi() {
-  console.log("🔄 Starting communities sync from API...");
-  const result = await CommunitiesProcessor.fetchAndProcessData();
-  console.log(
-    `✅ Communities sync complete. Inserted: ${result.inserted}, Updated: ${result.updated}, Errors: ${result.errors}, Total in DB: ${result.totalAfter}`
-  );
-  return result;
 }

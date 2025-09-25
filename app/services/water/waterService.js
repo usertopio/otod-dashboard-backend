@@ -9,28 +9,26 @@ import WaterLogger from "./waterLogger.js";
 // WaterService handles the business logic for fetching, resetting, and managing water records.
 export default class WaterService {
   /**
-   * Resets only the water table in the database.
-   * - Disables foreign key checks to allow truncation.
-   * - Truncates the water table, leaving related tables untouched.
-   * - Re-enables foreign key checks after operation.
-   * - Logs the process and returns a status object.
+   * 1. Reset only the water table in the database
+   * 2. Fetch all water records from API and store in DB (loop with maxAttempts)
+   * 3. Log attempt start/results and final results
+   * 4. Return summary result object
+   * 5. Get database count method
    */
+
+  // 1. Reset only the water table in the database
   static async resetOnlyWaterTable() {
     const connection = connectionDB.promise();
-
     try {
       console.log("==========================================");
       console.log(
         `📩 Sending request to API Endpoint: {{LOCAL_HOST}}/api/fetchWater`
       );
       console.log("==========================================\n");
-
       console.log("🧹 Resetting ONLY water table...");
-
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
       await connection.query("TRUNCATE TABLE water");
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-
       console.log("✅ Only water table reset - next ID will be 1");
       return { success: true, message: "Only water table reset" };
     } catch (error) {
@@ -40,15 +38,9 @@ export default class WaterService {
     }
   }
 
-  /**
-   * Main entry point for fetching ALL water usage summary from the API and storing it in the database.
-   * - Resets the water table before starting.
-   * - Loops up to maxAttempts, fetching and processing data each time.
-   * - Logs progress and metrics for each attempt.
-   * - Stops early if no new records are inserted.
-   * - Returns a summary result object.
-   * @param {number} maxAttempts - The maximum number of fetch attempts.
-   */
+  // 2. Fetch all water records from API and store in DB (loop with maxAttempts)
+  // 3. Log attempt start/results and final results
+  // 4. Return summary result object
   static async fetchAllWater(maxAttempts = WATER_CONFIG.DEFAULT_MAX_ATTEMPTS) {
     await this.resetOnlyWaterTable();
 
@@ -116,51 +108,11 @@ export default class WaterService {
     };
   }
 
-  /**
-   * Returns the current count of water records in the database.
-   * @returns {Promise<number>} - The total number of water records in the DB.
-   */
+  // 5. Get database count method
   static async _getDatabaseCount() {
     const [result] = await connectionDB
       .promise()
       .query("SELECT COUNT(*) as total FROM water");
     return result[0].total;
-  }
-
-  /**
-   * Builds and logs the final result summary after the fetch loop.
-   * @param {number} targetCount - The target number of records.
-   * @param {number} attemptsUsed - The number of attempts used.
-   * @param {number} maxAttempts - The maximum allowed attempts.
-   * @returns {object} - Summary of the fetch operation.
-   */
-  static async _buildFinalResult(targetCount, attemptsUsed, maxAttempts) {
-    const finalCount = await this._getDatabaseCount();
-    let status;
-
-    // handle "ALL" target correctly
-    if (targetCount === "ALL") {
-      status = finalCount > 0 ? STATUS.SUCCESS : STATUS.INCOMPLETE;
-    } else {
-      status = finalCount >= targetCount ? STATUS.SUCCESS : STATUS.INCOMPLETE;
-    }
-
-    WaterLogger.logFinalResults(
-      targetCount,
-      finalCount,
-      attemptsUsed,
-      maxAttempts,
-      status
-    );
-
-    return {
-      message: `Fetch loop completed - ${status}`,
-      target: targetCount,
-      achieved: finalCount,
-      attemptsUsed: attemptsUsed,
-      maxAttempts: maxAttempts,
-      status: status,
-      reachedTarget: finalCount >= targetCount,
-    };
   }
 }

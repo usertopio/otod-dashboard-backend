@@ -10,40 +10,34 @@ import WaterLogger from "./waterLogger.js";
 // WaterProcessor handles fetching, deduplication, and DB upserts for water usage summary.
 export default class WaterProcessor {
   /**
-   * Fetches all water usage summary data from the API, deduplicates, and upserts into DB.
-   * Returns a result object with metrics and tracking info.
+   * 1. Get DB count before processing
+   * 2. Fetch all water usage summary data from API (by year)
+   * 3. Deduplicate records
+   * 4. Log summary
+   * 5. Bulk upsert to DB
+   * 6. Get DB count after processing
+   * 7. Return result object
    */
   static async fetchAndProcessData() {
-    // Get database count before processing
+    // 1. Get database count before processing
     const dbCountBefore = await this._getDatabaseCount();
 
-    // Initialize metrics
-    const metrics = {
-      allWaterAllPages: [],
-    };
+    // 2. Fetch all water usage summary data from API (by year)
+    const allWater = await this._fetchAllPages();
 
-    // Fetch data from API (single call per year)
-    await this._fetchWaterSummaryByMonth(metrics);
+    // 3. Deduplicate records
+    const uniqueWater = this._getUniqueWater(allWater);
 
-    // Process unique water records
-    const uniqueWater = this._getUniqueWater(metrics.allWaterAllPages);
+    // 4. Log summary
+    WaterLogger.logApiSummary(allWater.length, uniqueWater.length);
 
-    WaterLogger.logApiSummary(
-      metrics.allWaterAllPages.length,
-      uniqueWater.length
-    );
-
-    // Process all water records at once
-    console.log(
-      `🚀 Processing ${uniqueWater.length} unique water records using BULK operations...`
-    );
-
+    // 5. Bulk upsert to DB
     const bulkResult = await bulkInsertOrUpdateWater(uniqueWater);
 
-    // Get database count after processing
+    // 6. Get database count after processing
     const dbCountAfter = await this._getDatabaseCount();
 
-    // Return simplified result compatible with service
+    // 7. Return result object
     return {
       inserted: bulkResult.inserted || 0,
       updated: bulkResult.updated || 0,
@@ -52,42 +46,32 @@ export default class WaterProcessor {
       totalBefore: dbCountBefore,
       totalAfter: dbCountAfter,
       growth: dbCountAfter - dbCountBefore,
-
-      // Keep existing properties for compatibility
-      allWaterAllPages: metrics.allWaterAllPages,
+      totalFromAPI: allWater.length,
       uniqueFromAPI: uniqueWater.length,
-      totalFromAPI: metrics.allWaterAllPages.length,
     };
   }
 
   /**
-   * Fetches all pages of water usage summary from the API and logs each page.
-   * @param {object} metrics - Metrics object to accumulate results.
+   * Fetches all pages of water usage summary from the API (by year).
    */
-  static async _fetchWaterSummaryByMonth(metrics) {
+  static async _fetchAllPages() {
+    let allWater = [];
     for (
       let year = WATER_CONFIG.START_YEAR;
       year <= WATER_CONFIG.END_YEAR;
       year++
     ) {
-      const requestBody = {
-        cropYear: year,
-        provinceName: "",
-      };
-
-      const waterResponse = await getWaterUsageSummaryByMonth(requestBody);
-      const allWaterCurPage = waterResponse.data || [];
-      metrics.allWaterAllPages =
-        metrics.allWaterAllPages.concat(allWaterCurPage);
-
-      WaterLogger.logPageInfo(year, 1, allWaterCurPage);
+      const requestBody = { cropYear: year, provinceName: "" };
+      const response = await getWaterUsageSummaryByMonth(requestBody);
+      const pageData = response.data || [];
+      allWater = allWater.concat(pageData);
+      WaterLogger.logPageInfo(year, 1, pageData);
     }
+    return allWater;
   }
 
   /**
    * Deduplicates water records by cropYear, provinceName, and operMonth.
-   * @param {Array} allWater - Array of all water records from API.
-   * @returns {Array} - Array of unique water records.
    */
   static _getUniqueWater(allWater) {
     return allWater.filter(
@@ -104,7 +88,6 @@ export default class WaterProcessor {
 
   /**
    * Gets the current count of water records in the DB.
-   * @returns {Promise<number>} - Total number of water records.
    */
   static async _getDatabaseCount() {
     const [result] = await connectionDB

@@ -25,7 +25,7 @@ export default class AvgPriceService {
       console.log("🧹 Resetting ONLY price table...");
 
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
-      await connection.query("TRUNCATE TABLE price");
+      await connection.query("TRUNCATE TABLE price"); // <-- corrected table name
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
 
       console.log("✅ Only price table reset - next ID will be 1");

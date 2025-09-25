@@ -44,11 +44,9 @@ export default class FarmersLogger {
     maxAttempts,
     status
   ) {
-    console.log(`\n🏁 === FINAL RESULT ===`);
-    console.log(`🎯 Target: ${targetCount}`);
-    console.log(`📊 Achieved: ${achieved}`);
-    console.log(`🔄 Attempts used: ${attemptsUsed}/${maxAttempts}`);
-    console.log(`✅ Status: ${status}`);
+    console.log(
+      `🏁 === FINAL RESULT ===\n🎯 Target: ${targetCount}\n📊 Achieved: ${achieved}\n🔄 Attempts used: ${attemptsUsed}/${maxAttempts}\n✅ Status: ${status}\n`
+    );
   }
 
   /**
