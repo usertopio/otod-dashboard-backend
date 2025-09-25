@@ -17,7 +17,6 @@ export default class MerchantsService {
 
   // 1. Reset only the merchants table in the database
   static async resetOnlyMerchantsTable() {
-    console.log("connectionDB before .promise():", connectionDB);
     const connection = connectionDB.promise();
     try {
       console.log("==========================================");
