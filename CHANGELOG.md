@@ -2,6 +2,66 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.4.0](https://github.com/usertopio/otod-durian-lab1/compare/v2.3.1...v2.4.0) (2025-09-25)
+
+
+### 🐛 Fixes
+
+* **cron:** 🐛update SCHEDULE_1340 time configuration ([cbc4755](https://github.com/usertopio/otod-durian-lab1/commit/cbc47554a299385c862920545eb1f4d532b0ec9b))
+* **cron:** 🐛update SCHEDULE_1340 time configuration ([242a79f](https://github.com/usertopio/otod-durian-lab1/commit/242a79f14875b8261e69b4322cc72f4c79d3d0a7))
+
+
+### ✨ Features
+
+* **api)(communities:** ✨sync communities data from API to database ([09e1ad3](https://github.com/usertopio/otod-durian-lab1/commit/09e1ad3cef5f2978102373329cf494c7c3236e2c))
+* **api:** ✨remove location ref ([6b797c5](https://github.com/usertopio/otod-durian-lab1/commit/6b797c52d6a0cef9822d224d1a1c06388b819de6))
+* **farmers:** ✨remove reference of farmers ([c1950c4](https://github.com/usertopio/otod-durian-lab1/commit/c1950c4a8230f412123383654253c6124ca7744b))
+
+
+### 🧹 Chore
+
+* **cron:** 🔄update scheduled tasks initialization message ([3b4c46c](https://github.com/usertopio/otod-durian-lab1/commit/3b4c46cff6b6537307ef2b1217c0be7dff258bd6))
+* **cron:** 🔥remove commented-out schedule configuration ([321ff2a](https://github.com/usertopio/otod-durian-lab1/commit/321ff2a4cf38794f32607ee426529e4f643cfa12))
+* **docker:** 🐳 fix container name in docker-compose.yml ([e1414cc](https://github.com/usertopio/otod-durian-lab1/commit/e1414cc664091ff98879dedc724edaa464d98189))
+* **docker:** 🐳 update Docker configuration for app service ([dac63d8](https://github.com/usertopio/otod-durian-lab1/commit/dac63d818e09f763284dd72d42cceabe58b05954))
+* **docker:** 🐳 update image and container name to v2.3.1 ([cb28c53](https://github.com/usertopio/otod-durian-lab1/commit/cb28c53c35b76ce274d6525a56948a160ff88588))
+* **merchants:** 🔊 add connectionDB log for debugging ([9434d6a](https://github.com/usertopio/otod-durian-lab1/commit/9434d6a20c5ce2c7af8fb9f522bd059c09dd10ff))
+
+
+### ♻️ Refactor
+
+* **api)(substance:** ♻️ enhance getSubstanceUsageSummaryByMonth with retry logic ([dec24d7](https://github.com/usertopio/otod-durian-lab1/commit/dec24d7bafc15fa7a3fc34d6da6ac7838583a387))
+* **cron:** ♻️ update scheduled task time to 5:00 AM daily ([67c8b78](https://github.com/usertopio/otod-durian-lab1/commit/67c8b78fddc55d854b3e6f736feb975582a9da47))
+* **cron:** ♻️update schedule configuration for clarity ([2f145f8](https://github.com/usertopio/otod-durian-lab1/commit/2f145f8dbdf020b036e74fea0029c74105d9f9ff))
+* **cron:** 🔥remove commented-out SCHEDULE_1340 configuration ([a58a397](https://github.com/usertopio/otod-durian-lab1/commit/a58a397dd226eef096785726126eca09c51e681b))
+* **db)(communities:** ♻️ streamline communities service and database operations ([95b0fe5](https://github.com/usertopio/otod-durian-lab1/commit/95b0fe55afa84a50334c027dce79d497ffc8ec78))
+* **db)(communities:** ♻️update community reference fields for consistency ([80a074f](https://github.com/usertopio/otod-durian-lab1/commit/80a074f2b5fec1ae470055ca52726dd83f6a552d))
+* **db)(durianGardens:** ♻️ reorganize code structure and remove redundant comments ([093b1b3](https://github.com/usertopio/otod-durian-lab1/commit/093b1b309cfe8d2cfb91746a4bcbdb3ac7dd4d86))
+* **db)(durianGardens:** ♻️ streamline data fetching and processing logic ([78ff2be](https://github.com/usertopio/otod-durian-lab1/commit/78ff2be5a998b4da1448366de2bc9bf2244b143c))
+* **db)(farmers:** ♻️remove unused reference code functions and streamline farmers processing ([19e780e](https://github.com/usertopio/otod-durian-lab1/commit/19e780ebd43bfaca8dd4db83f6707435356825c7))
+* **db)(merchants:** ♻️ remove unused reference code and streamline merchant processing ([6e28ba5](https://github.com/usertopio/otod-durian-lab1/commit/6e28ba5898ff958b47763feb74ab6fd05c3d852e))
+* **db)(news:** ♻️ remove bulk reference code processing functions ([5d5a6ee](https://github.com/usertopio/otod-durian-lab1/commit/5d5a6ee90970a4ae9cf17f2ab88a4306c24aec5b))
+* **db)(news:** ♻️ update news group handling in bulk insert logic ([f68d970](https://github.com/usertopio/otod-durian-lab1/commit/f68d97091db9c6ffa2100332258c9a932929a821))
+* **db)(news:** ♻️update province field in bulkInsertOrUpdateNews function ([5a649d4](https://github.com/usertopio/otod-durian-lab1/commit/5a649d41e64c83938320845c348443a8053f0d6d))
+* **db)(price:** ♻️ update breed reference handling in price processing ([566dfb0](https://github.com/usertopio/otod-durian-lab1/commit/566dfb09d5c1934c6eb9976a78d263dd757db76f))
+* **db)(price:** ♻️ update table references in price processing services ([d72957c](https://github.com/usertopio/otod-durian-lab1/commit/d72957c94875cfeeca914821a2428c74740f9c97))
+* **db)(substance:** ♻️update province field in bulkInsertOrUpdateOperations function ([9f81948](https://github.com/usertopio/otod-durian-lab1/commit/9f819481ae406b91b42995b62cfb225249ae8fe3))
+* **db)(substance:** ♻️update province field in bulkInsertOrUpdateSubstances and bulkProcessReferenceCodes functions ([4b43aa5](https://github.com/usertopio/otod-durian-lab1/commit/4b43aa5df61092e33500b6dc24a6b19510ab21bd))
+* **db)(substance:** ♻️update region field in bulkInsertOrUpdateAvgPrice and substanceDb functions ([cd4200e](https://github.com/usertopio/otod-durian-lab1/commit/cd4200e7d47695a24de66ab8851919fa1041f11e))
+* **db)(water:** ♻️ remove unused reference code processing functions ([822536d](https://github.com/usertopio/otod-durian-lab1/commit/822536d2cb7fe2a1bca228401d778465c287445c))
+* **db)(water:** ♻️update province handling in bulkInsertOrUpdateWater function ([7de8e05](https://github.com/usertopio/otod-durian-lab1/commit/7de8e0566e9967bf6979e778156f76ea4a0b8b51))
+* **db:** ♻️update avgPrice data mapping for consistency ([0539ee2](https://github.com/usertopio/otod-durian-lab1/commit/0539ee2800fbcbd131c50c0ea17014da6b6d0304))
+* **db:** ♻️update landType field for consistency ([6fed1d9](https://github.com/usertopio/otod-durian-lab1/commit/6fed1d9a8ed0d4f8c321ee63578677247de8aa20))
+* **merchants:** ♻️ remove debug log for connectionDB in resetOnlyMerchantsTable ([0ff1d04](https://github.com/usertopio/otod-durian-lab1/commit/0ff1d04bcab1c9e27af68df70f372b37e903b1b6))
+* **merchants:** ♻️ update database connection usage in processors ([cb7e6fe](https://github.com/usertopio/otod-durian-lab1/commit/cb7e6fe9948905705d9936f5d47ba2b87ec03600))
+* **substance:** ♻️ streamline data fetching and processing in SubstanceProcessor ([acfcf78](https://github.com/usertopio/otod-durian-lab1/commit/acfcf78e128c32f95fb3f0a70b5e63293a966213))
+* **substance:** ♻️ streamline substance processing and enhance logging ([a1d7a1a](https://github.com/usertopio/otod-durian-lab1/commit/a1d7a1afbe9b98d68790b7ec291bb92f3004bf3c))
+
+
+### 📝 Docs
+
+* **readme:** 📝 update README for version 2.3.2 and improve links ([a31c61f](https://github.com/usertopio/otod-durian-lab1/commit/a31c61f247e307ae48b7b031d20914c822bceec9))
+
 ## [2.4.0](https://github.com/usertopio/otod-durian-lab1/compare/v2.2.0...v2.4.0) (2025-09-15)
 
 
