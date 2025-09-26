@@ -25,8 +25,7 @@ export default class PriceProcessor {
     // 3. Deduplicate records
     const uniquePrices = this._getUniquePrices(allPrices);
 
-    // 4. Log summary
-    // (Optional: implement PriceLogger.logApiSummary if you want logging)
+    // 4. Log summary (optional)
     // PriceLogger.logApiSummary(allPrices.length, uniquePrices.length);
 
     // 5. Bulk upsert to DB
@@ -43,9 +42,6 @@ export default class PriceProcessor {
       totalProcessed: uniquePrices.length,
       totalBefore: dbCountBefore,
       totalAfter: dbCountAfter,
-      growth: dbCountAfter - dbCountBefore,
-      totalFromAPI: allPrices.length,
-      uniqueFromAPI: uniquePrices.length,
     };
   }
 
@@ -107,7 +103,7 @@ export default class PriceProcessor {
   static async _getDatabaseCount() {
     const [result] = await connectionDB
       .promise()
-      .query("SELECT COUNT(*) as total FROM price");
+      .query("SELECT COUNT(*) as total FROM avg_price"); // CHANGED
     return result[0].total;
   }
 }
