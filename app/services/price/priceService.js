@@ -7,9 +7,9 @@ import AvgPriceLogger from "./priceLogger.js";
 // AvgPriceService handles the business logic for fetching, resetting, and managing avg price records.
 export default class AvgPriceService {
   /**
-   * Resets only the price table in the database.
+   * Resets only the avg_price table in the database.
    * - Disables foreign key checks to allow truncation.
-   * - Truncates the price table, leaving related tables untouched.
+   * - Truncates the avg_price table, leaving related tables untouched.
    * - Re-enables foreign key checks after operation.
    * - Logs the process and returns a status object.
    */
@@ -22,17 +22,16 @@ export default class AvgPriceService {
       );
       console.log("==========================================\n");
 
-      console.log("🧹 Resetting ONLY price table...");
+      console.log("🧹 Resetting ONLY avg_price table...");
 
       await connection.query("SET FOREIGN_KEY_CHECKS = 0");
-      await connection.query("TRUNCATE TABLE price"); // <-- corrected table name
+      await connection.query("TRUNCATE TABLE avg_price"); // CHANGED
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-
-      console.log("✅ Only price table reset - next ID will be 1");
-      return { success: true, message: "Only price table reset" };
+      console.log("✅ Only avg_price table reset - next ID will be 1");
+      return { success: true, message: "Only avg_price table reset" };
     } catch (error) {
       await connection.query("SET FOREIGN_KEY_CHECKS = 1");
-      console.error("❌ Error resetting price table:", error);
+      console.error("❌ Error resetting avg_price table:", error);
       throw error;
     }
   }
@@ -67,9 +66,8 @@ export default class AvgPriceService {
       totalUpdated += result.dbResult?.updated || 0;
       totalErrors += result.dbResult?.errors || 0;
 
-      // Stop if no new records were inserted AND no updates occurred
-      const hasNewData = (result.dbResult?.inserted || 0) > 0;
-      hasMoreData = hasNewData;
+      // Stop if no new records were inserted
+      hasMoreData = (result.dbResult?.inserted || 0) > 0;
 
       console.log(
         `🔍 Attempt ${attempt}: Inserted ${
@@ -101,7 +99,7 @@ export default class AvgPriceService {
       errors: totalErrors,
       status: "SUCCESS",
       reachedTarget: true,
-      table: "price",
+      table: "avg_price", // CHANGED
     };
   }
 
@@ -112,7 +110,7 @@ export default class AvgPriceService {
   static async _getDatabaseCount() {
     const [result] = await connectionDB
       .promise()
-      .query("SELECT COUNT(*) as total FROM price");
+      .query("SELECT COUNT(*) as total FROM avg_price"); // CHANGED
     return result[0].total;
   }
 }

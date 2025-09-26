@@ -86,7 +86,7 @@ export async function bulkInsertOrUpdateAvgPrice(avgPrices) {
     );
     const [countBefore] = await connectionDB
       .promise()
-      .query("SELECT COUNT(*) as count FROM price");
+      .query("SELECT COUNT(*) as count FROM avg_price"); // CHANGED
     const beforeCount = countBefore[0].count;
     const bangkokTime = getBangkokTime();
     const avgPriceData = avgPrices.map((price) => [
@@ -100,7 +100,7 @@ export async function bulkInsertOrUpdateAvgPrice(avgPrices) {
       bangkokTime,
     ]);
     const sql = `
-      INSERT INTO price (
+      INSERT INTO avg_price (
         app_price_id, province, region, breed_name, price_date, avg_price, data_source, fetch_at
       ) VALUES ?
       ON DUPLICATE KEY UPDATE
@@ -115,7 +115,7 @@ export async function bulkInsertOrUpdateAvgPrice(avgPrices) {
     const [result] = await connectionDB.promise().query(sql, [avgPriceData]);
     const [countAfter] = await connectionDB
       .promise()
-      .query("SELECT COUNT(*) as count FROM price");
+      .query("SELECT COUNT(*) as count FROM avg_price"); // CHANGED
     const afterCount = countAfter[0].count;
     const actualInserts = afterCount - beforeCount;
     const actualUpdates = avgPrices.length - actualInserts;
