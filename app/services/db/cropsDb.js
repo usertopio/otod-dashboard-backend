@@ -14,69 +14,6 @@ const getBangkokTime = () => {
 };
 
 /**
- * Bulk ensure reference codes for a list of names
- */
-const bulkEnsureRefCodes = async (
-  table,
-  nameColumn,
-  codeColumn,
-  names,
-  prefix
-) => {
-  if (!names.length) return new Map();
-
-  try {
-    // Get existing codes in one query
-    const [existing] = await connectionDB
-      .promise()
-      .query(
-        `SELECT ${nameColumn}, ${codeColumn} FROM ${table} WHERE ${nameColumn} IN (?)`,
-        [names]
-      );
-
-    const codeMap = new Map();
-    existing.forEach((row) => {
-      codeMap.set(row[nameColumn], row[codeColumn]);
-    });
-
-    // Find missing names
-    const missingNames = names.filter((name) => !codeMap.has(name));
-
-    if (missingNames.length > 0) {
-      // Generate codes for missing names
-      const [maxResult] = await connectionDB
-        .promise()
-        .query(
-          `SELECT ${codeColumn} FROM ${table} WHERE ${codeColumn} LIKE '${prefix}%' ORDER BY ${codeColumn} DESC LIMIT 1`
-        );
-
-      let nextNumber = 1;
-      if (maxResult.length > 0) {
-        const lastCode = maxResult[0][codeColumn];
-        nextNumber = parseInt(lastCode.replace(prefix, "")) + 1;
-      }
-
-      // Bulk insert missing codes
-      const insertData = missingNames.map((name, index) => {
-        const code = `${prefix}${String(nextNumber + index).padStart(3, "0")}`;
-        codeMap.set(name, code);
-        return [code, name, "generated"];
-      });
-
-      const insertQuery = `INSERT INTO ${table} (${codeColumn}, ${nameColumn}, source) VALUES ?`;
-      await connectionDB.promise().query(insertQuery, [insertData]);
-
-      console.log(`🆕 Created ${insertData.length} new ${table} codes`);
-    }
-
-    return codeMap;
-  } catch (err) {
-    console.error(`Bulk ${table} lookup error:`, err);
-    return new Map();
-  }
-};
-
-/**
  * Validates land ownership for crops
  */
 const validateLandOwnership = async (crops) => {
@@ -131,50 +68,6 @@ const validateLandOwnership = async (crops) => {
 };
 
 /**
- * Bulk process reference codes for crops
- */
-export async function bulkProcessReferenceCodes(crops) {
-  console.time("Reference codes processing");
-
-  try {
-    const breeds = [
-      ...new Set(crops.map((c) => c.breedName || c.breed).filter(Boolean)),
-    ];
-    const durianStages = [
-      ...new Set(
-        crops.map((c) => c.durianStageName || c.durianStage).filter(Boolean)
-      ),
-    ];
-
-    const [breedCodes, durianStageCodes] = await Promise.all([
-      // ✅ FIX: ref_breeds uses breed_name (no _th suffix)
-      bulkEnsureRefCodes(
-        "ref_breeds",
-        "breed_name",
-        "breed_id",
-        breeds,
-        "GBREED"
-      ),
-      // ✅ FIX: ref_durian_stages uses stage_name_th (with _th suffix)
-      bulkEnsureRefCodes(
-        "ref_durian_stages",
-        "stage_name_th",
-        "stage_id",
-        durianStages,
-        "GSTAGE"
-      ),
-    ]);
-
-    console.timeEnd("Reference codes processing");
-    return { breedCodes, durianStageCodes };
-  } catch (error) {
-    console.error("❌ Error in bulkProcessReferenceCodes:", error);
-    console.timeEnd("Reference codes processing");
-    return { breedCodes: new Map(), durianStageCodes: new Map() };
-  }
-}
-
-/**
  * Bulk insert or update crops in the database
  */
 export async function bulkInsertOrUpdateCrops(crops) {
@@ -185,11 +78,6 @@ export async function bulkInsertOrUpdateCrops(crops) {
   const connection = connectionDB.promise();
 
   try {
-    // Process reference codes
-    const { breedCodes, durianStageCodes } = await bulkProcessReferenceCodes(
-      crops
-    );
-
     // Validate land ownership
     const { validCrops, skippedCount } = await validateLandOwnership(crops);
 
@@ -211,7 +99,7 @@ export async function bulkInsertOrUpdateCrops(crops) {
       crop.cropId,
       crop.cropYear ?? null,
       crop.cropName || null,
-      breedCodes.get(crop.breedName || crop.breed) || null,
+      crop.breedName || crop.breed || null,
       crop.cropStartDate || null,
       crop.cropEndDate || null,
       crop.totalTrees ?? null,
@@ -221,7 +109,7 @@ export async function bulkInsertOrUpdateCrops(crops) {
       crop.forecastFertilizerCost ?? null,
       crop.forecastEquipmentCost ?? null,
       crop.forecastPetrolCost ?? null,
-      durianStageCodes.get(crop.durianStageName || crop.durianStage) || null,
+      crop.durianStageName || crop.durianStage || null,
       crop.lotNumber || null,
       crop.createdTime || null,
       crop.updatedTime || null,
@@ -240,10 +128,10 @@ export async function bulkInsertOrUpdateCrops(crops) {
 
     const sql = `
       INSERT INTO crops (
-        rec_id, farmer_id, land_id, crop_id, crop_year, crop_name, breed_id,
+        rec_id, farmer_id, land_id, crop_id, crop_year, crop_name, breed_name,
         crop_start_date, crop_end_date, total_trees, forecast_kg, forecast_baht,
         forecast_worker_cost, forecast_fertilizer_cost, forecast_equipment_cost,
-        forecast_petrol_cost, durian_stage_id, lot_number, created_at, updated_at,
+        forecast_petrol_cost, durian_stage_name, lot_number, created_at, updated_at,
         fetch_at
       ) VALUES ?
       ON DUPLICATE KEY UPDATE
@@ -252,7 +140,7 @@ export async function bulkInsertOrUpdateCrops(crops) {
         crop_id = VALUES(crop_id),
         crop_year = VALUES(crop_year),
         crop_name = VALUES(crop_name),
-        breed_id = VALUES(breed_id),
+        breed_name = VALUES(breed_name),
         crop_start_date = VALUES(crop_start_date),
         crop_end_date = VALUES(crop_end_date),
         total_trees = VALUES(total_trees),
@@ -262,7 +150,7 @@ export async function bulkInsertOrUpdateCrops(crops) {
         forecast_fertilizer_cost = VALUES(forecast_fertilizer_cost),
         forecast_equipment_cost = VALUES(forecast_equipment_cost),
         forecast_petrol_cost = VALUES(forecast_petrol_cost),
-        durian_stage_id = VALUES(durian_stage_id),
+        durian_stage_name = VALUES(durian_stage_name),
         lot_number = VALUES(lot_number),
         created_at = VALUES(created_at),
         updated_at = VALUES(updated_at),
