@@ -22,8 +22,8 @@ RUN adduser -S nodeuser -u 1001
 RUN chown -R nodeuser:nodejs /app
 USER nodeuser
 
-# Expose port
-EXPOSE 5000
+# # Expose port
+# EXPOSE 5000
 
 # Start the application
 CMD ["npm", "start"]
