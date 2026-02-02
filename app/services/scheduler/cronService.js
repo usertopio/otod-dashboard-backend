@@ -134,7 +134,7 @@ class CronService {
 
       const results = [];
       for (let i = 0; i < steps.length; i++) {
-        await this.runStep(steps[i], i + 1, steps.length, results, 0);
+        await this.runStep(steps[i], i + 1, steps.length, results, 2); // Add 2 retries
       }
 
       const duration = ((Date.now() - startTime) / 1000).toFixed(2);

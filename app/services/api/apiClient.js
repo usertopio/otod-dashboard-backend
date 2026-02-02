@@ -4,7 +4,7 @@ import tokenManager from "../../utils/tokenManager.js";
 // Create axios instance
 const apiClient = axios.create({
   baseURL: process.env.OUTSOURCE_API_BASE_URL,
-  timeout: 10000,
+  timeout: 30000, // 30 seconds (increased from 10s for large datasets)
   headers: {
     "Content-Type": "application/json",
   },

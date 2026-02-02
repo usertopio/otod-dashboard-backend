@@ -14,21 +14,6 @@ const getBangkokTime = () => {
 };
 
 /**
- * Get all existing crop_ids from crops table for validation
- */
-const getValidCropIds = async () => {
-  try {
-    const [rows] = await connectionDB
-      .promise()
-      .query("SELECT DISTINCT crop_id FROM crops");
-    return new Set(rows.map((row) => row.crop_id));
-  } catch (err) {
-    console.error("Error fetching valid crop IDs:", err);
-    return new Set();
-  }
-};
-
-/**
  * Bulk insert or update operations using INSERT ... ON DUPLICATE KEY UPDATE
  */
 export async function bulkInsertOrUpdateOperations(operations) {
@@ -39,11 +24,6 @@ export async function bulkInsertOrUpdateOperations(operations) {
   const connection = connectionDB.promise();
 
   try {
-    console.time("Crop validation");
-    // Get all valid crop_ids from crops table
-    const validCropIds = await getValidCropIds();
-    console.timeEnd("Crop validation");
-
     console.time("Data preparation");
 
     // Get current count before operation
@@ -55,21 +35,10 @@ export async function bulkInsertOrUpdateOperations(operations) {
     // Get Bangkok time
     const bangkokTime = getBangkokTime();
 
-    // Filter operations with valid crop_ids and prepare data
+    // Prepare all operations for insertion (no validation)
     const validOperations = [];
-    const skippedOperations = [];
 
     for (const operation of operations) {
-      // Validate if crop_id exists in crops table
-      if (!validCropIds.has(operation.cropId)) {
-        skippedOperations.push({
-          recId: operation.recId,
-          cropId: operation.cropId,
-          reason: "missing_crop_reference",
-        });
-        continue;
-      }
-
       // Use API values directly (no reference code mapping)
       validOperations.push([
         operation.recId,
@@ -88,22 +57,6 @@ export async function bulkInsertOrUpdateOperations(operations) {
         operation.companyId ?? null,
         bangkokTime,
       ]);
-    }
-
-    console.log(
-      `📊 Validation: ${validOperations.length} valid, ${skippedOperations.length} skipped operations`
-    );
-
-    if (skippedOperations.length > 0) {
-      console.warn(
-        `⚠️  Skipped ${skippedOperations.length} operations with missing references`
-      );
-      // Log first few examples
-      skippedOperations.slice(0, 5).forEach((skip) => {
-        console.warn(
-          `   - Operation ${skip.recId}: ${skip.reason} (crop_id: '${skip.cropId}')`
-        );
-      });
     }
 
     let actualInserts = 0;
@@ -153,12 +106,12 @@ export async function bulkInsertOrUpdateOperations(operations) {
     } else {
       console.timeEnd("Data preparation");
       console.log(
-        "⚠️  No valid operations to process - all skipped due to missing references"
+        "⚠️  No operations to process"
       );
     }
 
     console.log(
-      `📊 Bulk operation: ${actualInserts} inserted, ${actualUpdates} updated, ${skippedOperations.length} skipped`
+      `📊 Bulk operation: ${actualInserts} inserted, ${actualUpdates} updated`
     );
     console.log(
       `📊 Database: ${beforeCount} → ${beforeCount + actualInserts} (${
@@ -170,7 +123,7 @@ export async function bulkInsertOrUpdateOperations(operations) {
       inserted: actualInserts,
       updated: Math.max(0, actualUpdates),
       errors: 0,
-      skipped: skippedOperations.length,
+      skipped: 0,
       totalProcessed: operations.length,
       affectedRows: result?.affectedRows || 0,
     };

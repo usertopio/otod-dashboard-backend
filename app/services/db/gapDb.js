@@ -14,21 +14,6 @@ const getBangkokTime = () => {
 };
 
 /**
- * Get all existing land_ids from durian_gardens table for validation
- */
-async function getValidLandIds() {
-  try {
-    const [result] = await connectionDB
-      .promise()
-      .query("SELECT land_id FROM durian_gardens");
-    return new Set(result.map((row) => row.land_id));
-  } catch (error) {
-    console.error("Error getting valid land_ids:", error);
-    return new Set();
-  }
-}
-
-/**
  * Bulk insert or update GAP certificates using INSERT ... ON DUPLICATE KEY UPDATE
  * @param {Array} gapCertificates - Array of GAP certificate objects
  * @returns {Promise<object>} - Bulk operation result
@@ -41,65 +26,41 @@ export async function bulkInsertOrUpdateGap(gapCertificates) {
   const connection = connectionDB.promise();
 
   try {
-    console.time("Land validation");
-
-    // Get all valid land_ids from durian_gardens table
-    const validLandIds = await getValidLandIds();
-
-    console.timeEnd("Land validation");
     console.time("Data preparation");
 
     //  Get Bangkok time
     const bangkokTime = getBangkokTime();
 
-    // Filter GAP certificates with valid land_ids and prepare data
+    // Prepare all GAP certificates for insertion (no validation)
     const validGapCertificates = [];
-    const skippedGapCertificates = [];
 
     for (const gap of gapCertificates) {
       // Skip if gapCertNumber is empty (no GAP certificate)
       if (!gap.gapCertNumber || gap.gapCertNumber.trim() === "") {
-        skippedGapCertificates.push({
-          landId: gap.landId,
-          reason: "empty_gap_cert_number",
-        });
         continue;
       }
 
-      // Validate if land_id exists in durian_gardens table
-      if (!validLandIds.has(gap.landId)) {
-        skippedGapCertificates.push({
-          landId: gap.landId,
-          reason: "missing_land_reference",
-        });
-        continue;
-      }
-
-      // Only map the fields that exist in the table
+      // Only map the fields that exist in the table (allow NULL for land_id)
       validGapCertificates.push([
         gap.gapCertNumber,
         gap.gapCertType || null,
         gap.gapIssuedDate || null,
         gap.gapExpiryDate || null,
-        gap.farmerId,
-        gap.landId,
-        gap.cropId,
+        gap.farmerId || null,
+        gap.landId || null,
+        gap.cropId || null,
         bangkokTime,
       ]);
     }
 
-    console.log(
-      `📊 Validation: ${validGapCertificates.length} valid, ${skippedGapCertificates.length} skipped GAP certificates`
-    );
-
     if (validGapCertificates.length === 0) {
-      console.log("⚠️  No valid GAP certificates to process");
+      console.log("⚠️  No GAP certificates to process");
       console.timeEnd("Data preparation");
       return {
         inserted: 0,
         updated: 0,
         errors: 0,
-        skipped: skippedGapCertificates.length,
+        skipped: 0,
       };
     }
 
@@ -149,7 +110,7 @@ export async function bulkInsertOrUpdateGap(gapCertificates) {
       inserted: actualInserts,
       updated: actualUpdates,
       errors: 0,
-      skipped: skippedGapCertificates.length,
+      skipped: 0,
       totalProcessed: gapCertificates.length,
       affectedRows: result.affectedRows,
     };
@@ -165,6 +126,3 @@ export async function bulkInsertOrUpdateGap(gapCertificates) {
     };
   }
 }
-
-// Export the validation function as well
-export { getValidLandIds };

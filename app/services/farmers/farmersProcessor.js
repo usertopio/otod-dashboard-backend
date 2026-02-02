@@ -60,13 +60,18 @@ export default class FarmersProcessor {
     let allFarmers = [];
     let hasMore = true;
     while (hasMore) {
-      console.log(`📄 Fetching page ${page}...`);
-      const apiResult = await getFarmers({ pageIndex: page, pageSize: 500 });
-      if (!apiResult?.data?.length) break;
-      console.log(`   ➡️  Got ${apiResult.data.length} farmers`);
-      allFarmers = allFarmers.concat(apiResult.data);
-      page++;
-      hasMore = apiResult.data.length === 500;
+      try {
+        console.log(`📄 Fetching page ${page}...`);
+        const apiResult = await getFarmers({ pageIndex: page, pageSize: 500 });
+        if (!apiResult?.data?.length) break;
+        console.log(`   ➡️  Got ${apiResult.data.length} farmers`);
+        allFarmers = allFarmers.concat(apiResult.data);
+        page++;
+        hasMore = apiResult.data.length === 500;
+      } catch (error) {
+        console.error(`❌ Error fetching farmers page ${page}:`, error.message);
+        throw new Error(`Failed to fetch farmers at page ${page}: ${error.message}`);
+      }
     }
     return allFarmers;
   }
