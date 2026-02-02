@@ -14,60 +14,6 @@ const getBangkokTime = () => {
 };
 
 /**
- * Validates land ownership for crops
- */
-const validateLandOwnership = async (crops) => {
-  console.time("Land validation");
-
-  try {
-    const connection = connectionDB.promise();
-
-    // Get all unique farmer_id and land_id pairs from crops
-    const farmerLandPairs = crops.map((crop) => ({
-      farmerId: crop.farmerId,
-      landId: crop.landId,
-      cropId: crop.cropId,
-    }));
-
-    // Get all land records that match our farmer-land pairs
-    const farmerIds = [
-      ...new Set(farmerLandPairs.map((pair) => pair.farmerId)),
-    ];
-    const landIds = [...new Set(farmerLandPairs.map((pair) => pair.landId))];
-
-    const [validLands] = await connection.query(
-      `SELECT farmer_id, land_id FROM durian_gardens 
-       WHERE farmer_id IN (?) AND land_id IN (?)`,
-      [farmerIds, landIds]
-    );
-
-    // Create a Set of valid farmer-land combinations for fast lookup
-    const validCombinations = new Set(
-      validLands.map((land) => `${land.farmer_id}-${land.land_id}`)
-    );
-
-    // Filter crops to only include those with valid land ownership
-    const validCrops = crops.filter((crop) => {
-      const key = `${crop.farmerId}-${crop.landId}`;
-      return validCombinations.has(key);
-    });
-
-    console.timeEnd("Land validation");
-
-    const skippedCount = crops.length - validCrops.length;
-    console.log(
-      `📊 Validation: ${validCrops.length} valid, ${skippedCount} skipped crops`
-    );
-
-    return { validCrops, skippedCount };
-  } catch (error) {
-    console.error("❌ Error in land validation:", error);
-    console.timeEnd("Land validation");
-    return { validCrops: [], skippedCount: crops.length };
-  }
-};
-
-/**
  * Bulk insert or update crops in the database
  */
 export async function bulkInsertOrUpdateCrops(crops) {
@@ -78,21 +24,13 @@ export async function bulkInsertOrUpdateCrops(crops) {
   const connection = connectionDB.promise();
 
   try {
-    // Validate land ownership
-    const { validCrops, skippedCount } = await validateLandOwnership(crops);
-
-    if (validCrops.length === 0) {
-      console.log("📊 No valid crops to process after land validation");
-      return { inserted: 0, updated: 0, errors: 0, skipped: skippedCount };
-    }
-
     console.time("Data preparation");
 
     // Get Bangkok time
     const bangkokTime = getBangkokTime();
 
-    // Prepare data for bulk insert
-    const cropData = validCrops.map((crop) => [
+    // Prepare data for bulk insert (no validation)
+    const cropData = crops.map((crop) => [
       crop.recId,
       crop.farmerId,
       crop.landId,
@@ -170,17 +108,17 @@ export async function bulkInsertOrUpdateCrops(crops) {
 
     // Calculate actual inserts and updates
     const actualInserted = countAfter - countBefore;
-    const actualUpdated = validCrops.length - actualInserted;
+    const actualUpdated = crops.length - actualInserted;
 
     console.log(
-      `📊 Bulk operation: ${actualInserted} inserted, ${actualUpdated} updated, ${skippedCount} skipped`
+      `📊 Bulk operation: ${actualInserted} inserted, ${actualUpdated} updated`
     );
 
     return {
       inserted: actualInserted,
       updated: actualUpdated,
       errors: 0,
-      skipped: skippedCount,
+      skipped: 0,
       affectedRows: result.affectedRows,
       totalProcessed: crops.length,
     };

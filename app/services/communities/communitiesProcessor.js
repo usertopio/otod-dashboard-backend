@@ -61,14 +61,19 @@ export default class CommunitiesProcessor {
     let allCommunities = [];
     let hasMore = true;
     while (hasMore) {
-      const apiResult = await getCommunities({
-        pageIndex: page,
-        pageSize: 500,
-      });
-      if (!apiResult?.data?.length) break;
-      allCommunities = allCommunities.concat(apiResult.data);
-      page++;
-      hasMore = apiResult.data.length === 500;
+      try {
+        const apiResult = await getCommunities({
+          pageIndex: page,
+          pageSize: 500,
+        });
+        if (!apiResult?.data?.length) break;
+        allCommunities = allCommunities.concat(apiResult.data);
+        page++;
+        hasMore = apiResult.data.length === 500;
+      } catch (error) {
+        console.error(`❌ Error fetching communities page ${page}:`, error.message);
+        throw new Error(`Failed to fetch communities at page ${page}: ${error.message}`);
+      }
     }
     return allCommunities;
   }

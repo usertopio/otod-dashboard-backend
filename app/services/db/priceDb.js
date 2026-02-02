@@ -11,6 +11,7 @@ export async function bulkInsertOrUpdateAvgPrice(avgPrices) {
     return { inserted: 0, updated: 0, errors: 0 };
   }
   try {
+    // Reference tables no longer needed - removed bulkProcessReferenceCodes call
     const [countBefore] = await connectionDB
       .promise()
       .query("SELECT COUNT(*) as count FROM avg_price");
