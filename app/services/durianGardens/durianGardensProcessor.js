@@ -27,16 +27,16 @@ export default class DurianGardensProcessor {
     // 3. Deduplicate gardens (already unique by landId after merge)
     const uniqueGardens = this._getUniqueGardens(allGardens);
 
-    // 4. Log summary (optional)
+    // 4. Log summary
     DurianGardensLogger.logApiSummary(allGardens.length, uniqueGardens.length);
 
     // 5. Bulk upsert to DB
     const result = await bulkInsertOrUpdateDurianGardens(uniqueGardens);
 
-    // 6. Get DB count after processing
+    // 7. Get DB count after processing
     const dbCountAfter = await this._getDatabaseCount();
 
-    // 7. Return result
+    // 8. Return result
     return {
       inserted: result.inserted,
       updated: result.updated,
