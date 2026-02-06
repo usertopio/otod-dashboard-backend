@@ -30,19 +30,12 @@ export default class DurianGardensProcessor {
     // 4. Log summary
     DurianGardensLogger.logApiSummary(allGardens.length, uniqueGardens.length);
 
-    // 5. Bulk upsert to DB
-    const result = await bulkInsertOrUpdateDurianGardens(uniqueGardens);
-
-    // 7. Get DB count after processing
-    const dbCountAfter = await this._getDatabaseCount();
-
-    // 8. Return result
+    // 5. Return data for service to handle insert
     return {
-      inserted: result.inserted,
-      updated: result.updated,
-      errors: result.errors,
-      totalAfter: dbCountAfter,
-      processingMethod: "BULK_UPSERT",
+      success: true,
+      data: uniqueGardens,
+      recordCount: uniqueGardens.length,
+      totalBefore: dbCountBefore,
     };
   }
 

@@ -3,6 +3,7 @@ import { connectionDB } from "../../config/db/db.conf.js";
 import { MERCHANTS_CONFIG, STATUS } from "../../utils/constants.js";
 import MerchantsProcessor from "./merchantsProcessor.js";
 import MerchantsLogger from "./merchantsLogger.js";
+import { bulkInsertOrUpdateMerchants } from "../db/merchantsDb.js";
 
 // ===================== Service =====================
 // MerchantsService handles the business logic for fetching, resetting, and managing merchant records.
@@ -37,73 +38,65 @@ export default class MerchantsService {
     }
   }
 
-  // 2. Fetch all merchants from API and store in DB (loop with maxAttempts)
+  // 2. Fetch all merchants from API and store in DB (NEW APPROACH)
   // 3. Log attempt start/results and final results
   // 4. Return summary result object
   static async fetchAllMerchants(
     maxAttempts = MERCHANTS_CONFIG.DEFAULT_MAX_ATTEMPTS
   ) {
-    await this.resetOnlyMerchantsTable();
+    console.log("==========================================");
+    console.log("📩 NEW APPROACH: Fetch first, validate, then truncate");
+    console.log("==========================================\n");
 
-    let attempt = 1;
-    let totalInserted = 0;
-    let totalUpdated = 0;
-    let totalErrors = 0;
-    let hasMoreData = true;
+    const countBefore = await this._getDatabaseCount();
+    console.log(`📊 Current records in database: ${countBefore}`);
 
-    console.log(`🏪 Fetching ALL merchants, Max attempts: ${maxAttempts}`);
+    // STEP 1: Fetch data from API (NO DB changes yet)
+    console.log("📡 STEP 1: Fetching data from API...");
+    const result = await MerchantsProcessor.fetchAndProcessData();
 
-    while (attempt <= maxAttempts && hasMoreData) {
-      MerchantsLogger.logAttemptStart(attempt, maxAttempts);
-
-      const result = await MerchantsProcessor.fetchAndProcessData();
-
-      MerchantsLogger.logAttemptResults(attempt, result);
-
-      totalInserted += result.inserted || 0;
-      totalUpdated += result.updated || 0;
-      totalErrors += result.errors || 0;
-
-      hasMoreData = (result.inserted || 0) > 0;
-
-      // Early termination for efficiency
-      if (
-        attempt === 1 &&
-        (result.inserted || 0) > 0 &&
-        (result.errors || 0) === 0
-      ) {
-        console.log(
-          `✅ First attempt successful with ${result.inserted} records - stopping`
-        );
-        hasMoreData = false;
-      }
-
-      console.log(
-        `🔍 Attempt ${attempt}: Inserted ${result.inserted}, Continue: ${hasMoreData}`
-      );
-
-      attempt++;
+    // STEP 2: Validate fetch result
+    if (!result.success || result.recordCount === 0) {
+      console.log("❌ STEP 2: Fetch failed or no data received");
+      console.log("⚠️  Table NOT truncated - preserving existing data");
+      
+      return {
+        message: "API fetch failed - table NOT truncated",
+        countBefore: countBefore,
+        countAfter: countBefore,
+        inserted: 0,
+        updated: 0,
+        errors: 1,
+        status: STATUS.FAILED,
+        oldDataPreserved: true,
+      };
     }
 
-    const finalCount = await this._getDatabaseCount();
+    // STEP 3: Fetch succeeded - NOW safe to truncate
+    console.log(`✅ STEP 3: Fetch successful with ${result.recordCount} records`);
+    console.log("🧹 STEP 4: NOW safe to reset table...");
+    await this.resetOnlyMerchantsTable();
 
-    MerchantsLogger.logFinalResults(
-      "ALL",
-      finalCount,
-      attempt - 1,
-      maxAttempts,
-      STATUS.SUCCESS
-    );
+    // STEP 5: Insert the new data
+    console.log("💾 STEP 5: Inserting new data...");
+    const insertResult = await bulkInsertOrUpdateMerchants(result.data);
+
+    const countAfter = await this._getDatabaseCount();
+
+    MerchantsLogger.logFinalResults("ALL", countAfter, 1, maxAttempts, STATUS.SUCCESS);
 
     return {
-      message: `Fetch loop completed - ALL records fetched`,
-      achieved: finalCount,
-      attemptsUsed: attempt - 1,
-      maxAttempts: maxAttempts,
-      inserted: totalInserted,
-      updated: totalUpdated,
-      errors: totalErrors,
+      message: "Fetch-first approach succeeded",
+      countBefore: countBefore,
+      countAfter: countAfter,
+      inserted: insertResult.inserted || 0,
+      updated: insertResult.updated || 0,
+      errors: insertResult.errors || 0,
       status: STATUS.SUCCESS,
+      oldDataPreserved: false,
+      achieved: countAfter,
+      attemptsUsed: 1,
+      maxAttempts: maxAttempts,
       reachedTarget: true,
       table: "merchants",
     };

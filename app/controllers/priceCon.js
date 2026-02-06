@@ -12,9 +12,9 @@ class PriceController {
    */
   static async fetchAvgPrice(req, res) {
     try {
-      // Get maxAttempts from request body or use default
+      // Safely get maxAttempts from request body or use default
       const maxAttempts =
-        req.body.maxAttempts || PRICE_CONFIG.DEFAULT_MAX_ATTEMPTS;
+        (req.body && req.body.maxAttempts) || PRICE_CONFIG.DEFAULT_MAX_ATTEMPTS;
 
       // Call the service to fetch avg price records
       const result = await AvgPriceService.fetchAllAvgPrices(maxAttempts);

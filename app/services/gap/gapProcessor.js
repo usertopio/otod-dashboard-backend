@@ -31,23 +31,13 @@ export default class GapProcessor {
     // 4. Log summary
     GapLogger.logApiSummary(allGap.length, uniqueGap.length);
 
-    // 5. Bulk upsert to DB
-    const bulkResult = await bulkInsertOrUpdateGap(uniqueGap);
-
-    // 6. Get database count after processing
-    const dbCountAfter = await this._getDatabaseCount();
-
-    // 7. Return result object
+    // 5. Return data for service to handle insert
     return {
-      inserted: bulkResult.inserted || 0,
-      updated: bulkResult.updated || 0,
-      errors: bulkResult.errors || 0,
-      totalProcessed: uniqueGap.length,
-      totalBefore: dbCountBefore,
-      totalAfter: dbCountAfter,
-      growth: dbCountAfter - dbCountBefore,
+      success: true,
+      data: uniqueGap,
+      recordCount: uniqueGap.length,
       totalFromAPI: allGap.length,
-      uniqueFromAPI: uniqueGap.length,
+      totalBefore: dbCountBefore,
     };
   }
 

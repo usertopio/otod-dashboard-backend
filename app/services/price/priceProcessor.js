@@ -28,20 +28,13 @@ export default class PriceProcessor {
     // 4. Log summary (optional)
     // PriceLogger.logApiSummary(allPrices.length, uniquePrices.length);
 
-    // 5. Bulk upsert to DB
-    const bulkResult = await bulkInsertOrUpdateAvgPrice(uniquePrices);
-
-    // 6. Get database count after processing
-    const dbCountAfter = await this._getDatabaseCount();
-
-    // 7. Return result object
+    // 5. Return data for service to handle insert
     return {
-      inserted: bulkResult.inserted || 0,
-      updated: bulkResult.updated || 0,
-      errors: bulkResult.errors || 0,
-      totalProcessed: uniquePrices.length,
+      success: true,
+      data: uniquePrices,
+      recordCount: uniquePrices.length,
+      totalFromAPI: allPrices.length,
       totalBefore: dbCountBefore,
-      totalAfter: dbCountAfter,
     };
   }
 

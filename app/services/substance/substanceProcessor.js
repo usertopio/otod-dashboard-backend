@@ -29,23 +29,14 @@ class SubstanceProcessor {
     // 5. Log summary
     SubstanceLogger.logApiSummary(allSubstance.length, uniqueSubstance.length);
 
-    // 6. Bulk insert only new records to DB
-    const bulkResult = await bulkInsertOrUpdateSubstances(newSubstance);
-
-    // 7. Get database count after processing
-    const dbCountAfter = await this._getDatabaseCount();
-
-    // 8. Return result object
+    // 6. Return data for service to handle insert
     return {
-      inserted: bulkResult.inserted || 0,
-      updated: 0,
-      errors: bulkResult.errors || 0,
-      totalProcessed: newSubstance.length,
-      totalBefore: dbCountBefore,
-      totalAfter: dbCountAfter,
-      growth: dbCountAfter - dbCountBefore,
+      success: true,
+      data: newSubstance,
+      recordCount: newSubstance.length,
       totalFromAPI: allSubstance.length,
       uniqueFromAPI: uniqueSubstance.length,
+      totalBefore: dbCountBefore,
     };
   }
 
