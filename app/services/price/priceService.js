@@ -1,7 +1,9 @@
 // ===================== Imports =====================
 import { connectionDB } from "../../config/db/db.conf.js";
+import { STATUS } from "../../utils/constants.js";
 import AvgPriceProcessor from "./priceProcessor.js";
 import AvgPriceLogger from "./priceLogger.js";
+import { bulkInsertOrUpdateAvgPrice } from "../db/priceDb.js";
 
 // ===================== Service =====================
 // AvgPriceService handles the business logic for fetching, resetting, and managing avg price records.
@@ -38,68 +40,62 @@ export default class AvgPriceService {
 
   /**
    * Fetches ALL avg price records from the API and stores them in the database.
-   * Loops up to maxAttempts, stops early if API returns no new data.
+   * NEW APPROACH: Fetch first, validate, then truncate.
    * Returns a summary result object.
    * @param {number} maxAttempts - The maximum number of fetch attempts.
    */
   static async fetchAllAvgPrices(maxAttempts = 10) {
-    await this.resetOnlyPriceTable();
+    console.log("==========================================");
+    console.log("📩 NEW APPROACH: Fetch first, validate, then truncate");
+    console.log("==========================================\n");
 
-    let attempt = 1;
-    let totalInserted = 0;
-    let totalUpdated = 0;
-    let totalErrors = 0;
-    let hasMoreData = true;
+    const countBefore = await this._getDatabaseCount();
+    console.log(`📊 Current records in database: ${countBefore}`);
 
-    console.log(
-      `💰 Fetching ALL avg price records, Max attempts: ${maxAttempts}`
-    );
+    // STEP 1: Fetch data from API (NO DB changes yet)
+    console.log("📡 STEP 1: Fetching data from API...");
+    const result = await AvgPriceProcessor.fetchAndProcessData();
 
-    while (attempt <= maxAttempts && hasMoreData) {
-      AvgPriceLogger.logAttemptStart(attempt, maxAttempts);
-
-      // Fetch and process data (single bulk operation)
-      const result = await AvgPriceProcessor.fetchAndProcessData();
-      AvgPriceLogger.logAttemptResults(attempt, result); // Pass the whole result object
-
-      totalInserted += result.dbResult?.inserted || 0;
-      totalUpdated += result.dbResult?.updated || 0;
-      totalErrors += result.dbResult?.errors || 0;
-
-      // Stop if no new records were inserted
-      hasMoreData = (result.dbResult?.inserted || 0) > 0;
-
-      console.log(
-        `🔍 Attempt ${attempt}: Inserted ${
-          result.dbResult?.inserted || 0
-        }, Continue: ${hasMoreData}`
-      );
-
-      if (!hasMoreData) break;
-      attempt++;
+    // STEP 2: Validate fetch result
+    if (!result.success || result.recordCount === 0) {
+      console.log("❌ STEP 2: Fetch failed or no data received");
+      console.log("⚠️  Table NOT truncated - preserving existing data");
+      
+      return {
+        message: "API fetch failed - table NOT truncated",
+        countBefore: countBefore,
+        countAfter: countBefore,
+        inserted: 0,
+        updated: 0,
+        errors: 1,
+        status: STATUS.FAILED,
+        oldDataPreserved: true,
+      };
     }
 
-    const finalCount = await this._getDatabaseCount();
+    // STEP 3: Fetch succeeded - NOW safe to truncate
+    console.log(`✅ STEP 3: Fetch successful with ${result.recordCount} records`);
+    console.log("🧹 STEP 4: NOW safe to reset table...");
+    await this.resetOnlyPriceTable();
 
-    AvgPriceLogger.logFinalResults(
-      "ALL",
-      finalCount,
-      attempt,
-      maxAttempts,
-      "SUCCESS"
-    );
+    // STEP 5: Insert the new data
+    console.log("💾 STEP 5: Inserting new data...");
+    const insertResult = await bulkInsertOrUpdateAvgPrice(result.data);
+
+    const countAfter = await this._getDatabaseCount();
+
+    AvgPriceLogger.logFinalResults("ALL", countAfter, 1, maxAttempts, STATUS.SUCCESS);
 
     return {
-      message: `Fetch loop completed - ALL records fetched`,
-      achieved: finalCount,
-      attemptsUsed: attempt,
-      maxAttempts: maxAttempts,
-      inserted: totalInserted,
-      updated: totalUpdated,
-      errors: totalErrors,
-      status: "SUCCESS",
-      reachedTarget: true,
-      table: "avg_price", // CHANGED
+      message: "Fetch-first approach succeeded",
+      countBefore: countBefore,
+      countAfter: countAfter,
+      inserted: insertResult.inserted || 0,
+      updated: insertResult.updated || 0,
+      errors: insertResult.errors || 0,
+      status: STATUS.SUCCESS,
+      oldDataPreserved: false,
+      table: "avg_price",
     };
   }
 

@@ -29,26 +29,16 @@ export default class FarmersProcessor {
 
     // 4. Log summary
     console.log(
-      `🚀 Processing ${uniqueFarmers.length} unique farmers (from ${allFarmers.length} total API records) using BULK operations...`
+      `🚀 Processing ${uniqueFarmers.length} unique farmers (from ${allFarmers.length} total API records)...`
     );
 
-    // 5. Bulk upsert to DB
-    const bulkResult = await bulkInsertOrUpdateFarmers(uniqueFarmers);
-
-    // 6. Get database count after processing
-    const dbCountAfter = await this._getDatabaseCount();
-
-    // 7. Return result object
+    // 5. Return data for service to handle insert
     return {
-      inserted: bulkResult.inserted || 0,
-      updated: bulkResult.updated || 0,
-      errors: bulkResult.errors || 0,
-      totalProcessed: uniqueFarmers.length,
-      totalBefore: dbCountBefore,
-      totalAfter: dbCountAfter,
-      growth: dbCountAfter - dbCountBefore,
+      success: true,
+      data: uniqueFarmers,
+      recordCount: uniqueFarmers.length,
       totalFromAPI: allFarmers.length,
-      uniqueFromAPI: uniqueFarmers.length,
+      totalBefore: dbCountBefore,
     };
   }
 

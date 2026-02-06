@@ -3,6 +3,7 @@ import { connectionDB } from "../../config/db/db.conf.js";
 import { FARMERS_CONFIG, STATUS } from "../../utils/constants.js";
 import FarmersProcessor from "./farmersProcessor.js";
 import FarmersLogger from "./farmersLogger.js";
+import { bulkInsertOrUpdateFarmers } from "../db/farmersDb.js";
 
 // ===================== Service =====================
 export async function syncFarmersFromApi() {
@@ -46,65 +47,78 @@ export default class FarmersService {
     }
   }
 
-  // 2. Fetch all farmers from API and store in DB (loop with maxAttempts)
+  // 2. Fetch all farmers from API and store in DB (NEW APPROACH: Fetch First)
   // 3. Log attempt start/results and final results
   // 4. Return summary result object
   static async fetchAllFarmers(
     maxAttempts = FARMERS_CONFIG.DEFAULT_MAX_ATTEMPTS
   ) {
-    await this.resetOnlyFarmersTable();
+    console.log("==========================================");
+    console.log(`📩 NEW APPROACH: Fetch first, validate, then truncate`);
+    console.log("==========================================\n");
 
-    let attempt = 1;
-    let totalInserted = 0;
-    let totalUpdated = 0;
-    let totalErrors = 0;
-    let hasMoreData = true;
+    const countBefore = await this._getDatabaseCount();
+    console.log(`📊 Current records in database: ${countBefore}`);
 
     console.log(`👨‍🌾 Fetching ALL farmers, Max attempts: ${maxAttempts}`);
 
-    while (attempt <= maxAttempts && hasMoreData) {
+    let attempt = 1;
+
+    while (attempt <= maxAttempts) {
       FarmersLogger.logAttemptStart(attempt, maxAttempts);
 
+      // STEP 1: Fetch data from API (NO DB changes yet)
+      console.log(`📡 STEP 1: Fetching data from API (attempt ${attempt})...`);
       const result = await FarmersProcessor.fetchAndProcessData();
 
-      FarmersLogger.logAttemptResults(attempt, result);
+      // STEP 2: Validate fetch result
+      if (!result.success || result.recordCount === 0) {
+        console.log(`❌ STEP 2: Fetch failed or no data received`);
+        console.log(`⚠️  Table NOT truncated - preserving existing data`);
+        
+        return {
+          message: "API fetch failed - table NOT truncated",
+          countBefore: countBefore,
+          countAfter: countBefore,
+          inserted: 0,
+          updated: 0,
+          errors: 1,
+          status: STATUS.FAILED,
+          oldDataPreserved: true,
+        };
+      }
 
-      totalInserted += result.inserted || 0;
-      totalUpdated += result.updated || 0;
-      totalErrors += result.errors || 0;
+      // STEP 3: Fetch succeeded - NOW safe to truncate
+      console.log(`✅ STEP 3: Fetch successful with ${result.recordCount} records`);
+      console.log(`🧹 STEP 4: NOW safe to reset table...`);
+      await this.resetOnlyFarmersTable();
 
-      const hasNewData = (result.inserted || 0) > 0;
-      hasMoreData = hasNewData;
+      // STEP 5: Insert the new data
+      console.log(`💾 STEP 5: Inserting new data...`);
+      const insertResult = await bulkInsertOrUpdateFarmers(result.data);
 
-      console.log(
-        `🔍 Attempt ${attempt}: New data: ${hasNewData}, Continue: ${hasMoreData}`
+      const countAfter = await this._getDatabaseCount();
+
+      FarmersLogger.logFinalResults(
+        "ALL",
+        countAfter,
+        attempt,
+        maxAttempts,
+        STATUS.SUCCESS
       );
 
-      attempt++;
+      return {
+        message: `Fetch-first approach succeeded`,
+        countBefore: countBefore,
+        countAfter: countAfter,
+        inserted: insertResult.inserted || 0,
+        updated: insertResult.updated || 0,
+        errors: insertResult.errors || 0,
+        status: STATUS.SUCCESS,
+        oldDataPreserved: false,
+        table: "farmers",
+      };
     }
-
-    const finalCount = await this._getDatabaseCount();
-
-    FarmersLogger.logFinalResults(
-      "ALL",
-      finalCount,
-      attempt - 1,
-      maxAttempts,
-      STATUS.SUCCESS
-    );
-
-    return {
-      message: `Fetch loop completed - ALL records fetched`,
-      achieved: finalCount,
-      attemptsUsed: attempt - 1,
-      maxAttempts: maxAttempts,
-      inserted: totalInserted,
-      updated: totalUpdated,
-      errors: totalErrors,
-      status: STATUS.SUCCESS,
-      reachedTarget: true,
-      table: "farmers",
-    };
   }
 
   // 5. Get database count method

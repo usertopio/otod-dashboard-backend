@@ -31,23 +31,13 @@ export default class WaterProcessor {
     // 4. Log summary
     WaterLogger.logApiSummary(allWater.length, uniqueWater.length);
 
-    // 5. Bulk upsert to DB
-    const bulkResult = await bulkInsertOrUpdateWater(uniqueWater);
-
-    // 6. Get database count after processing
-    const dbCountAfter = await this._getDatabaseCount();
-
-    // 7. Return result object
+    // 5. Return data for service to handle insert
     return {
-      inserted: bulkResult.inserted || 0,
-      updated: bulkResult.updated || 0,
-      errors: bulkResult.errors || 0,
-      totalProcessed: uniqueWater.length,
-      totalBefore: dbCountBefore,
-      totalAfter: dbCountAfter,
-      growth: dbCountAfter - dbCountBefore,
+      success: true,
+      data: uniqueWater,
+      recordCount: uniqueWater.length,
       totalFromAPI: allWater.length,
-      uniqueFromAPI: uniqueWater.length,
+      totalBefore: dbCountBefore,
     };
   }
 

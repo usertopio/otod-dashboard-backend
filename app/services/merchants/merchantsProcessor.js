@@ -26,11 +26,13 @@ export default class MerchantsProcessor {
     // 4. Log summary (optional)
     MerchantsLogger.logApiSummary(allMerchants.length, uniqueMerchants.length);
 
-    // 5. Bulk upsert to DB
-    const result = await bulkInsertOrUpdateMerchants(uniqueMerchants);
-
-    // 6. Return result
-    return result;
+    // 5. Return data for service to handle insert
+    return {
+      success: true,
+      data: uniqueMerchants,
+      recordCount: uniqueMerchants.length,
+      totalBefore: dbCountBefore,
+    };
   }
 
   /**

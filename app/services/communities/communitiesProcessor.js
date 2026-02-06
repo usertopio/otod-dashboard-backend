@@ -33,23 +33,13 @@ export default class CommunitiesProcessor {
       uniqueCommunities.length
     );
 
-    // 5. Bulk upsert to DB
-    const bulkResult = await bulkInsertOrUpdateCommunities(uniqueCommunities);
-
-    // 6. Get database count after processing
-    const dbCountAfter = await this._getDatabaseCount();
-
-    // 7. Return result object
+    // 5. Return data for service to handle insert
     return {
-      inserted: bulkResult.inserted || 0,
-      updated: bulkResult.updated || 0,
-      errors: bulkResult.errors || 0,
-      totalProcessed: uniqueCommunities.length,
-      totalBefore: dbCountBefore,
-      totalAfter: dbCountAfter,
-      growth: dbCountAfter - dbCountBefore,
+      success: true,
+      data: uniqueCommunities,
+      recordCount: uniqueCommunities.length,
       totalFromAPI: allCommunities.length,
-      uniqueFromAPI: uniqueCommunities.length,
+      totalBefore: dbCountBefore,
     };
   }
 
